@@ -1,0 +1,7 @@
+rootProject.name = 'autoscaling'
+
+include 'main'
+include 'core'
+include 'as-catalogue'
+
+project(':main').projectDir = file('main')

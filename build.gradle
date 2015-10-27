@@ -1,0 +1,52 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'jacoco'
+
+apply from: 'gradle/gradle/application.java.gradle'
+
+/**
+ * Project settings
+ */
+project.ext {
+    //------------------------------------------------//
+    /**
+     * Spring Related Variables
+     */
+    springVersion = '4.2.0.RELEASE'
+    springBootVersion = '1.2.5.RELEASE'
+    //------------------------------------------------//
+    //------------------------------------------------//
+    /**
+     * Application Related Version
+     */
+    applicationVersion = version
+    applicationVersionDebian = "1";
+
+    //------------------------------------------------//
+    //------------------------------------------------//
+    /**
+     * gradle Related Vars
+     */
+    //------------------------------------------------//
+    mainClass = 'org.openbaton.autoscaling.Main'
+}
+
+apply from: 'gradle/gradle/run.application.java.gradle'
+
+repositories {
+    mavenCentral()
+    maven {
+        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+    }
+}
+
+dependencies {
+    compile project(':main')
+
+    compile 'org.openbaton:sdk:0.12'
+
+    compile 'org.slf4j:slf4j-simple:1.6.1'
+
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
