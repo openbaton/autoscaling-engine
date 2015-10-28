@@ -3,5 +3,8 @@ rootProject.name = 'autoscaling'
 include 'main'
 include 'core'
 include 'as-catalogue'
+include 'api'
+include 'utils'
 
 project(':main').projectDir = file('main')
+project(':utils').projectDir = file('utils')

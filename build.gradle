@@ -3,8 +3,6 @@ apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'jacoco'
 
-apply from: 'gradle/gradle/application.java.gradle'
-
 /**
  * Project settings
  */
@@ -32,6 +30,7 @@ project.ext {
     mainClass = 'org.openbaton.autoscaling.Main'
 }
 
+apply from: 'gradle/gradle/application.java.gradle'
 apply from: 'gradle/gradle/run.application.java.gradle'
 
 repositories {
@@ -44,9 +43,12 @@ repositories {
 dependencies {
     compile project(':main')
 
-    compile 'org.openbaton:sdk:0.12'
+    //compile 'org.openbaton:sdk:0.12'
+    //compile 'org.slf4j:slf4j-log4j12'
+    //compile 'org.slf4j:slf4j'
 
-    compile 'org.slf4j:slf4j-simple:1.6.1'
+    compile 'org.slf4j:slf4j-api:1.6.1'
+    //compile 'org.slf4j:slf4j-simple:1.7.12'
 
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }

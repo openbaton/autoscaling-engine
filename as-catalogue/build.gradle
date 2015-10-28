@@ -1,10 +1,18 @@
-dependencies {
-    compile project(':core')
+repositories {
+    mavenCentral()
+    maven {
+        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+    }
+}
 
-    //compile 'org.openbaton:catalogue:0.12'
+dependencies {
+    //compile project(':core')
+
+    compile 'org.openbaton:catalogue:0.12'
 
     //compile 'org.openbaton:sdk:0.12'
 
-    compile 'org.springframework.data:spring-data-jpa:1.8.2.RELEASE'
-    compile 'org.springframework.boot:spring-boot-starter-data-jpa:' + springBootVersion
+    //compile 'org.springframework.data:spring-data-jpa:1.8.2.RELEASE'
+    //compile 'org.springframework.boot:spring-boot-starter-data-jpa:' + springBootVersion
+    compile 'org.springframework.boot:spring-boot:' + springBootVersion
 }
