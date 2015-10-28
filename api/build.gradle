@@ -1,0 +1,25 @@
+repositories {
+    mavenCentral()
+    maven {
+        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+    }
+}
+
+dependencies {
+    compile project(':core')
+
+    compile("org.springframework.boot:spring-boot-starter-websocket:" + springBootVersion)
+
+    testCompile("com.jayway.jsonpath:json-path-assert:2.0.0")
+    testCompile("org.mockito:mockito-all:1.10.19")
+    testCompile("junit:junit:4.12")
+
+}
+
+configurations {
+//    compile.exclude module: 'log4j-over-slf4j'
+//    compile.exclude module: 'jcl-over-slf4j'
+//    compile.exclude module: 'jul-to-slf4j'
+//    compile.exclude module: 'logback-classic'
+//    compile.exclude module: 'logback-core'
+}
