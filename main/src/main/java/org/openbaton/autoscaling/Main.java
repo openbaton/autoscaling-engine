@@ -1,8 +1,5 @@
 package org.openbaton.autoscaling;
 
-import org.openbaton.autoscaling.utils.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 
 /**
@@ -13,7 +10,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        SpringApplication.run(ElasticityManager.class, args);
+        SpringApplication.run(Application.class, args);
     }
 
 }
