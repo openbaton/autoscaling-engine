@@ -5,14 +5,12 @@ import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
+import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
-import org.openbaton.exceptions.VimException;
 import org.openbaton.monitoring.interfaces.ResourcePerformanceManagement;
-import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.plugin.utils.PluginBroker;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +21,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -38,8 +35,6 @@ import java.util.concurrent.ScheduledFuture;
 public class ElasticityManagement {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
-
-    protected ResourceManagement resourceManagement;
 
     protected ResourcePerformanceManagement monitor;
 
@@ -56,19 +51,18 @@ public class ElasticityManagement {
     @Autowired
     private VnfrMonitor vnfrMonitor;
 
-    /**
-     * Vim must be initialized only after the registry is up and plugin registered
-     */
-    public void initilizeVim() {
+    public ResourcePerformanceManagement getMonitor() {
         PluginBroker<ResourcePerformanceManagement> pluginBroker = new PluginBroker<>();
-        try {
-            this.monitor = pluginBroker.getPlugin("localhost", "monitor", "smart-dummy", "smart", 19345);
-        } catch (RemoteException e) {
-            log.error(e.getLocalizedMessage(), e);
-        } catch (NotBoundException e) {
-            log.warn("Monitoring " + e.getLocalizedMessage() + ". ElasticityManagement will not start.", e);
-        }
-        resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "openstack", 19345);
+        ResourcePerformanceManagement monitor = null;
+        monitor = new MyMonitor();
+//        try {
+//            monitor = pluginBroker.getPlugin("localhost", "monitor", "smart-dummy", "smart", 19999);
+//        } catch (RemoteException e) {
+//            log.error(e.getLocalizedMessage(), e);
+//        } catch (NotBoundException e) {
+//            log.warn("Monitoring " + e.getLocalizedMessage() + ". ElasticityManagement will not start.", e);
+//        }
+        return monitor;
     }
 
     @PostConstruct
@@ -80,8 +74,17 @@ public class ElasticityManagement {
         this.taskScheduler.initialize();
     }
 
+    public void activate(NetworkServiceRecord nsr) {
+        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+            if (vnfr.getAuto_scale_policy().size() > 0)
+                activate(vnfr);
+        }
+    }
+
     public void activate(VirtualNetworkFunctionRecord vnfr) {
-        log.debug("Activating Elasticity for vnfr " + vnfr.getId());
+        log.debug("Activating Elasticity for VNFR " + vnfr.getId());
+        if (this.monitor == null)
+            monitor = getMonitor();
         if (monitor != null) {
             tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
             for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
@@ -91,21 +94,31 @@ public class ElasticityManagement {
                 ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(elasticityTask, policy.getPeriod() * 1000);
                 tasks.get(vnfr.getId()).add(scheduledFuture);
             }
-            log.debug("Activated Elasticity for vnfr " + vnfr.getId());
+            log.debug("Activated Elasticity for VNFR " + vnfr.getId());
         } else {
             log.warn("Cannot activate ElasticityManagement because the MonitoringAgent is not available");
         }
     }
 
+    public void deactivate(NetworkServiceRecord nsr) {
+        log.debug("Deactivating Elasticity for all VNFRs of NSR with id: " + nsr.getId());
+        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+            if (vnfrMonitor.getVNFR(vnfr.getId()) != null) {
+                deactivate(vnfr);
+            }
+        }
+        log.debug("Deactivated Elasticity for all VNFRs of NSR with id: " + nsr.getId());
+    }
+
     public void deactivate(VirtualNetworkFunctionRecord vnfr) {
-        log.debug("Deactivating Elasticity for vnfr " + vnfr.getId());
+        log.debug("Deactivating Elasticity for VNFR " + vnfr.getId());
         if (tasks.containsKey(vnfr.getId())) {
             Set<ScheduledFuture> vnfrTasks = tasks.get(vnfr.getId());
             for (ScheduledFuture scheduledFuture : vnfrTasks) {
                 scheduledFuture.cancel(false);
             }
             vnfrMonitor.removeVNFR(vnfr.getId());
-            log.debug("Deactivated Elasticity for vnfr " + vnfr.getId());
+            log.debug("Deactivated Elasticity for VNFR " + vnfr.getId());
         } else {
             log.debug("Not Found any ElasticityTasks for VNFR with id: " + vnfr.getId());
         }
@@ -164,23 +177,24 @@ public class ElasticityManagement {
                 }
                 //If the Instance doesn't exists, allocate a new one
                 if (!found) {
-                    try {
-                        Map<String, String> floatgingIps = new HashMap<>();
-                        for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()){
-                            if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
-                                floatgingIps.put(connectionPoint.getVirtual_link_reference(),connectionPoint.getFloatingIp());
-                        }
-                        String userdata = "#userdata";
-                        Future<VNFCInstance> allocate = resourceManagement.allocate(vdu, vnfr, vnfComponent, userdata, floatgingIps);
-                        vnfcInstances.add(allocate);
-                        continue;
-                    } catch (VimException e) {
-                        log.error(e.getMessage(), e);
-                        throw new RuntimeException();
-                    } catch (VimDriverException e) {
-                        log.error(e.getMessage(), e);
-                        throw new RuntimeException();
-                    }
+//                    try {
+//                        Map<String, String> floatgingIps = new HashMap<>();
+//                        for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()){
+//                            if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
+//                                floatgingIps.put(connectionPoint.getVirtual_link_reference(),connectionPoint.getFloatingIp());
+//                        }
+//                        String userdata = "#userdata";
+//                        //TODO send scale to orchestrator
+//                        //Future<VNFCInstance> allocate = resourceManagement.allocate(vdu, vnfr, vnfComponent, userdata, floatgingIps);
+//                        //vnfcInstances.add(allocate);
+//                        continue;
+//                    } catch (VimException e) {
+//                        log.error(e.getMessage(), e);
+//                        throw new RuntimeException();
+//                    } catch (VimDriverException e) {
+//                        log.error(e.getMessage(), e);
+//                        throw new RuntimeException();
+//                    }
                 }
             }
             //Check for removed Components to scale in
@@ -197,14 +211,15 @@ public class ElasticityManagement {
                 }
                 //VNFComponent is not exsting anymore -> Remove VNFCInstance
                 if (!found) {
-                    try {
-                        log.debug("VNCInstance: " + vnfcInstance.toString() + " removing");
-                        resourceManagement.release(vnfcInstance, vdu.getVimInstance());
-                        removed_instances.add(vnfcInstance);
-                    } catch (VimException e) {
-                        log.error(e.getMessage(), e);
-                        throw new RuntimeException();
-                    }
+//                    try {
+//                        log.debug("VNCInstance: " + vnfcInstance.toString() + " removing");
+//                        //TODO send scale to orchestrator
+//                        //resourceManagement.release(vnfcInstance, vdu.getVimInstance());
+//                        removed_instances.add(vnfcInstance);
+//                    } catch (VimException e) {
+//                        log.error(e.getMessage(), e);
+//                        throw new RuntimeException();
+//                    }
                 }
             }
             //Remove terminated VNFCInstances
@@ -225,6 +240,8 @@ public class ElasticityManagement {
     }
 
     public synchronized List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, final String metric, String period) throws RemoteException {
+        if (this.monitor == null)
+            monitor = getMonitor();
         List<Item> measurementResults = new ArrayList<Item>();
         List<String> hostnames = new ArrayList<String>();
         List<String> metrics = new ArrayList<String>();
@@ -309,5 +326,30 @@ public class ElasticityManagement {
             return false;
         }
         return true;
+    }
+
+    class MyMonitor implements ResourcePerformanceManagement {
+
+        @Override
+        public List<Item> getMeasurementResults(List<String> hostnames, List<String> metrics, String period) throws RemoteException {
+            List<Item> items = new ArrayList<>();
+            for (String hostname : hostnames) {
+                for (String metric : metrics) {
+                    Item item = new Item();
+                    item.setHostId(hostname);
+                    item.setHostname(hostname);
+                    item.setLastValue(Double.toString(Math.random() * 100));
+                    item.setValue(Double.toString(Math.random() * 100));
+                    item.setMetric(metric);
+                    items.add(item);
+                }
+            }
+            return items;
+        }
+
+        @Override
+        public void notifyResults() throws RemoteException {
+
+        }
     }
 }
