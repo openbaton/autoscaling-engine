@@ -9,18 +9,24 @@ import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
+import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.monitoring.interfaces.ResourcePerformanceManagement;
 import org.openbaton.plugin.utils.PluginBroker;
+import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -31,81 +37,68 @@ import java.util.concurrent.ScheduledFuture;
  * Created by mpa on 27.10.15.
  */
 @Service
-@Scope
+@Scope("singleton")
 public class ElasticityManagement {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    protected ResourcePerformanceManagement monitor;
-
     private ThreadPoolTaskScheduler taskScheduler;
-
-    @Autowired
-    private AutowireCapableBeanFactory beanFactory;
 
     private Map<String, Set<ScheduledFuture>> tasks;
 
     @Autowired
-    private ConfigurableApplicationContext context;
-
-    @Autowired
     private VnfrMonitor vnfrMonitor;
 
-    public ResourcePerformanceManagement getMonitor() {
-        PluginBroker<ResourcePerformanceManagement> pluginBroker = new PluginBroker<>();
-        ResourcePerformanceManagement monitor = null;
-        monitor = new MyMonitor();
-//        try {
-//            monitor = pluginBroker.getPlugin("localhost", "monitor", "smart-dummy", "smart", 19999);
-//        } catch (RemoteException e) {
-//            log.error(e.getLocalizedMessage(), e);
-//        } catch (NotBoundException e) {
-//            log.warn("Monitoring " + e.getLocalizedMessage() + ". ElasticityManagement will not start.", e);
-//        }
-        return monitor;
-    }
+    //private NFVORequestor nfvoRequestor;
 
-    @PostConstruct
-    private void init() {
-        tasks = new HashMap<>();
+//    @Autowired
+//    private Environment properties;
+
+    private Properties properties;
+
+//    @PostConstruct
+    public void init(Properties properties) {
+        log.debug("======================");
+        log.debug(properties.toString());
+        this.properties = properties;
+        //this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
+        this.tasks = new HashMap<>();
+
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
         this.taskScheduler.initialize();
     }
 
-    public void activate(NetworkServiceRecord nsr) {
+    public void activate(NetworkServiceRecord nsr) throws NotFoundException {
+        log.debug("==========ACTIVATE============");
+        log.debug(properties.toString());
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
             if (vnfr.getAuto_scale_policy().size() > 0)
                 activate(vnfr);
         }
     }
 
-    public void activate(VirtualNetworkFunctionRecord vnfr) {
+    public void activate(VirtualNetworkFunctionRecord vnfr) throws NotFoundException {
         log.debug("Activating Elasticity for VNFR " + vnfr.getId());
-        if (this.monitor == null)
-            monitor = getMonitor();
-        if (monitor != null) {
-            tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
-            for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
-                ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
-                elasticityTask.init(vnfr, policy);
-                //taskExecutor.execute(elasticityTask);
-                ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(elasticityTask, policy.getPeriod() * 1000);
-                tasks.get(vnfr.getId()).add(scheduledFuture);
-            }
-            log.debug("Activated Elasticity for VNFR " + vnfr.getId());
-        } else {
-            log.warn("Cannot activate ElasticityManagement because the MonitoringAgent is not available");
+        vnfrMonitor.addVnfr(vnfr.getId());
+        log.debug("=======VNFR-MONITOR=======");
+        log.debug(vnfrMonitor.toString());
+        tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
+        for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
+//                ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
+            ElasticityTask elasticityTask = new ElasticityTask();
+            elasticityTask.init(vnfr, policy, vnfrMonitor, properties);
+            ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(elasticityTask, policy.getPeriod() * 1000);
+            tasks.get(vnfr.getId()).add(scheduledFuture);
         }
+        log.debug("Activated Elasticity for VNFR " + vnfr.getId());
     }
 
     public void deactivate(NetworkServiceRecord nsr) {
         log.debug("Deactivating Elasticity for all VNFRs of NSR with id: " + nsr.getId());
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            if (vnfrMonitor.getVNFR(vnfr.getId()) != null) {
                 deactivate(vnfr);
-            }
         }
         log.debug("Deactivated Elasticity for all VNFRs of NSR with id: " + nsr.getId());
     }
@@ -117,239 +110,11 @@ public class ElasticityManagement {
             for (ScheduledFuture scheduledFuture : vnfrTasks) {
                 scheduledFuture.cancel(false);
             }
-            vnfrMonitor.removeVNFR(vnfr.getId());
+            tasks.remove(vnfr.getId());
             log.debug("Deactivated Elasticity for VNFR " + vnfr.getId());
         } else {
             log.debug("Not Found any ElasticityTasks for VNFR with id: " + vnfr.getId());
         }
-
-    }
-
-    public void scaleVNFComponents(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy) {
-        if (autoScalePolicy.getAction().equals("scaleup")) {
-            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                if (vdu.getVnfc().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
-                    VNFComponent vnfComponent_copy = vdu.getVnfc().iterator().next();
-                    VNFComponent vnfComponent_new = new VNFComponent();
-                    vnfComponent_new.setConnection_point(new HashSet<VNFDConnectionPoint>());
-                    for (VNFDConnectionPoint vnfdConnectionPoint_copy : vnfComponent_copy.getConnection_point()) {
-                        VNFDConnectionPoint vnfdConnectionPoint_new = new VNFDConnectionPoint();
-                        vnfdConnectionPoint_new.setVirtual_link_reference(vnfdConnectionPoint_copy.getVirtual_link_reference());
-                        vnfdConnectionPoint_new.setType(vnfdConnectionPoint_copy.getType());
-                        vnfComponent_new.getConnection_point().add(vnfdConnectionPoint_new);
-                    }
-                    vdu.getVnfc().add(vnfComponent_new);
-                    log.debug("SCALING: Added new Component to VDU " + vdu.getId());
-                    return;
-                } else {
-                    continue;
-                }
-            }
-            log.debug("Not found any VDU to scale out a VNFComponent. Limits are reached.");
-        } else if (autoScalePolicy.getAction().equals("scaledown")) {
-            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                if (vdu.getVnfc().size() > 1 && vdu.getVnfc().iterator().hasNext()) {
-                    VNFComponent vnfComponent_remove = vdu.getVnfc().iterator().next();
-                    vdu.getVnfc().remove(vnfComponent_remove);
-                    log.debug("SCALING: Removed Component " + vnfComponent_remove.getId() + " from VDU " + vdu.getId());
-                    return;
-                } else {
-                    continue;
-                }
-            }
-            log.debug("Not found any VDU to scale in a VNFComponent. Limits are reached.");
-        }
-    }
-
-    public void scaleVNFCInstances(VirtualNetworkFunctionRecord vnfr) {
-        List<Future<VNFCInstance>> vnfcInstances = new ArrayList<>();
-        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            //Check for additional components for scaling out
-            for (VNFComponent vnfComponent : vdu.getVnfc()) {
-                //VNFComponent ID is null -> NEW
-                boolean found = false;
-                //Check if VNFCInstance for VNFComponent already exists
-                for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                    if (vnfComponent.getId().equals(vnfcInstance.getVnfComponent().getId())) {
-                        found = true;
-                        break;
-                    }
-                }
-                //If the Instance doesn't exists, allocate a new one
-                if (!found) {
-//                    try {
-//                        Map<String, String> floatgingIps = new HashMap<>();
-//                        for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()){
-//                            if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
-//                                floatgingIps.put(connectionPoint.getVirtual_link_reference(),connectionPoint.getFloatingIp());
-//                        }
-//                        String userdata = "#userdata";
-//                        //TODO send scale to orchestrator
-//                        //Future<VNFCInstance> allocate = resourceManagement.allocate(vdu, vnfr, vnfComponent, userdata, floatgingIps);
-//                        //vnfcInstances.add(allocate);
-//                        continue;
-//                    } catch (VimException e) {
-//                        log.error(e.getMessage(), e);
-//                        throw new RuntimeException();
-//                    } catch (VimDriverException e) {
-//                        log.error(e.getMessage(), e);
-//                        throw new RuntimeException();
-//                    }
-                }
-            }
-            //Check for removed Components to scale in
-            Set<VNFCInstance> removed_instances = new HashSet<>();
-            for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                boolean found = false;
-                for (VNFComponent vnfComponent : vdu.getVnfc()) {
-                    if (vnfcInstance.getVnfComponent().getId().equals(vnfComponent.getId())) {
-                        log.debug("VNCInstance: " + vnfcInstance.toString() + " stays");
-                        found = true;
-                        //VNFComponent is still existing
-                        break;
-                    }
-                }
-                //VNFComponent is not exsting anymore -> Remove VNFCInstance
-                if (!found) {
-//                    try {
-//                        log.debug("VNCInstance: " + vnfcInstance.toString() + " removing");
-//                        //TODO send scale to orchestrator
-//                        //resourceManagement.release(vnfcInstance, vdu.getVimInstance());
-//                        removed_instances.add(vnfcInstance);
-//                    } catch (VimException e) {
-//                        log.error(e.getMessage(), e);
-//                        throw new RuntimeException();
-//                    }
-                }
-            }
-            //Remove terminated VNFCInstances
-            vdu.getVnfc_instance().removeAll(removed_instances);
-        }
-        //Print ids of deployed VDUs
-        for (Future<VNFCInstance> vnfcInstance : vnfcInstances) {
-            try {
-                log.debug("Created VNFCInstance with id: " + vnfcInstance.get());
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-                throw new RuntimeException(e.getMessage(), e);
-            } catch (ExecutionException e) {
-                log.error(e.getMessage(), e);
-                throw new RuntimeException(e.getMessage(), e);
-            }
-        }
-    }
-
-    public synchronized List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, final String metric, String period) throws RemoteException {
-        if (this.monitor == null)
-            monitor = getMonitor();
-        List<Item> measurementResults = new ArrayList<Item>();
-        List<String> hostnames = new ArrayList<String>();
-        List<String> metrics = new ArrayList<String>();
-        metrics.add(metric);
-        log.debug("Getting all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + ".");
-        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            for (final VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                hostnames.add(vnfcInstance.getHostname());
-            }
-        }
-        measurementResults.addAll(monitor.getMeasurementResults(hostnames, metrics, period));
-        log.debug("Got all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + " -> " + measurementResults + ".");
-        return measurementResults;
-    }
-
-    public double calculateMeasurementResult(AutoScalePolicy autoScalePolicy, List<Item> measurementResults) {
-        double result;
-        List<Double> consideredResults = new ArrayList<>();
-        for (Item measurementResult : measurementResults) {
-            consideredResults.add(Double.parseDouble(measurementResult.getValue()));
-        }
-        switch (autoScalePolicy.getStatistic()) {
-            case "avg":
-                double sum = 0;
-                for (Double consideredResult : consideredResults) {
-                    sum += consideredResult;
-                }
-                result = sum / measurementResults.size();
-                break;
-            case "min":
-                result = Collections.min(consideredResults);
-                break;
-            case "max":
-                result = Collections.max(consideredResults);
-                break;
-            default:
-                result = -1;
-                break;
-        }
-        return result;
-    }
-
-    public boolean triggerAction(AutoScalePolicy autoScalePolicy, double result) {
-        switch (autoScalePolicy.getComparisonOperator()) {
-            case ">":
-                if (result > autoScalePolicy.getThreshold()) {
-                    return true;
-                }
-                break;
-            case "<":
-                if (result < autoScalePolicy.getThreshold()) {
-                    return true;
-                }
-                break;
-            case "=":
-                if (result == autoScalePolicy.getThreshold()) {
-                    return true;
-                }
-                break;
-            default:
-                return false;
-        }
-        return false;
-    }
-
-    public boolean checkFeasibility(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy) {
-        if (autoScalePolicy.getAction().equals("scaleup")) {
-            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                if (vdu.getVnfc().size() < vdu.getScale_in_out()) {
-                    return true;
-                }
-            }
-            log.debug("Maximum number of instances are reached on all VimInstances");
-            return false;
-        } else if (autoScalePolicy.getAction().equals("scaledown")) {
-            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                if (vdu.getVnfc().size() > 1) {
-                    return true;
-                }
-            }
-            log.warn("Cannot terminate the last VDU.");
-            return false;
-        }
-        return true;
-    }
-
-    class MyMonitor implements ResourcePerformanceManagement {
-
-        @Override
-        public List<Item> getMeasurementResults(List<String> hostnames, List<String> metrics, String period) throws RemoteException {
-            List<Item> items = new ArrayList<>();
-            for (String hostname : hostnames) {
-                for (String metric : metrics) {
-                    Item item = new Item();
-                    item.setHostId(hostname);
-                    item.setHostname(hostname);
-                    item.setLastValue(Double.toString(Math.random() * 100));
-                    item.setValue(Double.toString(Math.random() * 100));
-                    item.setMetric(metric);
-                    items.add(item);
-                }
-            }
-            return items;
-        }
-
-        @Override
-        public void notifyResults() throws RemoteException {
-
-        }
+        vnfrMonitor.removeVnfr(vnfr.getId());
     }
 }

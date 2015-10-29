@@ -11,23 +11,53 @@ import java.util.HashMap;
 @Scope
 public class VnfrMonitor {
 
-    private HashMap<String, VirtualNetworkFunctionRecord> virtualNetworkFunctionRecords;
+    private HashMap<String, ScalingStatus> states;
 
     @PostConstruct
     public synchronized void init() {
-        this.virtualNetworkFunctionRecords = new HashMap<>();
+        states = new HashMap<String, ScalingStatus>();
     }
 
-    public synchronized VirtualNetworkFunctionRecord getVNFR(String id) {
-        return virtualNetworkFunctionRecords.get(id);
+    public synchronized void addVnfr(String vnfrId) {
+        states.put(vnfrId, ScalingStatus.READY);
     }
 
-    public synchronized void addVNFR(VirtualNetworkFunctionRecord virtualNetworkFunctionRecord) {
-        virtualNetworkFunctionRecords.put(virtualNetworkFunctionRecord.getId(), virtualNetworkFunctionRecord);
+    public synchronized void removeVnfr(String vnfrId) {
+        states.remove(vnfrId);
     }
 
-    public synchronized void removeVNFR(String id) {
-        virtualNetworkFunctionRecords.remove(id);
+    public synchronized void setState(String vnfrId, ScalingStatus state) {
+        states.put(vnfrId, state);
     }
+
+    public synchronized ScalingStatus getState(String vnfrId) {
+        return states.get(vnfrId);
+    }
+
+    @Override
+    public String toString() {
+        return "VnfrMonitor{" +
+                "states=" + states +
+                '}';
+    }
+
+    //    private HashMap<String, VirtualNetworkFunctionRecord> virtualNetworkFunctionRecords;
+//
+//    @PostConstruct
+//    public synchronized void init() {
+//        this.virtualNetworkFunctionRecords = new HashMap<>();
+//    }
+//
+//    public synchronized VirtualNetworkFunctionRecord getVNFR(String id) {
+//        return virtualNetworkFunctionRecords.get(id);
+//    }
+//
+//    public synchronized void addVNFR(VirtualNetworkFunctionRecord virtualNetworkFunctionRecord) {
+//        virtualNetworkFunctionRecords.put(virtualNetworkFunctionRecord.getId(), virtualNetworkFunctionRecord);
+//    }
+//
+//    public synchronized void removeVNFR(String id) {
+//        virtualNetworkFunctionRecords.remove(id);
+//    }
 
 }

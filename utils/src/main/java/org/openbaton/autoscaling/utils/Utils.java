@@ -2,6 +2,9 @@ package org.openbaton.autoscaling.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MutablePropertySources;
+import org.springframework.core.env.PropertiesPropertySource;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -72,4 +75,19 @@ public class Utils {
         return properties;
     }
 
+    public static void loadExternalProperties(ConfigurableEnvironment properties) {
+        if (properties.containsProperty("external-properties-file") && properties.getProperty("external-properties-file") != null) {
+            try {
+                InputStream is = new FileInputStream(new File(properties.getProperty("external-properties-file")));
+                Properties externalProperties = new Properties();
+                externalProperties.load(is);
+                PropertiesPropertySource propertiesPropertySource = new PropertiesPropertySource("external-properties", externalProperties);
+
+                MutablePropertySources propertySources = properties.getPropertySources();
+                propertySources.addFirst(propertiesPropertySource);
+            } catch (IOException e) {
+                log.warn("Not found external-properties-file: " + properties.getProperty("external-properties-file"));
+            }
+        }
+    }
 }

@@ -1,7 +1,9 @@
 package org.openbaton.autoscaling;
 
+import org.openbaton.autoscaling.core.ElasticityManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.nfvo.Action;
+import org.openbaton.catalogue.nfvo.ConfigurationParameter;
 import org.openbaton.catalogue.nfvo.EndpointType;
 import org.openbaton.catalogue.nfvo.EventEndpoint;
 import org.openbaton.plugin.utils.PluginStartup;
@@ -9,14 +11,25 @@ import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MutablePropertySources;
+import org.springframework.core.env.PropertiesPropertySource;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -24,24 +37,40 @@ import java.util.Properties;
  */
 @SpringBootApplication
 @ComponentScan("org.openbaton.autoscaling")
+//@PropertySource({
+//        "classpath:autoscaling.properties",
+//        "classpath:openbaton.properties"
+//})
 public class Application {
 
     protected static Logger log = LoggerFactory.getLogger(Application.class);
 
-    private Properties properties;
-
     private NFVORequestor nfvoRequestor;
 
-    private String subscriptionId;
+    private List<String> subscriptionIds;
+
+//    @Autowired
+//    private ConfigurableEnvironment properties;
+
+    @Autowired
+    private ElasticityManagement elasticityManagement;
+
+    private Properties properties;
 
     @PostConstruct
     private void init() throws SDKException {
         properties = Utils.loadProperties();
+        //Utils.loadExternalProperties(properties);
+
+        elasticityManagement.init(properties);
+
+        subscriptionIds = new ArrayList<>();
         startPlugins();
 
         waitForNfvo();
         this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
-        subscribe();
+        subscribe(Action.INSTANTIATE_FINISH);
+        subscribe(Action.RELEASE_RESOURCES_FINISH);
     }
 
     @PreDestroy
@@ -50,18 +79,20 @@ public class Application {
         destroyPlugins();
     }
 
-    private void subscribe() throws SDKException {
-        log.debug("Subscribing to all Events with INSTANTIATE_FINISH");
+    private void subscribe(Action action) throws SDKException {
+        log.debug("Subscribing to all NSR Events with Action " + action);
         EventEndpoint eventEndpoint = new EventEndpoint();
-        eventEndpoint.setName("AutoscalingEvent");
-        eventEndpoint.setEndpoint("http://localhost:9999/event");
-        eventEndpoint.setEvent(Action.INSTANTIATE_FINISH);
+        eventEndpoint.setName("Subscription:" + action);
+        eventEndpoint.setEndpoint("http://localhost:9999/event/" + action);
+        eventEndpoint.setEvent(action);
         eventEndpoint.setType(EndpointType.REST);
-        this.subscriptionId = nfvoRequestor.getEventAgent().create(eventEndpoint).getId();
+        this.subscriptionIds.add(nfvoRequestor.getEventAgent().create(eventEndpoint).getId());
     }
 
     private void unsubscribe() throws SDKException {
-        nfvoRequestor.getEventAgent().delete(subscriptionId);
+        for (String subscriptionId : subscriptionIds) {
+            nfvoRequestor.getEventAgent().delete(subscriptionId);
+        }
     }
 
     private void startPlugins() {
@@ -78,10 +109,6 @@ public class Application {
 
     private void destroyPlugins() {
         PluginStartup.destroy();
-    }
-
-    public Properties getProperties() {
-        return properties;
     }
 
     private void waitForNfvo() {

@@ -46,13 +46,13 @@ public class RestEvent {
     private ElasticityManagement elasticityManagement;
 
     /**
-     * Adds a new VNF software Image to the image repository
+     * Activates autoscaling for the passed NSR
      *
      * @param msg : NSR in payload to add for autoscaling
      */
-    @RequestMapping(value = "", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "INSTANTIATE_FINISH", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public void create(@RequestBody String msg) throws NotFoundException {
+    public void activate(@RequestBody String msg) throws NotFoundException {
         log.debug("========================");
         log.debug("msg=" + msg);
         JsonParser jsonParser = new JsonParser();
@@ -65,28 +65,23 @@ public class RestEvent {
         elasticityManagement.activate(nsr);
     }
 
-//    /**
-//     * Adds a new VNF software Image to the image repository
-//     *
-//     * @param applicationEventNFVO : NSR to add for autoscaling
-//     */
-//    @RequestMapping(value = "", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-//    @ResponseStatus(HttpStatus.CREATED)
-//    public void create(@RequestBody ApplicationEventNFVO applicationEventNFVO) throws NotFoundException {
-//        log.debug("========================");
-//        log.debug("nsr=" + (NetworkServiceRecord) applicationEventNFVO.getPayload());
-//    }
-
     /**
-     * Removes the Application from the Application repository
+     * Deactivates autoscaling for the passed NSR
      *
-     * @param nsrId : The nsr's id to be deleted from autoscaling
+     * @param msg : NSR in payload to add for autoscaling
      */
-    @RequestMapping(value = "{nsrId}", method = RequestMethod.DELETE)
-    @ResponseStatus(HttpStatus.OK)
-    public void delete(@PathVariable("nsrId") NetworkServiceRecord nsr) throws NotFoundException {
+    @RequestMapping(value = "RELEASE_RESOURCES_FINISH", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public void deactivate(@RequestBody String msg) throws NotFoundException {
         log.debug("========================");
-        log.debug("nsr=" + nsr);
+        log.debug("msg=" + msg);
+        JsonParser jsonParser = new JsonParser();
+        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
+        Gson mapper = new GsonBuilder().create();
+        Action action = mapper.fromJson(json.get("action"), Action.class);
+        log.debug("ACTION=" + action);
+        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+        log.debug("NSR=" + nsr);
         elasticityManagement.deactivate(nsr);
     }
 }
