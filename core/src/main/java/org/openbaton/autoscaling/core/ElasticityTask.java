@@ -6,6 +6,7 @@ import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
+import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
@@ -86,55 +87,95 @@ class ElasticityTask implements Runnable {
         log.debug("ElasticityTask: Checking AutoScalingPolicy " + autoScalePolicy.getAction() + " with id: " + autoScalePolicy.getId() + " VNFR with id: " + vnfr_id);
         if (vnfrMonitor.getState(vnfr_id) == ScalingStatus.READY) {
             VirtualNetworkFunctionRecord vnfr = null;
+            NetworkServiceRecord nsr = null;
+            List<String> nsrVnfrIds = new ArrayList<>();
             try {
                 vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+                nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+                for (VirtualNetworkFunctionRecord otherVnfr : nsr.getVnfr()) {
+                    nsrVnfrIds.add(otherVnfr.getId());
+                }
             } catch (SDKException e) {
+                log.error(e.getMessage());
+            } catch (ClassNotFoundException e) {
                 log.error(e.getMessage(), e);
             }
-            if (vnfr != null) {
-                if (vnfr.getStatus() == Status.ACTIVE) {
-                    try {
-                        List<Item> measurementResults = getRawMeasurementResults(vnfr, autoScalePolicy.getMetric(), Integer.toString(autoScalePolicy.getPeriod()));
-                        double finalResult = calculateMeasurementResult(autoScalePolicy, measurementResults);
-                        log.debug("ElasticityTask: Final measurement result on vnfr " + vnfr.getId() + " on metric " + autoScalePolicy.getMetric() + " with statistic " + autoScalePolicy.getStatistic() + " is " + finalResult + " " + measurementResults);
-                        if (triggerAction(autoScalePolicy, finalResult) && checkFeasibility(vnfr, autoScalePolicy)) {
+            if (nsr != null) {
+                if (vnfr != null) {
+                    if (nsr.getStatus() == Status.ACTIVE) {
+                        if (vnfr.getStatus() == Status.ACTIVE) {
                             try {
-                                if (vnfrMonitor.requestScaling(vnfr_id)) {
-                                    log.debug("ElasticityTask: Executing scaling action of AutoScalePolicy with id " + autoScalePolicy.getId());
-                                    scale(vnfr, autoScalePolicy);
-                                    log.debug("ElasticityTask: Starting cooldown period (" + autoScalePolicy.getCooldown() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
-                                    Thread.sleep(autoScalePolicy.getCooldown() * 1000);
-                                    log.debug("ElasticityTask: Finished cooldown period (" + autoScalePolicy.getCooldown() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
+                                List<Item> measurementResults = getRawMeasurementResults(vnfr, autoScalePolicy.getMetric(), Integer.toString(autoScalePolicy.getPeriod()));
+                                double finalResult = calculateMeasurementResult(autoScalePolicy, measurementResults);
+                                log.debug("ElasticityTask: Final measurement result on vnfr " + vnfr.getId() + " on metric " + autoScalePolicy.getMetric() + " with statistic " + autoScalePolicy.getStatistic() + " is " + finalResult + " " + measurementResults);
+                                if (triggerAction(autoScalePolicy, finalResult) && checkFeasibility(vnfr, autoScalePolicy)) {
+                                    try {
+                                        log.debug("ElasticityTask: AutoScalingPolicy " + autoScalePolicy.getAction() + " with id: " + autoScalePolicy.getId() + " requests Scaling");
+                                        if (vnfrMonitor.requestScaling(nsrVnfrIds)) {
+                                            log.debug("ElasticityTask: Scaling request of AutoScalingPolicy " + autoScalePolicy.getAction() + " with id: " + autoScalePolicy.getId() + " accepted");
+                                            log.debug("ElasticityTask: Executing scaling action of AutoScalePolicy " + autoScalePolicy.getAction() + " with id " + autoScalePolicy.getId());
+                                            scale(vnfr, autoScalePolicy);
+                                            HashSet<Status> statesToContinue = new HashSet<>();
+                                            statesToContinue.add(Status.ACTIVE);
+                                            statesToContinue.add(Status.ERROR);
+                                            waitForState(nsr_id, vnfr_id, statesToContinue);
+                                            log.debug("ElasticityTask: Starting cooldown period (" + autoScalePolicy.getCooldown() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
+                                            Thread.sleep(autoScalePolicy.getCooldown() * 1000);
+                                            log.debug("ElasticityTask: Finished cooldown period (" + autoScalePolicy.getCooldown() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
+                                        } else {
+                                            log.debug("ElasticityTask: Scaling request of AutoScalingPolicy " + autoScalePolicy.getAction() + " with id: " + autoScalePolicy.getId() + " denied");
+                                            log.debug("ElasticityTask: Alarm was thrown but another Alarm was faster. So Action is not executed");
+                                        }
+                                    } catch (NotFoundException e) {
+                                        log.error(e.getMessage(), e);
+                                    } catch (SDKException e) {
+                                        log.error(e.getMessage(), e);
+                                    } finally {
+                                        vnfrMonitor.release(nsrVnfrIds);
+                                    }
                                 } else {
-                                    log.debug("ElasticityTask: Alarm was thrown but another Alarm was faster. So Action is not executed");
+                                    log.debug("ElasticityTask: Scaling of AutoScalePolicy with id " + autoScalePolicy.getId() + " is not triggered");
                                 }
-                            } catch (NotFoundException e) {
-                                log.error(e.getMessage(), e);
-                            } catch (SDKException e) {
-                                log.error(e.getMessage(), e);
-                            } finally {
-                                vnfrMonitor.setState(vnfr_id, ScalingStatus.READY);
+                                log.debug("ElasticityTask: Starting sleeping period (" + autoScalePolicy.getPeriod() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
+                            } catch (InterruptedException e) {
+                                log.warn("ElasticityTask: ElasticityTask was interrupted");
+                            } catch (RemoteException e) {
+                                log.warn("ElasticityTask: Problem with the MonitoringPlugin!");
                             }
                         } else {
-                            log.debug("ElasticityTask: Scaling of AutoScalePolicy with id " + autoScalePolicy.getId() + " is not triggered");
+                            log.debug("ElasticityTask: VNFR with id: " + vnfr_id + " in state: " + vnfr.getStatus() + " -> waiting until state goes back to " + Status.ACTIVE);
                         }
-                        log.debug("ElasticityTask: Starting sleeping period (" + autoScalePolicy.getPeriod() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
-                    } catch (InterruptedException e) {
-                        log.warn("ElasticityTask: ElasticityTask was interrupted");
-                    } catch (RemoteException e) {
-                        log.warn("ElasticityTask: Problem with the MonitoringPlugin!");
+                    } else {
+                        log.debug("ElasticityTask: NSR with id: " + nsr_id + " in state: " + nsr.getStatus() + " -> waiting until state goes back to " + Status.ACTIVE);
                     }
                 } else {
-                    log.debug("ElasticityTask: In state: " + vnfr.getStatus() + " -> waiting until state goes back to " + Status.ACTIVE);
+                    log.error("ElasticityTask: Not found VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
                 }
             } else {
-                log.error("ElasticityTask: Not found VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
+                log.error("ElasticityTask: Not found NSR with id: " + nsr_id);
             }
         } else {
             log.debug("ElasticityTask: Cannot check for scaling. Internal state of VNFR is: " + vnfrMonitor.getState(vnfr_id) + ". Waiting for state: " + ScalingStatus.READY);
         }
     }
 
+    public void waitForState(String nsrId, String vnfrId, Set<Status> states) {
+        try {
+            Thread.sleep(15000);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+        }
+        VirtualNetworkFunctionRecord vnfr = getVnfr(nsrId, vnfrId);
+        while (!states.contains(vnfr.getStatus())) {
+            log.debug("ElasticityTask: Waiting until status of VNFR with id: " + vnfrId + " goes back to " + states);
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            }
+            vnfr = getVnfr(nsrId, vnfrId);
+        }
+    }
 
     public VirtualNetworkFunctionRecord getVnfr(String nsrId, String vnfrId) {
         try {
@@ -149,8 +190,8 @@ class ElasticityTask implements Runnable {
         PluginBroker<ResourcePerformanceManagement> pluginBroker = new PluginBroker<>();
         ResourcePerformanceManagement monitor = null;
         monitor = new MyMonitor();
-        if (true)
-            return monitor;
+//        if (true)
+//            return monitor;
         try {
             monitor = pluginBroker.getPlugin("localhost", "monitor", "smart-dummy", "smart", 19999);
         } catch (RemoteException e) {
@@ -172,6 +213,7 @@ class ElasticityTask implements Runnable {
                         VNFDConnectionPoint vnfdConnectionPoint_new = new VNFDConnectionPoint();
                         vnfdConnectionPoint_new.setVirtual_link_reference(vnfdConnectionPoint_copy.getVirtual_link_reference());
                         vnfdConnectionPoint_new.setType(vnfdConnectionPoint_copy.getType());
+                        vnfdConnectionPoint_new.setFloatingIp(vnfdConnectionPoint_copy.getFloatingIp());
                         vnfComponent_new.getConnection_point().add(vnfdConnectionPoint_new);
                     }
                     nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
@@ -277,7 +319,7 @@ class ElasticityTask implements Runnable {
         }
     }
 
-    public synchronized List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, final String metric, String period) throws RemoteException {
+    public List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, final String metric, String period) throws RemoteException {
         List<Item> measurementResults = new ArrayList<Item>();
         List<String> hostnames = new ArrayList<String>();
         List<String> metrics = new ArrayList<String>();

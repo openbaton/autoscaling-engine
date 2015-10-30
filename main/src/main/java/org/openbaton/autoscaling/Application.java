@@ -71,6 +71,7 @@ public class Application {
         this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
         subscribe(Action.INSTANTIATE_FINISH);
         subscribe(Action.RELEASE_RESOURCES_FINISH);
+        subscribe(Action.ERROR);
     }
 
     @PreDestroy

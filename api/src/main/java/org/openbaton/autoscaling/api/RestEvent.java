@@ -21,6 +21,7 @@ import net.minidev.json.parser.JSONParser;
 import org.openbaton.autoscaling.catalogue.VnfrMonitor;
 import org.openbaton.autoscaling.core.ElasticityManagement;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
+import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.ApplicationEventNFVO;
 import org.openbaton.exceptions.NotFoundException;
@@ -84,4 +85,31 @@ public class RestEvent {
         log.debug("NSR=" + nsr);
         elasticityManagement.deactivate(nsr);
     }
+
+    /**
+     * Stops autoscaling for the passed NSR
+     *
+     * @param msg : NSR in payload to add for autoscaling
+     */
+    @RequestMapping(value = "ERROR", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public void stop(@RequestBody String msg) throws NotFoundException {
+        log.debug("========================");
+        log.debug("msg=" + msg);
+        JsonParser jsonParser = new JsonParser();
+        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
+        Gson mapper = new GsonBuilder().create();
+        Action action = mapper.fromJson(json.get("action"), Action.class);
+        log.debug("ACTION=" + action);
+        try {
+            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+            log.debug("NSR=" + nsr);
+            elasticityManagement.deactivate(nsr);
+        } catch (NullPointerException e) {
+            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
+            log.debug("vnfr=" + vnfr);
+            elasticityManagement.deactivate(vnfr);
+        }
+    }
+
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
+import java.util.List;
 
 @Service
 @Scope
@@ -35,16 +36,16 @@ public class VnfrMonitor {
         return states.get(vnfrId);
     }
 
-    public synchronized boolean requestScaling(String vnfrId) throws NotFoundException {
-        ScalingStatus status = states.get(vnfrId);
-        if (status == null) {
-            throw new NotFoundException("VnfrMonitor: Not found VNFR with id: " + vnfrId);
-        } else if (status == ScalingStatus.READY) {
-            states.put(vnfrId, ScalingStatus.BUSY);
-            return true;
-        } else {
-            return false;
+    public synchronized boolean requestScaling(List<String> allVnfrIds) throws NotFoundException {
+        for (String otherVnfrId : allVnfrIds) {
+            if (states.get(otherVnfrId) == ScalingStatus.BUSY) {
+                return false;
+            }
         }
+        for (String otherVnfrId : allVnfrIds) {
+            states.put(otherVnfrId, ScalingStatus.BUSY);
+        }
+        return true;
     }
 
     @Override
@@ -54,23 +55,9 @@ public class VnfrMonitor {
                 '}';
     }
 
-    //    private HashMap<String, VirtualNetworkFunctionRecord> virtualNetworkFunctionRecords;
-//
-//    @PostConstruct
-//    public synchronized void init() {
-//        this.virtualNetworkFunctionRecords = new HashMap<>();
-//    }
-//
-//    public synchronized VirtualNetworkFunctionRecord getVNFR(String id) {
-//        return virtualNetworkFunctionRecords.get(id);
-//    }
-//
-//    public synchronized void addVNFR(VirtualNetworkFunctionRecord virtualNetworkFunctionRecord) {
-//        virtualNetworkFunctionRecords.put(virtualNetworkFunctionRecord.getId(), virtualNetworkFunctionRecord);
-//    }
-//
-//    public synchronized void removeVNFR(String id) {
-//        virtualNetworkFunctionRecords.remove(id);
-//    }
-
+    public void release(List<String> allVnfrIds) {
+        for (String otherVnfrId : allVnfrIds) {
+            states.put(otherVnfrId, ScalingStatus.READY);
+        }
+    }
 }

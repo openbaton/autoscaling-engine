@@ -84,15 +84,21 @@ public class ElasticityManagement {
         vnfrMonitor.addVnfr(vnfr.getId());
         log.debug("=======VNFR-MONITOR=======");
         log.debug(vnfrMonitor.toString());
-        tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
-        for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
+        if (!tasks.containsKey(vnfr.getId())) {
+            log.debug("Creating new ElasticityTasks for VNFR with id: " + vnfr.getId());
+            tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
+            for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
+                log.debug("Creating new ElasticityTask for AutoScalingPolicy " + policy.getAction() + " with id: " + policy.getId() + " of VNFR with id: " + vnfr.getId());
 //                ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
-            ElasticityTask elasticityTask = new ElasticityTask();
-            elasticityTask.init(vnfr, policy, vnfrMonitor, properties);
-            ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(elasticityTask, policy.getPeriod() * 1000);
-            tasks.get(vnfr.getId()).add(scheduledFuture);
+                ElasticityTask elasticityTask = new ElasticityTask();
+                elasticityTask.init(vnfr, policy, vnfrMonitor, properties);
+                ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(elasticityTask, policy.getPeriod() * 1000);
+                tasks.get(vnfr.getId()).add(scheduledFuture);
+            }
+            log.debug("Activated Elasticity for VNFR " + vnfr.getId());
+        } else {
+            log.debug("ElasticityTasks for VNFR with id " + vnfr.getId() + " were already activated");
         }
-        log.debug("Activated Elasticity for VNFR " + vnfr.getId());
     }
 
     public void deactivate(NetworkServiceRecord nsr) {
