@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id=":as-catalogue" external.linked.project.path="$MODULE_DIR$" external.root.project.path="$USER_HOME$/openbaton/autoscaling" external.system.id="GRADLE" external.system.module.group="org.openbaton" external.system.module.version="0.01-SNAPSHOT" type="JAVA_MODULE" version="4">
+<module external.linked.project.id=":as-catalogue" external.linked.project.path="$MODULE_DIR$" external.root.project.path="$MODULE_DIR$/.." external.system.id="GRADLE" external.system.module.group="org.openbaton" external.system.module.version="0.01-SNAPSHOT" type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/build/classes/main" />
     <output-test url="file://$MODULE_DIR$/build/classes/test" />
@@ -17,7 +17,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="Gradle: org.openbaton:catalogue:0.12" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework.boot:spring-boot:1.2.5.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.fasterxml.jackson.core:jackson-annotations:2.5.3" level="project" />
@@ -28,5 +27,7 @@
     <orderEntry type="library" exported="" name="Gradle: org.springframework:spring-beans:4.1.7.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework:spring-expression:4.1.7.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: aopalliance:aopalliance:1.0" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:catalogue:0.14" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:exception:0.14" level="project" />
   </component>
 </module>

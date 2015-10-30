@@ -8,7 +8,8 @@ repositories {
 dependencies {
     //compile project(':core')
 
-    compile 'org.openbaton:catalogue:0.12'
+    compile 'org.openbaton:catalogue:0.14'
+    compile 'org.openbaton:exception:0.14'
 
     //compile 'org.openbaton:sdk:0.12'
 

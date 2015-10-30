@@ -15,11 +15,3 @@ dependencies {
     testCompile("junit:junit:4.12")
 
 }
-
-configurations {
-//    compile.exclude module: 'log4j-over-slf4j'
-//    compile.exclude module: 'jcl-over-slf4j'
-//    compile.exclude module: 'jul-to-slf4j'
-//    compile.exclude module: 'logback-classic'
-//    compile.exclude module: 'logback-core'
-}

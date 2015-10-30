@@ -1,6 +1,7 @@
 package org.openbaton.autoscaling.catalogue;
 
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.openbaton.exceptions.NotFoundException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,18 @@ public class VnfrMonitor {
 
     public synchronized ScalingStatus getState(String vnfrId) {
         return states.get(vnfrId);
+    }
+
+    public synchronized boolean requestScaling(String vnfrId) throws NotFoundException {
+        ScalingStatus status = states.get(vnfrId);
+        if (status == null) {
+            throw new NotFoundException("VnfrMonitor: Not found VNFR with id: " + vnfrId);
+        } else if (status == ScalingStatus.READY) {
+            states.put(vnfrId, ScalingStatus.BUSY);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
