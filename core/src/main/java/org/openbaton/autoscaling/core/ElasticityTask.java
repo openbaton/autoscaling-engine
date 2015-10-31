@@ -189,11 +189,11 @@ class ElasticityTask implements Runnable {
     public ResourcePerformanceManagement getMonitor() {
         PluginBroker<ResourcePerformanceManagement> pluginBroker = new PluginBroker<>();
         ResourcePerformanceManagement monitor = null;
-        monitor = new MyMonitor();
+        //monitor = new MyMonitor();
 //        if (true)
 //            return monitor;
         try {
-            monitor = pluginBroker.getPlugin("localhost", "monitor", "smart-dummy", "smart", 19999);
+            monitor = pluginBroker.getPlugin("localhost", "monitor", "zabbix-agent", "zabbix", 19999);
         } catch (RemoteException e) {
             log.error(e.getLocalizedMessage(), e);
         } catch (NotBoundException e) {
