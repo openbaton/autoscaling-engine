@@ -2,10 +2,13 @@ package org.openbaton.autoscaling;
 
 import org.openbaton.autoscaling.core.ElasticityManagement;
 import org.openbaton.autoscaling.utils.Utils;
+import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
+import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.ConfigurationParameter;
 import org.openbaton.catalogue.nfvo.EndpointType;
 import org.openbaton.catalogue.nfvo.EventEndpoint;
+import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.plugin.utils.PluginStartup;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
@@ -72,6 +75,8 @@ public class Application {
         subscribe(Action.INSTANTIATE_FINISH);
         subscribe(Action.RELEASE_RESOURCES_FINISH);
         subscribe(Action.ERROR);
+
+        fetchNSRsFromNFVO();
     }
 
     @PreDestroy
@@ -118,4 +123,31 @@ public class Application {
             System.exit(1); // 1 stands for the error in running nfvo TODO define error codes (doing)
         }
     }
+
+    private void fetchNSRsFromNFVO() {
+        log.debug("Fetching previously deployed NSRs from NFVO to start the autoscaling for them.");
+        List<NetworkServiceRecord> nsrs = null;
+        try {
+            nsrs = nfvoRequestor.getNetworkServiceRecordAgent().findAll();
+        } catch (SDKException e) {
+            log.warn("Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start", e);
+            return;
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+            return;
+        }
+        for (NetworkServiceRecord nsr : nsrs) {
+            try {
+                if (nsr.getStatus() == Status.ACTIVE || nsr.getStatus() == Status.SCALING) {
+                    log.debug("Adding previously deployed NSR with id: " + nsr.getId() + " to autoscaling");
+                    elasticityManagement.activate(nsr);
+                } else {
+                    log.warn("Cannot add NSR with id: " + nsr.getId() + " to autoscaling because it is in state: " + nsr.getStatus() + " and not in state " + Status.ACTIVE + " or " + Status.ERROR + ". ");
+                }
+            } catch (NotFoundException e) {
+                log.warn("Not found NSR with id: " + nsr.getId());
+            }
+        }
+    }
+
 }

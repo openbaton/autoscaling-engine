@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.*;
@@ -138,9 +139,9 @@ class ElasticityTask implements Runnable {
                                 }
                                 log.debug("ElasticityTask: Starting sleeping period (" + autoScalePolicy.getPeriod() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
                             } catch (InterruptedException e) {
-                                log.warn("ElasticityTask: ElasticityTask was interrupted");
+                                log.warn("ElasticityTask: ElasticityTask was interrupted", e);
                             } catch (RemoteException e) {
-                                log.warn("ElasticityTask: Problem with the MonitoringPlugin!");
+                                log.warn("ElasticityTask: Problem with the MonitoringPlugin!", e);
                             }
                         } else {
                             log.debug("ElasticityTask: VNFR with id: " + vnfr_id + " in state: " + vnfr.getStatus() + " -> waiting until state goes back to " + Status.ACTIVE);
@@ -319,17 +320,22 @@ class ElasticityTask implements Runnable {
         }
     }
 
-    public List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, final String metric, String period) throws RemoteException {
-        List<Item> measurementResults = new ArrayList<Item>();
-        List<String> hostnames = new ArrayList<String>();
-        List<String> metrics = new ArrayList<String>();
+    public List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, String metric, String period) throws RemoteException {
+        ArrayList<Item> measurementResults = new ArrayList<Item>();
+        ArrayList<String> hostnames = new ArrayList<String>();
+        ArrayList<String> metrics = new ArrayList<String>();
         metrics.add(metric);
         log.debug("Getting all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + ".");
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            for (final VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
+            for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
                 hostnames.add(vnfcInstance.getHostname());
             }
         }
+//        hostnames.removeAll(hostnames);
+//        hostnames.add("opensdncore-client");
+//        metrics.removeAll(metrics);
+//        metrics.add("vm.memory.size[buffers]");
+        log.debug("Getting all measurement results for hostnames " + hostnames + " on metric " + metric + ".");
         measurementResults.addAll(monitor.getMeasurementResults(hostnames, metrics, period));
         log.debug("Got all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + " -> " + measurementResults + ".");
         return measurementResults;

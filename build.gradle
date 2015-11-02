@@ -27,7 +27,7 @@ project.ext {
      * gradle Related Vars
      */
     //------------------------------------------------//
-    mainClass = 'org.openbaton.autoscaling.Main'
+    mainClass = 'org.openbaton.autoscaling.Starter'
 }
 
 apply from: 'gradle/gradle/application.java.gradle'
