@@ -66,6 +66,8 @@ class ElasticityTask implements Runnable {
 
     private String name;
 
+    private boolean first_time;
+
     public void init(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy, VnfrMonitor vnfrMonitor, Properties properties) throws NotFoundException {
         this.properties = properties;
         this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("openbaton-username"), this.properties.getProperty("openbaton-password"), this.properties.getProperty("openbaton-url"), this.properties.getProperty("openbaton-port"), "1");
@@ -79,10 +81,20 @@ class ElasticityTask implements Runnable {
             throw new NotFoundException("ElasticityTask: Monitor was not found. Cannot start Autoscaling for VNFR with id: " + vnfr_id);
         }
         this.vnfrMonitor = vnfrMonitor;
+        this.first_time = true;
     }
 
     @Override
     public void run() {
+        if (first_time == true) {
+            log.debug("Starting ElasticityTask the first time. So wait for the cooldown...");
+            first_time = false;
+            try {
+                Thread.sleep(autoScalePolicy.getCooldown() * 1000);
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
         log.debug("=======VNFR-MONITOR IN TASK=======");
         log.debug(vnfrMonitor.toString());
         log.debug("ElasticityTask: Checking AutoScalingPolicy " + autoScalePolicy.getAction() + " with id: " + autoScalePolicy.getId() + " VNFR with id: " + vnfr_id);
