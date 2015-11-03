@@ -36,7 +36,7 @@ public class VnfrMonitor {
         return states.get(vnfrId);
     }
 
-    public synchronized boolean requestScaling(List<String> allVnfrIds) throws NotFoundException {
+    public synchronized boolean requestScaling(List<String> allVnfrIds) {
         for (String otherVnfrId : allVnfrIds) {
             if (states.get(otherVnfrId) == ScalingStatus.BUSY) {
                 return false;

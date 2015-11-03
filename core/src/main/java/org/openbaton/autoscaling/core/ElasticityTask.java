@@ -128,7 +128,7 @@ class ElasticityTask implements Runnable {
                                             log.debug("ElasticityTask: Alarm was thrown but another Alarm was faster. So Action is not executed");
                                         }
                                     } catch (NotFoundException e) {
-                                        log.error(e.getMessage(), e);
+                                        log.warn(e.getMessage());
                                     } catch (SDKException e) {
                                         log.error(e.getMessage(), e);
                                     } finally {
@@ -203,7 +203,7 @@ class ElasticityTask implements Runnable {
         return monitor;
     }
 
-    public void scale(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy) throws SDKException {
+    public void scale(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy) throws SDKException, NotFoundException {
         if (autoScalePolicy.getAction().equals("scaleup")) {
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 if (vdu.getVnfc().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
@@ -225,20 +225,21 @@ class ElasticityTask implements Runnable {
                     continue;
                 }
             }
-            log.debug("Not found any VDU to scale out a VNFComponent. Limits are reached.");
+            //log.debug("Not found any VDU to scale out a VNFComponent. Limits are reached.");
+            throw new NotFoundException("Not found any VDU to scale out a VNFComponent. Limits are reached.");
         } else if (autoScalePolicy.getAction().equals("scaledown")) {
-//            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-//                if (vdu.getVnfc().size() > 1 && vdu.getVnfc().iterator().hasNext()) {
-//                    VNFComponent vnfComponent_remove = vdu.getVnfc().iterator().next();
-//                    //vdu.getVnfc().remove(vnfComponent_remove);
-            nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId());
-//                    log.debug("SCALING: Removed Component " + vnfComponent_remove.getId() + " from VDU " + vdu.getId());
-//                    return;
-//                } else {
-//                    continue;
-//                }
-//            }
-//            log.debug("Not found any VDU to scale in a VNFComponent. Limits are reached.");
+            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
+                    VNFCInstance vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
+                    nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
+                    log.debug("SCALING: Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
+                    return;
+                } else {
+                    continue;
+                }
+            }
+            //log.debug("Not found any VDU to scale in a VNFComponent. Limits are reached.");
+            throw new NotFoundException("Not found any VDU to scale in a VNFComponent. Limits are reached.");
         }
     }
 
