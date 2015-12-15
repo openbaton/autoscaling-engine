@@ -42,6 +42,10 @@ repositories {
 
 dependencies {
     compile project(':main')
+    compile project(':core')
+    compile project(':utils')
+    compile project(':api')
+    compile project(':catalogue')
 
     compile 'org.slf4j:slf4j-api:1.6.1'
 

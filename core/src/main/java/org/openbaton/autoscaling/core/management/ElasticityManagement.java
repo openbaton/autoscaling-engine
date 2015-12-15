@@ -32,6 +32,9 @@ public class ElasticityManagement {
     @Autowired
     private VnfrMonitor vnfrMonitor;
 
+    @Autowired
+    private DetectionManagment detectionManagment;
+
     //private NFVORequestor nfvoRequestor;
 
 //    @Autowired
@@ -57,8 +60,10 @@ public class ElasticityManagement {
         log.debug("==========ACTIVATE============");
         log.debug(properties.toString());
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            if (vnfr.getAuto_scale_policy().size() > 0)
-                activate(vnfr);
+            if (vnfr.getType().equals("media-server")) {
+                if (vnfr.getAuto_scale_policy().size() > 0)
+                    activate(vnfr);
+            }
         }
     }
 
@@ -72,7 +77,7 @@ public class ElasticityManagement {
             tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
             for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
                 log.debug("Creating new ElasticityTask for AutoScalingPolicy " + policy.getAction() + " with id: " + policy.getId() + " of VNFR with id: " + vnfr.getId());
-//                ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
+                //ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
                 DetectionTask detectionTask = new DetectionTask();
                 detectionTask.init(vnfr, policy, vnfrMonitor, properties);
                 ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, policy.getPeriod() * 1000);

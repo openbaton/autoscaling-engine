@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id=":core" external.linked.project.path="$MODULE_DIR$" external.root.project.path="$USER_HOME$/openbaton/autoscaling" external.system.id="GRADLE" external.system.module.group="org.openbaton" external.system.module.version="0.01-SNAPSHOT" type="JAVA_MODULE" version="4">
+<module external.linked.project.id=":core" external.linked.project.path="$MODULE_DIR$" external.root.project.path="$USER_HOME$/projects/nubomedia/ms-vnfm" external.system.id="GRADLE" external.system.module.group="org.openbaton" external.system.module.version="0.4-SNAPSHOT" type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/build/classes/main" />
     <output-test url="file://$MODULE_DIR$/build/classes/test" />
@@ -17,28 +17,25 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="as-catalogue" exported="" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:sdk:0.15-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:vim-int:0.15-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework.boot:spring-boot:1.2.5.RELEASE" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: com.google.code.gson:gson:2.5" level="project" />
     <orderEntry type="library" exported="" name="Gradle: net.minidev:json-smart:2.2" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.slf4j:slf4j-api:1.7.12" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.mashape.unirest:unirest-java:1.4.5" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: com.fasterxml.jackson.core:jackson-annotations:2.5.3" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:exception:0.15-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:vim-drivers:0.15-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:plugin:0.15-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:monitoring:0.15-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Gradle: net.minidev:accessors-smart:1.1" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.apache.httpcomponents:httpasyncclient:4.0.2" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.apache.httpcomponents:httpmime:4.3.6" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.json:json:20140107" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.openbaton:utils:0.15-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Gradle: commons-logging:commons-logging:1.2" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.ow2.asm:asm:5.0.3" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.apache.httpcomponents:httpcore-nio:4.3.2" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: aopalliance:aopalliance:1.0" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.openbaton:sdk:0.15-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.openbaton:vim-int:0.15-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: com.google.code.gson:gson:2.5" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.openbaton:vim-drivers:0.15-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.openbaton:plugin:0.15-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.openbaton:monitoring:0.15-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.openbaton:utils:0.15-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework.boot:spring-boot-autoconfigure:1.2.5.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework.boot:spring-boot-starter-logging:1.2.5.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.rabbitmq:amqp-client:3.5.6" level="project" />
@@ -49,11 +46,13 @@
     <orderEntry type="library" exported="" name="Gradle: ch.qos.logback:logback-classic:1.1.3" level="project" />
     <orderEntry type="library" exported="" name="Gradle: ch.qos.logback:logback-core:1.1.3" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.openbaton:catalogue:0.15-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.openbaton:exception:0.15-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: com.fasterxml.jackson.core:jackson-annotations:2.5.3" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework:spring-context:4.2.0.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework:spring-aop:4.2.0.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework:spring-beans:4.2.0.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework:spring-expression:4.2.0.RELEASE" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: aopalliance:aopalliance:1.0" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.apache.httpcomponents:httpclient:4.5.1" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.springframework:spring-core:4.2.0.RELEASE" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.apache.httpcomponents:httpcore:4.4.3" level="project" />

@@ -27,45 +27,8 @@ import java.util.concurrent.ScheduledFuture;
  */
 @Service
 @Scope("singleton")
-public class DetectionEngine implements VirtualisedResourcesPerformanceManagement{
+public class DetectionEngine {
 
-    @Override
-    public String createPMJob(ObjectSelection resourceSelector, List<String> performanceMetric, List<String> performanceMetricGroup, Integer collectionPeriod, Integer reportingPeriod) throws MonitoringException {
-        return null;
-    }
 
-    @Override
-    public List<String> deletePMJob(List<String> itemIdsToDelete) throws MonitoringException {
-        return null;
-    }
 
-    @Override
-    public List<Item> queryPMJob(List<String> hostnames, List<String> metrics, String period) throws MonitoringException {
-        return null;
-    }
-
-    @Override
-    public void subscribe() {
-
-    }
-
-    @Override
-    public void notifyInfo() {
-
-    }
-
-    @Override
-    public String createThreshold(ObjectSelection objectSelector, String performanceMetric, ThresholdType thresholdType, ThresholdDetails thresholdDetails) throws MonitoringException {
-        return null;
-    }
-
-    @Override
-    public List<String> deleteThreshold(List<String> thresholdIds) throws MonitoringException {
-        return null;
-    }
-
-    @Override
-    public void queryThreshold(String queryFilter) {
-
-    }
 }

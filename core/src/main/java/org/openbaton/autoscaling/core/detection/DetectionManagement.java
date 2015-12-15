@@ -29,6 +29,8 @@ import java.util.concurrent.ScheduledFuture;
 @Scope("singleton")
 public class DetectionManagement implements VirtualisedResourcesPerformanceManagement {
 
+    private VnfrMonitor vnfrMonitor;
+
     @Autowired
     private DetectionEngine detectionEngine;
 
