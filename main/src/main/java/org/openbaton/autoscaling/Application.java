@@ -1,11 +1,11 @@
 package org.openbaton.autoscaling;
 
-import org.openbaton.autoscaling.core.ElasticityManagement;
+import org.openbaton.autoscaling.core.detection.DetectionEngine;
+import org.openbaton.autoscaling.core.management.ElasticityManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.nfvo.Action;
-import org.openbaton.catalogue.nfvo.ConfigurationParameter;
 import org.openbaton.catalogue.nfvo.EndpointType;
 import org.openbaton.catalogue.nfvo.EventEndpoint;
 import org.openbaton.exceptions.NotFoundException;
@@ -14,20 +14,12 @@ import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.MutablePropertySources;
-import org.springframework.core.env.PropertiesPropertySource;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -56,6 +48,9 @@ public class Application {
 //    private ConfigurableEnvironment properties;
 
     @Autowired
+    private DetectionEngine detectionEngine;
+
+    @Autowired
     private ElasticityManagement elasticityManagement;
 
     private Properties properties;
@@ -65,7 +60,7 @@ public class Application {
         properties = Utils.loadProperties();
         //Utils.loadExternalProperties(properties);
 
-        elasticityManagement.init(properties);
+        //detectionEngine.init(properties);
 
         subscriptionIds = new ArrayList<>();
         startPlugins();
@@ -107,7 +102,7 @@ public class Application {
             Registry registry = LocateRegistry.createRegistry(registryport);
             log.debug("Registry created: ");
             log.debug(registry.toString() + " has: " + registry.list().length + " entries");
-            PluginStartup.startPluginRecursive("./plugins", true, "localhost", "" + registryport);
+            //PluginStartup.startPluginRecursive("./plugins", true, "localhost", "" + registryport);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }

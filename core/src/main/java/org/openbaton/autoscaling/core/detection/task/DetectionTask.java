@@ -1,8 +1,11 @@
-package org.openbaton.autoscaling.core;
+package org.openbaton.autoscaling.core.detection.task;
 
 import org.openbaton.autoscaling.catalogue.ScalingStatus;
 import org.openbaton.autoscaling.catalogue.VnfrMonitor;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
+import org.openbaton.catalogue.mano.common.monitoring.ObjectSelection;
+import org.openbaton.catalogue.mano.common.monitoring.ThresholdDetails;
+import org.openbaton.catalogue.mano.common.monitoring.ThresholdType;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
@@ -11,8 +14,9 @@ import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
+import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
-import org.openbaton.monitoring.interfaces.ResourcePerformanceManagement;
+import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
 import org.openbaton.plugin.utils.PluginBroker;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
@@ -40,7 +44,7 @@ import java.util.concurrent.Future;
 
 @Service
 @Scope("prototype")
-class ElasticityTask implements Runnable {
+public class DetectionTask implements Runnable {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -62,7 +66,7 @@ class ElasticityTask implements Runnable {
 
     private AutoScalePolicy autoScalePolicy;
 
-    private ResourcePerformanceManagement monitor;
+    private VirtualisedResourcesPerformanceManagement monitor;
 
     private String name;
 
@@ -76,7 +80,7 @@ class ElasticityTask implements Runnable {
         this.autoScalePolicy = autoScalePolicy;
         this.name = "ElasticityTask#" + vnfr.getId();
         log.debug("ElasticityTask: Fetching the monitor");
-        this.monitor = getMonitor();
+        //this.monitor = getMonitor();
         if (monitor==null) {
             throw new NotFoundException("ElasticityTask: Monitor was not found. Cannot start Autoscaling for VNFR with id: " + vnfr_id);
         }
@@ -199,21 +203,21 @@ class ElasticityTask implements Runnable {
         return null;
     }
 
-    public ResourcePerformanceManagement getMonitor() {
-        PluginBroker<ResourcePerformanceManagement> pluginBroker = new PluginBroker<>();
-        ResourcePerformanceManagement monitor = null;
-        //monitor = new MyMonitor();
-//        if (true)
-//            return monitor;
-        try {
-            monitor = pluginBroker.getPlugin("localhost", "monitor", "zabbix-agent", "zabbix", 19999);
-        } catch (RemoteException e) {
-            log.error(e.getLocalizedMessage(), e);
-        } catch (NotBoundException e) {
-            log.warn("Monitoring " + e.getLocalizedMessage() + ". ElasticityManagement will not start.", e);
-        }
-        return monitor;
-    }
+//    public VirtualisedResourcesPerformanceManagement getMonitor() {
+//        PluginBroker<VirtualisedResourcesPerformanceManagement> pluginBroker = new PluginBroker<>();
+//        VirtualisedResourcesPerformanceManagement monitor = null;
+//        //monitor = new MyMonitor();
+////        if (true)
+////            return monitor;
+//        try {
+//            monitor = pluginBroker.getPlugin("localhost", "monitor", "zabbix-agent", "zabbix", 19999);
+//        } catch (RemoteException e) {
+//            log.error(e.getLocalizedMessage(), e);
+//        } catch (NotBoundException e) {
+//            log.warn("Monitoring " + e.getLocalizedMessage() + ". ElasticityManagement will not start.", e);
+//        }
+//        return monitor;
+//    }
 
     public void scale(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy) throws SDKException, NotFoundException {
         if (autoScalePolicy.getAction().equals("scaleup")) {
@@ -349,7 +353,7 @@ class ElasticityTask implements Runnable {
 //        metrics.removeAll(metrics);
 //        metrics.add("vm.memory.size[buffers]");
         log.debug("Getting all measurement results for hostnames " + hostnames + " on metric " + metric + ".");
-        measurementResults.addAll(monitor.getMeasurementResults(hostnames, metrics, period));
+        //measurementResults.addAll(monitor.getMeasurementResults(hostnames, metrics, period));
         log.debug("Got all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + " -> " + measurementResults + ".");
         return measurementResults;
     }
@@ -425,27 +429,45 @@ class ElasticityTask implements Runnable {
         return true;
     }
 
-    class MyMonitor implements ResourcePerformanceManagement {
+    class EmmMonitor implements VirtualisedResourcesPerformanceManagement {
 
         @Override
-        public List<Item> getMeasurementResults(List<String> hostnames, List<String> metrics, String period) throws RemoteException {
-            List<Item> items = new ArrayList<>();
-            for (String hostname : hostnames) {
-                for (String metric : metrics) {
-                    Item item = new Item();
-                    item.setHostId(hostname);
-                    item.setHostname(hostname);
-                    item.setLastValue(Double.toString(Math.random() * 100));
-                    item.setValue(Double.toString(Math.random() * 100));
-                    item.setMetric(metric);
-                    items.add(item);
-                }
-            }
-            return items;
+        public String createPMJob(ObjectSelection resourceSelector, List<String> performanceMetric, List<String> performanceMetricGroup, Integer collectionPeriod, Integer reportingPeriod) throws MonitoringException {
+            return null;
         }
 
         @Override
-        public void notifyResults() throws RemoteException {
+        public List<String> deletePMJob(List<String> itemIdsToDelete) throws MonitoringException {
+            return null;
+        }
+
+        @Override
+        public List<Item> queryPMJob(List<String> hostnames, List<String> metrics, String period) throws MonitoringException {
+            return null;
+        }
+
+        @Override
+        public void subscribe() {
+
+        }
+
+        @Override
+        public void notifyInfo() {
+
+        }
+
+        @Override
+        public String createThreshold(ObjectSelection objectSelector, String performanceMetric, ThresholdType thresholdType, ThresholdDetails thresholdDetails) throws MonitoringException {
+            return null;
+        }
+
+        @Override
+        public List<String> deleteThreshold(List<String> thresholdIds) throws MonitoringException {
+            return null;
+        }
+
+        @Override
+        public void queryThreshold(String queryFilter) {
 
         }
     }

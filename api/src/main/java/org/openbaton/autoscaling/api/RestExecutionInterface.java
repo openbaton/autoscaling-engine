@@ -16,35 +16,30 @@
 
 package org.openbaton.autoscaling.api;
 
-import com.google.gson.*;
-import net.minidev.json.parser.JSONParser;
-import org.openbaton.autoscaling.catalogue.VnfrMonitor;
-import org.openbaton.autoscaling.core.ElasticityManagement;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.openbaton.autoscaling.core.detection.DetectionEngine;
+import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
-import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
-import org.openbaton.catalogue.nfvo.ApplicationEventNFVO;
 import org.openbaton.exceptions.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.json.GsonJsonParser;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-import java.util.Set;
-
 @RestController
 @RequestMapping("/event")
-public class RestEvent {
+public class RestExecutionInterface {
 
 	private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private ElasticityManagement elasticityManagement;
+    private ExecutionManagement executionManagement;
 
     /**
      * Activates autoscaling for the passed NSR
@@ -63,7 +58,7 @@ public class RestEvent {
         log.debug("ACTION=" + action);
         NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
         log.debug("NSR=" + nsr);
-        elasticityManagement.activate(nsr);
+//        detectionEngine.activate(nsr);
     }
 
     /**
@@ -83,7 +78,7 @@ public class RestEvent {
         log.debug("ACTION=" + action);
         NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
         log.debug("NSR=" + nsr);
-        elasticityManagement.deactivate(nsr);
+//        detectionEngine.deactivate(nsr);
     }
 
     /**

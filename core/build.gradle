@@ -9,8 +9,8 @@ dependencies {
     //compile 'org.openbaton:catalogue:0.12'
     compile project(':as-catalogue')
 
-    compile 'org.openbaton:sdk:0.14'
-    compile 'org.openbaton:vim-int:0.14'
+    compile 'org.openbaton:sdk:0.15-SNAPSHOT'
+    compile 'org.openbaton:vim-int:0.15-SNAPSHOT'
 
     //compile 'org.springframework.data:spring-data-jpa:1.8.2.RELEASE'
     //compile 'org.springframework.boot:spring-boot-starter-data-jpa:' + springBootVersion

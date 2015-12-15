@@ -1,36 +1,19 @@
-package org.openbaton.autoscaling.core;
+package org.openbaton.autoscaling.core.management;
 
 import org.openbaton.autoscaling.catalogue.VnfrMonitor;
+import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
-import org.openbaton.catalogue.mano.descriptor.VNFComponent;
-import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
-import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
-import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.exceptions.NotFoundException;
-import org.openbaton.monitoring.interfaces.ResourcePerformanceManagement;
-import org.openbaton.plugin.utils.PluginBroker;
-import org.openbaton.sdk.NFVORequestor;
-import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.env.Environment;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -90,9 +73,9 @@ public class ElasticityManagement {
             for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
                 log.debug("Creating new ElasticityTask for AutoScalingPolicy " + policy.getAction() + " with id: " + policy.getId() + " of VNFR with id: " + vnfr.getId());
 //                ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
-                ElasticityTask elasticityTask = new ElasticityTask();
-                elasticityTask.init(vnfr, policy, vnfrMonitor, properties);
-                ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(elasticityTask, policy.getPeriod() * 1000);
+                DetectionTask detectionTask = new DetectionTask();
+                detectionTask.init(vnfr, policy, vnfrMonitor, properties);
+                ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, policy.getPeriod() * 1000);
                 tasks.get(vnfr.getId()).add(scheduledFuture);
             }
             log.debug("Activated Elasticity for VNFR " + vnfr.getId());
