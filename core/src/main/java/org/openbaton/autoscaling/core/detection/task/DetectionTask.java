@@ -448,7 +448,7 @@ public class DetectionTask implements Runnable {
         public List<Item> queryPMJob(List<String> hostnames, List<String> metrics, String period) throws MonitoringException {
             for (String hostname : hostnames) {
                 for (String metric : metrics) {
-                    if (metric.equals("MediaServerState") {
+                    if (metric.equals("MediaServerState")) {
                         Iterable<MediaServer> mediaServer = mediaServerRepository.findAll();
                     }
                 }

@@ -7,10 +7,14 @@ repositories {
 
 dependencies {
     //compile 'org.openbaton:catalogue:0.12'
-    compile project(':catalogue')
+    compile project(':as-catalogue')
+    compile project(':vnfm-catalogue')
+    compile project(':repository')
+    compile project(':monitoring')
 
     compile 'org.openbaton:sdk:0.15-SNAPSHOT'
-    compile 'org.openbaton:vim-int:0.15-SNAPSHOT'
+    //compile 'org.openbaton:monitoring:0.15-SNAPSHOT'
+    //compile 'org.openbaton:vim-int:0.15'
 
     //compile 'org.springframework.data:spring-data-jpa:1.8.2.RELEASE'
     //compile 'org.springframework.boot:spring-boot-starter-data-jpa:' + springBootVersion

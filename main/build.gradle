@@ -7,7 +7,7 @@ repositories {
 
 dependencies {
     compile project(':core')
-    compile project(':as-utils')
+    compile project(':utils')
     compile project(':api')
 
     compile 'org.openbaton:catalogue:0.14'

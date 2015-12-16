@@ -2,6 +2,7 @@ package org.openbaton.autoscaling.core.management;
 
 import org.openbaton.autoscaling.catalogue.VnfrMonitor;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
+import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
@@ -33,7 +34,7 @@ public class ElasticityManagement {
     private VnfrMonitor vnfrMonitor;
 
     @Autowired
-    private DetectionManagment detectionManagment;
+    private DetectionManagement detectionManagment;
 
     //private NFVORequestor nfvoRequestor;
 
@@ -49,7 +50,6 @@ public class ElasticityManagement {
         this.properties = properties;
         //this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
         this.tasks = new HashMap<>();
-
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);

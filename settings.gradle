@@ -1,13 +1,13 @@
 rootProject.name = 'autoscaling'
 
-include 'main'
-include 'core'
-include 'catalogue'
-include 'api'
-include 'utils'
-
-project(':main').projectDir = file('main')
-project(':core').projectDir = file('core')
-project(':catalogue').projectDir = file('catalogue')
-project(':api').projectDir = file('api')
-project(':utils').projectDir = file('utils')
+//include 'main'
+//include 'core'
+//include 'catalogue'
+//include 'api'
+//include 'utils'
+//
+//project(':main').projectDir = file('main')
+//project(':core').projectDir = file('core')
+//project(':catalogue').projectDir = file('catalogue')
+//project(':api').projectDir = file('api')
+//project(':utils').projectDir = file('utils')
