@@ -1,11 +1,12 @@
 package org.openbaton.autoscaling.core.execution;
 
-import org.openbaton.autoscaling.catalogue.VnfrMonitor;
+import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.sdk.NFVORequestor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +33,7 @@ public class ExecutionManagement {
     @Autowired
     private VnfrMonitor vnfrMonitor;
 
-    //private NFVORequestor nfvoRequestor;
-
-//    @Autowired
-//    private Environment properties;
+    private NFVORequestor nfvoRequestor;
 
     private Properties properties;
 

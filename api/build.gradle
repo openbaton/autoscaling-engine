@@ -8,8 +8,8 @@ repositories {
 dependencies {
     compile project(':core')
 
-    compile 'org.openbaton:sdk:0.15-SNAPSHOT'
-    compile 'org.openbaton:vim-int:0.15-SNAPSHOT'
+    //compile 'org.openbaton:sdk:0.15-SNAPSHOT'
+    //compile 'org.openbaton:vim-int:0.15-SNAPSHOT'
 
     compile("org.springframework.boot:spring-boot-starter-websocket:" + springBootVersion)
 

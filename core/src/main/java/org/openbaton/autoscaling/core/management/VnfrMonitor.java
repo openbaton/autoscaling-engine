@@ -1,5 +1,6 @@
-package org.openbaton.autoscaling.catalogue;
+package org.openbaton.autoscaling.core.management;
 
+import org.openbaton.autoscaling.catalogue.ScalingStatus;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.springframework.context.annotation.Scope;

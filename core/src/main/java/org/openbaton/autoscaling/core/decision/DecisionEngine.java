@@ -1,6 +1,6 @@
 package org.openbaton.autoscaling.core.decision;
 
-import org.openbaton.autoscaling.catalogue.VnfrMonitor;
+import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
@@ -71,10 +71,10 @@ public class DecisionEngine {
             log.debug("Creating new ElasticityTasks for VNFR with id: " + vnfr.getId());
             tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
             for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
-                log.debug("Creating new ElasticityTask for AutoScalingPolicy " + policy.getAction() + " with id: " + policy.getId() + " of VNFR with id: " + vnfr.getId());
+//                log.debug("Creating new ElasticityTask for AutoScalingPolicy " + policy.getAction() + " with id: " + policy.getId() + " of VNFR with id: " + vnfr.getId());
 //                ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
                 DetectionTask detectionTask = new DetectionTask();
-                detectionTask.init(vnfr, policy, vnfrMonitor, properties);
+//                detectionTask.init(vnfr, policy, vnfrMonitor, properties);
                 ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, policy.getPeriod() * 1000);
                 tasks.get(vnfr.getId()).add(scheduledFuture);
             }

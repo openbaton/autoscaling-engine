@@ -10,7 +10,7 @@ dependencies {
     compile project(':utils')
     compile project(':api')
 
-    compile 'org.openbaton:catalogue:0.14'
+    //compile 'org.openbaton:catalogue:0.14'
 
     compile 'org.springframework.boot:spring-boot:' + springBootVersion
     compile 'org.springframework.boot:spring-boot-autoconfigure:' + springBootVersion

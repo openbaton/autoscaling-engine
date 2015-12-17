@@ -7,10 +7,14 @@ repositories {
 
 dependencies {
     //compile 'org.openbaton:catalogue:0.12'
+    compile project(':catalogue')
     compile project(':as-catalogue')
     compile project(':vnfm-catalogue')
+    compile project(':as-utils')
     compile project(':repository')
     compile project(':monitoring')
+//    compile project(':vnfm-sdk')
+//    compile project(':vnfm-sdk-amqp')
 
     compile 'org.openbaton:sdk:0.15-SNAPSHOT'
     //compile 'org.openbaton:monitoring:0.15-SNAPSHOT'

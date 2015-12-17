@@ -1,6 +1,6 @@
 package org.openbaton.autoscaling.core.execution;
 
-import org.openbaton.autoscaling.catalogue.VnfrMonitor;
+import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
