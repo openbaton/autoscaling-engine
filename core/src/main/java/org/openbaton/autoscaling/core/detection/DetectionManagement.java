@@ -44,8 +44,6 @@ public class DetectionManagement {
     @Autowired
     private DetectionEngine detectionEngine;
 
-    private NFVORequestor nfvoRequestor;
-
     private Properties properties;
 
     //@PostConstruct
@@ -53,7 +51,6 @@ public class DetectionManagement {
         log.debug("======================");
         log.debug(properties.toString());
         this.properties = properties;
-        //this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
         this.tasks = new HashMap<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
@@ -83,8 +80,7 @@ public class DetectionManagement {
             for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
                 log.debug("Creating new ElasticityTask for AutoScalingPolicy " + policy.getName() + " with id: " + policy.getId() + " of VNFR with id: " + vnfr.getId());
                 //ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
-                DetectionTask detectionTask = new DetectionTask();
-                detectionTask.init(vnfr, policy, properties);
+                DetectionTask detectionTask = new DetectionTask(vnfr, policy, properties);
                 ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, policy.getPeriod() * 1000);
                 tasks.get(vnfr.getId()).add(scheduledFuture);
             }

@@ -1,8 +1,10 @@
 package org.openbaton.autoscaling.core.detection.task;
 
 import org.openbaton.autoscaling.catalogue.ScalingStatus;
+import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionEngine;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
+import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAlarm;
 import org.openbaton.catalogue.mano.common.monitoring.Alarm;
@@ -31,7 +33,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.Iterable;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -49,6 +57,12 @@ public class DetectionTask implements Runnable {
 
     private NFVORequestor nfvoRequestor;
 
+    @Autowired
+    private DecisionManagement decisionManagement;
+
+    @Autowired
+    private DetectionEngine detectionEngine;
+
     private Properties properties;
 
     private String nsr_id;
@@ -57,13 +71,13 @@ public class DetectionTask implements Runnable {
 
     private AutoScalePolicy autoScalePolicy;
 
-    private VirtualisedResourcesPerformanceManagement monitor;
-
     private String name;
 
     private boolean first_time;
 
-    public void init(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy, Properties properties) throws NotFoundException {
+    private boolean fired;
+
+    public DetectionTask(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy, Properties properties) throws NotFoundException {
         this.properties = properties;
         this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("openbaton-username"), this.properties.getProperty("openbaton-password"), this.properties.getProperty("openbaton-url"), this.properties.getProperty("openbaton-port"), "1");
         this.nsr_id = vnfr.getParent_ns_id();
@@ -71,15 +85,14 @@ public class DetectionTask implements Runnable {
         this.autoScalePolicy = autoScalePolicy;
         this.name = "DetectionTask#" + vnfr.getId();
         log.debug("DetectionTask: Fetching the monitor");
-        this.monitor = new DetectionEngine();
-        if (monitor==null) {
-            throw new NotFoundException("DetectionTask: Monitor was not found. Cannot start Autoscaling for VNFR with id: " + vnfr_id);
-        }
         this.first_time = true;
+        this.fired = false;
     }
 
     @Override
     public void run() {
+        double alarmsWeightFired = 0;
+        double alarmsWeightCount = 0;
         if (first_time == true) {
             log.debug("Starting DetectionTask the first time. So wait for the cooldown...");
             first_time = false;
@@ -98,122 +111,50 @@ public class DetectionTask implements Runnable {
         }
         if (vnfr != null) {
             for (ScalingAlarm alarm : autoScalePolicy.getAlarms()) {
+                alarmsWeightCount =+ alarm.getWeight();
                 List<Item> measurementResults = null;
                 try {
-                    measurementResults = getRawMeasurementResults(vnfr, alarm.getMetric(), Integer.toString(autoScalePolicy.getPeriod()));
+                    measurementResults = detectionEngine.getRawMeasurementResults(vnfr, alarm.getMetric(), Integer.toString(autoScalePolicy.getPeriod()));
                 } catch (MonitoringException e) {
-                    e.printStackTrace();
+                    log.error(e.getMessage(), e);
                 }
-                double finalResult = calculateMeasurementResult(alarm, measurementResults);
-                log.debug("DetectionTask: Final measurement result on vnfr " + vnfr.getId() + " on metric " + alarm.getMetric() + " with statistic " + alarm.getStatistic() + " is " + finalResult + " " + measurementResults);
-                if (checkThreshold(alarm, finalResult)) {
-                    //ToDo send event
+                double finalAlarmResult = detectionEngine.calculateMeasurementResult(alarm, measurementResults);
+                log.debug("DetectionTask: Measurement result on vnfr " + vnfr.getId() + " on metric " + alarm.getMetric() + " with statistic " + alarm.getStatistic() + " is " + finalAlarmResult + " " + measurementResults);
+                if (detectionEngine.checkThreshold(alarm.getComparisonOperator(), alarm.getThreshold(), finalAlarmResult)) {
+                    alarmsWeightFired =+ alarm.getWeight();
+                    log.info("DetectionTask: Alarm with id: " + alarm.getId() + " of AutoScalePolicy with id " + autoScalePolicy.getId() + " is fired");
                 } else {
-                    log.debug("DetectionTask: Scaling of AutoScalePolicy with id " + autoScalePolicy.getId() + " is not triggered");
+                    log.debug("DetectionTask: Alarm with id: " + alarm.getId() + " of AutoScalePolicy with id " + autoScalePolicy.getId() + " is not fired");
                 }
-                log.debug("DetectionTask: Starting sleeping period (" + autoScalePolicy.getPeriod() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
+                log.debug("DetectionTask: Finished check of all Alarms of AutoScalePolicy with id " + autoScalePolicy.getId());
+            }
+            //Check if Alarm must be fired for this AutoScalingPolicy
+            double finalResult = (100 * alarmsWeightFired) / alarmsWeightCount;
+            log.debug("DetectionTask: Checking if AutoScalingPolicy with id " + autoScalePolicy.getId() + " must be executed");
+            if (detectionEngine.checkThreshold(autoScalePolicy.getComparisonOperator(), autoScalePolicy.getThreshold(), finalResult)) {
+                if (fired == false) {
+                    log.info("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                    fired = true;
+                    decisionManagement.decide(vnfr_id, autoScalePolicy);
+                } else {
+                    log.debug("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                }
+            } else {
+                if (fired == false) {
+                    log.debug("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                } else {
+                    log.info("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed anymore. This means that the Alarm is cleared -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                    fired = false;
+                    //ToDo throw event CLEARED
+                }
             }
         } else {
             log.error("DetectionTask: Not found VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         }
-    }
+        log.debug("DetectionTask: Starting sleeping period (" + autoScalePolicy.getPeriod() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
 
-    public void waitForState(String nsrId, String vnfrId, Set<Status> states) {
-        try {
-            Thread.sleep(15000);
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-        }
-        VirtualNetworkFunctionRecord vnfr = getVnfr(nsrId, vnfrId);
-        while (!states.contains(vnfr.getStatus())) {
-            log.debug("DetectionTask: Waiting until status of VNFR with id: " + vnfrId + " goes back to " + states);
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-            }
-            vnfr = getVnfr(nsrId, vnfrId);
-        }
-    }
-
-    public VirtualNetworkFunctionRecord getVnfr(String nsrId, String vnfrId) {
-        try {
-            return nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsrId, vnfrId);
-        } catch (SDKException e) {
-            log.error(e.getMessage(), e);
-        }
-        return null;
-    }
-
-    public List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, String metric, String period) throws MonitoringException {
-        ArrayList<Item> measurementResults = new ArrayList<Item>();
-        ArrayList<String> hostnames = new ArrayList<String>();
-        ArrayList<String> metrics = new ArrayList<String>();
-        metrics.add(metric);
-        log.debug("Getting all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + ".");
-        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                hostnames.add(vnfcInstance.getHostname());
-            }
-        }
-        log.debug("Getting all measurement results for hostnames " + hostnames + " on metric " + metric + ".");
-        measurementResults.addAll(monitor.queryPMJob(hostnames, metrics, period));
-        log.debug("Got all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + " -> " + measurementResults + ".");
-        return measurementResults;
-    }
-
-    public double calculateMeasurementResult(ScalingAlarm alarm, List<Item> measurementResults) {
-        double result;
-        List<Double> consideredResults = new ArrayList<>();
-        for (Item measurementResult : measurementResults) {
-            consideredResults.add(Double.parseDouble(measurementResult.getValue()));
-        }
-        switch (alarm.getStatistic()) {
-            case "avg":
-                double sum = 0;
-                for (Double consideredResult : consideredResults) {
-                    sum += consideredResult;
-                }
-                result = sum / measurementResults.size();
-                break;
-            case "min":
-                result = Collections.min(consideredResults);
-                break;
-            case "max":
-                result = Collections.max(consideredResults);
-                break;
-            default:
-                result = -1;
-                break;
-        }
-        return result;
-    }
-
-    public boolean checkThreshold(ScalingAlarm alarm, double result) {
-        switch (alarm.getComparisonOperator()) {
-            case ">":
-                if (result > alarm.getThreshold()) {
-                    return true;
-                }
-                break;
-            case "<":
-                if (result < alarm.getThreshold()) {
-                    return true;
-                }
-                break;
-            case "=":
-                if (result == alarm.getThreshold()) {
-                    return true;
-                }
-                break;
-            case "!=":
-                if (result != alarm.getThreshold()) {
-                    return true;
-                }
-                break;
-            default:
-                return false;
-        }
-        return false;
     }
 }
+
+
+

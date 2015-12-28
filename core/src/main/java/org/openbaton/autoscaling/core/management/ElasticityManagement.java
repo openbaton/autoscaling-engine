@@ -1,7 +1,9 @@
 package org.openbaton.autoscaling.core.management;
 
+import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
+import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
@@ -32,6 +34,12 @@ public class ElasticityManagement {
     private DetectionManagement detectionManagment;
 
     @Autowired
+    private DecisionManagement decisionManagement;
+
+    @Autowired
+    private ExecutionManagement executionManagement;
+
+    @Autowired
     private PoolManagement poolManagement;
 
     private NFVORequestor nfvoRequestor;
@@ -43,6 +51,9 @@ public class ElasticityManagement {
         properties = Utils.loadProperties();
         log.debug("Properties: " + properties.toString());
         this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
+        detectionManagment.init(properties);
+        decisionManagement.init(properties);
+        executionManagement.init(properties);
     }
 
     public void activate(NetworkServiceRecord nsr) throws NotFoundException {

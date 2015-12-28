@@ -1,8 +1,11 @@
 package org.openbaton.autoscaling.core.decision;
 
+import org.openbaton.autoscaling.core.decision.task.DecisionTask;
+import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
+import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
@@ -27,83 +30,44 @@ public class DecisionManagement {
 
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Map<String, Set<ScheduledFuture>> tasks;
-
-    @Autowired
-    private VnfrMonitor vnfrMonitor;
-
-    //private NFVORequestor nfvoRequestor;
-
-//    @Autowired
-//    private Environment properties;
+    private Map<String, ScheduledFuture> tasks;
 
     private Properties properties;
 
-//    @PostConstruct
+    @Autowired
+    private ExecutionManagement executionManagement;
+
+    //@PostConstruct
     public void init(Properties properties) {
         log.debug("======================");
         log.debug(properties.toString());
         this.properties = properties;
-        //this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
         this.tasks = new HashMap<>();
-
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
         this.taskScheduler.initialize();
     }
 
-    public void activate(NetworkServiceRecord nsr) throws NotFoundException {
-        log.debug("==========ACTIVATE============");
-        log.debug(properties.toString());
-        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            if (vnfr.getAuto_scale_policy().size() > 0)
-                activate(vnfr);
-        }
-    }
-
-    public void activate(VirtualNetworkFunctionRecord vnfr) throws NotFoundException {
-        log.debug("Activating Elasticity for VNFR " + vnfr.getId());
-        vnfrMonitor.addVnfr(vnfr.getId());
-        log.debug("=======VNFR-MONITOR=======");
-        log.debug(vnfrMonitor.toString());
-        if (!tasks.containsKey(vnfr.getId())) {
-            log.debug("Creating new ElasticityTasks for VNFR with id: " + vnfr.getId());
-            tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
-            for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
-//                log.debug("Creating new ElasticityTask for AutoScalingPolicy " + policy.getAction() + " with id: " + policy.getId() + " of VNFR with id: " + vnfr.getId());
-////                ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
-//                DetectionTask detectionTask = new DetectionTask();
-//                detectionTask.init(vnfr, policy, vnfrMonitor, properties);
-//                ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, policy.getPeriod() * 1000);
-//                tasks.get(vnfr.getId()).add(scheduledFuture);
-            }
-            log.debug("Activated Elasticity for VNFR " + vnfr.getId());
+    public void decide(String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
+        if (tasks.get(autoScalePolicy.getId()) == null) {
+            log.debug("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
+            DecisionTask decisionTask = new DecisionTask(vnfr_id, autoScalePolicy, properties);
+            ScheduledFuture scheduledFuture = taskScheduler.schedule(decisionTask, new Date());
+            tasks.put(autoScalePolicy.getId(), scheduledFuture);
         } else {
-            log.debug("ElasticityTasks for VNFR with id " + vnfr.getId() + " were already activated");
+            log.debug("Processing already a decision request for this AutoScalePolicy. Cannot create another DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         }
     }
 
-    public void deactivate(NetworkServiceRecord nsr) {
-        log.debug("Deactivating Elasticity for all VNFRs of NSR with id: " + nsr.getId());
-        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-                deactivate(vnfr);
-        }
-        log.debug("Deactivated Elasticity for all VNFRs of NSR with id: " + nsr.getId());
+    public void finished(String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        log.debug("Finished Decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
+        tasks.remove(autoScalePolicy.getId());
     }
 
-    public void deactivate(VirtualNetworkFunctionRecord vnfr) {
-        log.debug("Deactivating Elasticity for VNFR " + vnfr.getId());
-        if (tasks.containsKey(vnfr.getId())) {
-            Set<ScheduledFuture> vnfrTasks = tasks.get(vnfr.getId());
-            for (ScheduledFuture scheduledFuture : vnfrTasks) {
-                scheduledFuture.cancel(false);
-            }
-            tasks.remove(vnfr.getId());
-            log.debug("Deactivated Elasticity for VNFR " + vnfr.getId());
-        } else {
-            log.debug("Not Found any ElasticityTasks for VNFR with id: " + vnfr.getId());
-        }
-        vnfrMonitor.removeVnfr(vnfr.getId());
+    public void sendToExecutor(String vnfr_id, Set<ScalingAction> actions) {
+        executionManagement.execute(vnfr_id, actions);
     }
+
 }

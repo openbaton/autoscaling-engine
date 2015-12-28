@@ -26,9 +26,6 @@ public class PoolManagement {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    private DetectionManagement detectionManagment;
-
     public void activate(VirtualNetworkFunctionRecord vnfr, int pool_size, int pool_check_period) throws NotFoundException {
         log.debug("Activating pool mechanism for VNFR " + vnfr.getId());
     }
