@@ -49,11 +49,11 @@ public class DecisionManagement {
         this.taskScheduler.initialize();
     }
 
-    public void decide(String vnfr_id, AutoScalePolicy autoScalePolicy) {
+    public void decide(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
         log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         if (tasks.get(autoScalePolicy.getId()) == null) {
             log.debug("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-            DecisionTask decisionTask = new DecisionTask(vnfr_id, autoScalePolicy, properties);
+            DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties);
             ScheduledFuture scheduledFuture = taskScheduler.schedule(decisionTask, new Date());
             tasks.put(autoScalePolicy.getId(), scheduledFuture);
         } else {
@@ -66,8 +66,8 @@ public class DecisionManagement {
         tasks.remove(autoScalePolicy.getId());
     }
 
-    public void sendToExecutor(String vnfr_id, Set<ScalingAction> actions) {
-        executionManagement.execute(vnfr_id, actions);
+    public void sendToExecutor(String nsr_id, String vnfr_id, Set<ScalingAction> actions) {
+        executionManagement.execute(nsr_id, vnfr_id, actions);
     }
 
 }

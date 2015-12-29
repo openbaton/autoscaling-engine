@@ -58,69 +58,39 @@ public class ExecutionTask implements Runnable {
         this.properties = properties;
         this.vnfr_id = vnfr_id;
         this.actions = actions;
-        this.name = "ExecutionTask#" + vnfr_id;
+        this.name = "ExecutionTask#" + nsr_id + ":" + vnfr_id;
     }
 
     @Override
     public void run() {
         for (ScalingAction action : actions) {
-            switch (action.getType()) {
-                case SCALE_OUT:
-                    try {
+            try {
+                switch (action.getType()) {
+                    case SCALE_OUT:
                         executionEngine.scaleOut(nsr_id, vnfr_id);
-                    } catch (SDKException e) {
-                        log.error(e.getMessage(), e);
-                    } catch (NotFoundException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                    break;
-                case SCALE_OUT_TO:
-                    try {
+                        break;
+                    case SCALE_OUT_TO:
                         executionEngine.scaleOutTo(nsr_id, vnfr_id, Integer.parseInt(action.getValue()));
-                    } catch (SDKException e) {
-                        log.error(e.getMessage(), e);
-                    } catch (NotFoundException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                    break;
-                case SCALE_OUT_TO_FLAVOUR:
-                    try {
+                        break;
+                    case SCALE_OUT_TO_FLAVOUR:
                         executionEngine.scaleOutToFlavour(nsr_id, vnfr_id, action.getValue());
-                    } catch (SDKException e) {
-                        log.error(e.getMessage(), e);
-                    } catch (NotFoundException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                    break;
-                case SCALE_IN:
-                    try {
+                        break;
+                    case SCALE_IN:
                         executionEngine.scaleIn(nsr_id, vnfr_id);
-                    } catch (SDKException e) {
-                        log.error(e.getMessage(), e);
-                    } catch (NotFoundException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                    break;
-                case SCALE_IN_TO:
-                    try {
+                        break;
+                    case SCALE_IN_TO:
                         executionEngine.scaleInTo(nsr_id, vnfr_id, Integer.parseInt(action.getValue()));
-                    } catch (SDKException e) {
-                        log.error(e.getMessage(), e);
-                    } catch (NotFoundException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                    break;
-                case SCALE_IN_TO_FLAVOUR:
-                    try {
+                        break;
+                    case SCALE_IN_TO_FLAVOUR:
                         executionEngine.scaleInToFlavour(nsr_id, vnfr_id, action.getValue());
-                    } catch (SDKException e) {
-                        log.error(e.getMessage(), e);
-                    } catch (NotFoundException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                    break;
-                default:
-                    break;
+                        break;
+                    default:
+                        break;
+                }
+            } catch (SDKException e) {
+                log.error(e.getMessage(), e);
+            } catch (NotFoundException e) {
+                log.error(e.getMessage(), e);
             }
         }
     }

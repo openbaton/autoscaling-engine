@@ -15,6 +15,7 @@ import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
 import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,15 +37,15 @@ public class DetectionManagement {
 
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Map<String, Set<ScheduledFuture>> tasks;
+    private Map<String, Map<String, Map<String, ScheduledFuture>>> tasks;
+
+    private Properties properties;
+
+    @Autowired
+    private NFVORequestor nfvoRequestor;
 
     @Autowired
     private VnfrMonitor vnfrMonitor;
-
-    @Autowired
-    private DetectionEngine detectionEngine;
-
-    private Properties properties;
 
     //@PostConstruct
     public void init(Properties properties) {
@@ -58,58 +59,120 @@ public class DetectionManagement {
         this.taskScheduler.initialize();
     }
 
-    public void activate(NetworkServiceRecord nsr) throws NotFoundException {
-        log.debug("==========ACTIVATE============");
-        log.debug(properties.toString());
+    public void activate(String nsr_id) throws NotFoundException {
+        log.debug("Activating Alarm Detection for NSR with id: " + nsr_id);
+        NetworkServiceRecord nsr = null;
+        try {
+            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        if (nsr == null) {
+            throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
+        }
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            if (vnfr.getType().equals("media-server")) {
-                if (vnfr.getAuto_scale_policy().size() > 0)
-                    activate(vnfr);
+            for (AutoScalePolicy autoScalePolicy : vnfr.getAuto_scale_policy()) {
+                activate(nsr_id, vnfr.getId(), autoScalePolicy);
             }
         }
+        log.info("Activated Alarm Detection for NSR with id: " + nsr_id);
     }
 
-    public void activate(VirtualNetworkFunctionRecord vnfr) throws NotFoundException {
-        log.debug("Activating Elasticity for VNFR " + vnfr.getId());
-        vnfrMonitor.addVnfr(vnfr.getId());
-        log.debug("=======VNFR-MONITOR=======");
-        log.debug(vnfrMonitor.toString());
-        if (!tasks.containsKey(vnfr.getId())) {
-            log.debug("Creating new ElasticityTasks for VNFR with id: " + vnfr.getId());
-            tasks.put(vnfr.getId(), new HashSet<ScheduledFuture>());
-            for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
-                log.debug("Creating new ElasticityTask for AutoScalingPolicy " + policy.getName() + " with id: " + policy.getId() + " of VNFR with id: " + vnfr.getId());
-                //ElasticityTask elasticityTask = (ElasticityTask) context.getBean("elasticityTask");
-                DetectionTask detectionTask = new DetectionTask(vnfr, policy, properties);
-                ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, policy.getPeriod() * 1000);
-                tasks.get(vnfr.getId()).add(scheduledFuture);
-            }
-            log.debug("Activated Elasticity for VNFR " + vnfr.getId());
+    public void activate(String nsr_id, String vnfr_id) throws NotFoundException {
+        log.debug("Activating Alarm Detection for VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
+        VirtualNetworkFunctionRecord vnfr = null;
+        try {
+            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        }
+        if (vnfr == null) {
+            //throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
+            log.warn("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
+            return;
+        }
+        for (AutoScalePolicy autoScalePolicy : vnfr.getAuto_scale_policy()) {
+                    activate(nsr_id, vnfr.getId(), autoScalePolicy);
+        }
+        log.debug("Activated Alarm Detection for VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
+    }
+
+    public void activate(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) throws NotFoundException {
+        log.debug("Activating Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
+        if (!tasks.containsKey(nsr_id)) {
+            tasks.put(nsr_id, new HashMap<String, Map<String, ScheduledFuture>>());
+        }
+        if (!tasks.get(nsr_id).containsKey(vnfr_id)) {
+            tasks.get(nsr_id).put(vnfr_id, new HashMap<String, ScheduledFuture>());
+        }
+        if (!tasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
+            log.debug("Creating new DetectionTask for AutoScalingPolicy " + autoScalePolicy.getName() + " with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
+            DetectionTask detectionTask = new DetectionTask(nsr_id, vnfr_id, autoScalePolicy, properties);
+            ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, autoScalePolicy.getPeriod() * 1000);
+            tasks.get(nsr_id).get(vnfr_id).put(autoScalePolicy.getId(), scheduledFuture);
+            log.info("Activated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
         } else {
-            log.debug("ElasticityTasks for VNFR with id " + vnfr.getId() + " were already activated");
+            log.debug("Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id + " were already activated");
         }
     }
 
-    public void deactivate(NetworkServiceRecord nsr) {
-        log.debug("Deactivating Elasticity for all VNFRs of NSR with id: " + nsr.getId());
+    public void deactivate(String nsr_id) throws NotFoundException {
+        log.debug("Deactivating Alarm Detection of NSR with id: " + nsr_id);
+        NetworkServiceRecord nsr = null;
+        try {
+            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        if (nsr == null) {
+            throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
+        }
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            deactivate(vnfr);
+            deactivate(nsr_id, vnfr.getId());
         }
-        log.debug("Deactivated Elasticity for all VNFRs of NSR with id: " + nsr.getId());
+        log.info("Deactivated Alarm Detection of NSR with id: " + nsr_id);
     }
 
-    public void deactivate(VirtualNetworkFunctionRecord vnfr) {
-        log.debug("Deactivating Elasticity for VNFR " + vnfr.getId());
-        if (tasks.containsKey(vnfr.getId())) {
-            Set<ScheduledFuture> vnfrTasks = tasks.get(vnfr.getId());
-            for (ScheduledFuture scheduledFuture : vnfrTasks) {
-                scheduledFuture.cancel(false);
-            }
-            tasks.remove(vnfr.getId());
-            log.debug("Deactivated Elasticity for VNFR " + vnfr.getId());
-        } else {
-            log.debug("Not Found any ElasticityTasks for VNFR with id: " + vnfr.getId());
+    public void deactivate(String nsr_id, String vnfr_id) throws NotFoundException {
+        log.debug("Deactivating Alarm Detection of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
+        VirtualNetworkFunctionRecord vnfr = null;
+        try {
+            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
         }
-        vnfrMonitor.removeVnfr(vnfr.getId());
+        if (vnfr == null) {
+            //throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
+            log.warn("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
+            return;
+        }
+        for (AutoScalePolicy autoScalePolicy : vnfr.getAuto_scale_policy()) {
+            deactivate(nsr_id, vnfr_id, autoScalePolicy);
+        }
+        log.debug("Deactivated Alarm Detection for VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
+    }
+
+    public void deactivate(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        log.debug("Deactivating Elasticity for VNFR " + vnfr_id);
+        if (tasks.containsKey(nsr_id)) {
+            if (tasks.get(nsr_id).containsKey(vnfr_id)) {
+                if (tasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
+                    tasks.remove(vnfr_id);
+                    log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
+                } else {
+                    log.debug("Not Found DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
+                }
+            } else {
+                log.debug("Not Found any DetectionTasks for VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
+            }
+        } else {
+            log.debug("Not Found any DetectionTasks for NSR with id: " + nsr_id);
+        }
+        vnfrMonitor.removeVnfr(vnfr_id);
+        log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
     }
 }

@@ -13,8 +13,12 @@ dependencies {
     compile project(':as-utils')
     compile project(':repository')
     compile project(':monitoring')
+    compile project(':vim-int')
+
     //compile project(':vnfm-sdk')
     compile project(':vnfm-sdk-amqp')
+
+    runtime project(':vim-impl')
 
     compile 'org.openbaton:sdk:0.15'
     //compile 'org.openbaton:monitoring:0.15-SNAPSHOT'

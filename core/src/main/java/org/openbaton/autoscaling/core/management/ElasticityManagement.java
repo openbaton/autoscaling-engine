@@ -1,25 +1,20 @@
 package org.openbaton.autoscaling.core.management;
 
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
-import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
+import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.utils.Utils;
-import org.openbaton.catalogue.mano.common.AutoScalePolicy;
-import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
-import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.sdk.NFVORequestor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
-import java.util.concurrent.ScheduledFuture;
 
 /**
  * Created by mpa on 27.10.15.
@@ -54,31 +49,23 @@ public class ElasticityManagement {
         detectionManagment.init(properties);
         decisionManagement.init(properties);
         executionManagement.init(properties);
-    }
-
-    public void activate(NetworkServiceRecord nsr) throws NotFoundException {
-        log.debug("==========ACTIVATE============");
-        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            if (vnfr.getType().equals("media-server")) {
-                if (vnfr.getAuto_scale_policy().size() > 0)
-                    activate(vnfr);
-            }
+        if (properties.getProperty("pool_activated").equals(true)) {
+            poolManagement.init(properties);
         }
     }
 
-    public void activate(VirtualNetworkFunctionRecord vnfr) throws NotFoundException {
-        log.debug("Activating Elasticity for VNFR " + vnfr.getId());
-    }
-
-    public void deactivate(NetworkServiceRecord nsr) {
-        log.debug("Deactivating Elasticity for all VNFRs of NSR with id: " + nsr.getId());
-        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-                deactivate(vnfr);
+    public void activate(String nsr_id) throws NotFoundException {
+        log.debug("Activating Elasticity for NSR with id: " + nsr_id);
+        detectionManagment.activate(nsr_id);
+        if (properties.getProperty("pool_activated").equals(true)) {
+            poolManagement.activate(nsr_id);
         }
-        log.debug("Deactivated Elasticity for all VNFRs of NSR with id: " + nsr.getId());
+        log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 
-    public void deactivate(VirtualNetworkFunctionRecord vnfr) {
-        log.debug("Deactivating Elasticity for VNFR " + vnfr.getId());
+    public void deactivate(String nsr_id) throws NotFoundException {
+        log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
+        detectionManagment.deactivate(nsr_id);
+        log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
     }
 }

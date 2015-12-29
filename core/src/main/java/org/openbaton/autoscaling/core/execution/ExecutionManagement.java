@@ -55,11 +55,11 @@ public class ExecutionManagement {
         executionEngine = new ExecutionEngine(properties);
     }
 
-    public void execute(String vnfr_id, Set<ScalingAction> actions) {
+    public void execute(String nsr_id, String vnfr_id, Set<ScalingAction> actions) {
         log.debug("Processing execution request of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);
         if (tasks.get(vnfr_id) == null) {
             log.debug("Creating new ExecutionTask of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);
-            ExecutionTask executionTask = new ExecutionTask(vnfr_id, actions, properties);
+            ExecutionTask executionTask = new ExecutionTask(nsr_id, vnfr_id, actions, properties);
             ScheduledFuture scheduledFuture = taskScheduler.schedule(executionTask, new Date());
             tasks.put(vnfr_id, scheduledFuture);
         } else {

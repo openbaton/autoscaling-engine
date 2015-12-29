@@ -77,14 +77,13 @@ public class DetectionTask implements Runnable {
 
     private boolean fired;
 
-    public DetectionTask(VirtualNetworkFunctionRecord vnfr, AutoScalePolicy autoScalePolicy, Properties properties) throws NotFoundException {
+    public DetectionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, Properties properties) throws NotFoundException {
         this.properties = properties;
         this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("openbaton-username"), this.properties.getProperty("openbaton-password"), this.properties.getProperty("openbaton-url"), this.properties.getProperty("openbaton-port"), "1");
-        this.nsr_id = vnfr.getParent_ns_id();
-        this.vnfr_id = vnfr.getId();
+        this.nsr_id = nsr_id;
+        this.vnfr_id = vnfr_id;
         this.autoScalePolicy = autoScalePolicy;
-        this.name = "DetectionTask#" + vnfr.getId();
-        log.debug("DetectionTask: Fetching the monitor");
+        this.name = "DecisionTask#" + nsr_id + ":" + vnfr_id;
         this.first_time = true;
         this.fired = false;
     }
@@ -135,7 +134,7 @@ public class DetectionTask implements Runnable {
                 if (fired == false) {
                     log.info("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                     fired = true;
-                    decisionManagement.decide(vnfr_id, autoScalePolicy);
+                    decisionManagement.decide(nsr_id, vnfr_id, autoScalePolicy);
                 } else {
                     log.debug("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                 }
