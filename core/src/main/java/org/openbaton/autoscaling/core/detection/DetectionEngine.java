@@ -41,7 +41,7 @@ public class DetectionEngine {
     private VirtualisedResourcesPerformanceManagement monitor;
 
     public void init() throws NotFoundException {
-        this.monitor = new SimpleMonitor();
+        this.monitor = new EmmMonitor();
         if (monitor == null) {
             throw new NotFoundException("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
         }
@@ -148,7 +148,7 @@ public class DetectionEngine {
 
 }
 
-class SimpleMonitor implements VirtualisedResourcesPerformanceManagement{
+class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
 
     private Properties properties;
 
@@ -156,7 +156,7 @@ class SimpleMonitor implements VirtualisedResourcesPerformanceManagement{
 
     private String monitoringPort;
 
-    public SimpleMonitor() {
+    public EmmMonitor() {
         properties = Utils.loadProperties();
         monitoringIp = properties.getProperty("monitoring_ip");
         monitoringPort = properties.getProperty("monitoring_port");
@@ -176,7 +176,7 @@ class SimpleMonitor implements VirtualisedResourcesPerformanceManagement{
     @Override
     public List<Item> queryPMJob(List<String> hostnames, List<String> metrics, String period) throws MonitoringException {
         try {
-            URL url = new URL("http://localhost:8080/RESTfulExample/json/product/get");
+            URL url = new URL("http://" + monitoringIp + ":" + monitoringPort + "/monitor/");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");

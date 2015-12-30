@@ -2,6 +2,7 @@ package org.openbaton.autoscaling.core.features.pool;
 
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
+import org.openbaton.autoscaling.core.features.pool.task.PoolTask;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
@@ -43,7 +44,7 @@ public class PoolManagement {
 
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Map<String, Map<String, Map<String, ScheduledFuture>>> tasks;
+    private Map<String, ScheduledFuture> tasks;
 
     @Autowired
     private NFVORequestor nfvoRequestor;
@@ -73,8 +74,9 @@ public class PoolManagement {
     }
 
 
-    public void activate(String nsr_id) throws NotFoundException {
+    public void activate(String nsr_id) throws NotFoundException, VimDriverException, VimException {
         log.debug("Activating pool mechanism for VNFR " + nsr_id);
+        log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + pool_size);
         NetworkServiceRecord nsr = null;
         try {
             nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -86,15 +88,36 @@ public class PoolManagement {
         if (nsr == null) {
             throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
         }
+        //Prepare data structure
+        Map<String, Map<String, Set<VNFCInstance>>> vnfrMap = new HashMap<String, Map<String, Set<VNFCInstance>>>();
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+            vnfrMap.put(vnfr.getId(), new HashMap<String, Set<VNFCInstance>>());
+            Map<String, Set<VNFCInstance>> vduMap = new HashMap<String, Set<VNFCInstance>>();
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                allocateNewInstance(nsr, vnfr, vdu);
+                Set<VNFCInstance> vnfcInstances = new HashSet<>();
+                for (int i = 1; i <= pool_size ; i++) {
+                    vnfcInstances.add(allocateNewInstance(nsr, vnfr, vdu));
+                }
+                vduMap.put(vdu.getId(), vnfcInstances);
             }
+            vnfrMap.put(vnfr.getId(), vduMap);
         }
+        reservedInstances.put(nsr_id, vnfrMap);
+        startPoolCheck(nsr_id);
     }
 
-    public void deactivate(VirtualNetworkFunctionRecord vnfr) {
-        log.debug("Deactivating pool mechanism for VNFR " + vnfr.getId());
+    public void deactivate(String nsr_id) throws NotFoundException, VimException {
+        log.debug("Deactivating pool mechanism for NSR " + nsr_id);
+        stopPoolCheck(nsr_id);
+        releaseReservedInstances(nsr_id);
+        log.debug("Deactivated pool mechanism for NSR " + nsr_id);
+    }
+
+    public void deactivate(NetworkServiceRecord nsr) throws NotFoundException, VimException {
+        log.debug("Deactivating pool mechanism for NSR " + nsr.getId());
+        stopPoolCheck(nsr.getId());
+        releaseReservedInstances(nsr);
+        log.debug("Deactivated pool mechanism for NSR " + nsr.getId());
     }
 
     public Map<String, Map<String, Set<VNFCInstance>>> getReservedInstances(String nsr_id) {
@@ -108,15 +131,72 @@ public class PoolManagement {
         return new HashMap<>();
     }
 
-    public VNFCInstance allocateReservedInstance(String nsr_id, String vnfr_id, String vdu_id) {
-        return null;
+    public VNFCInstance allocateReservedInstance(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException, VimException {
+        VNFCInstance returnedInstance = null;
+        if (reservedInstances.containsKey(nsr_id)) {
+            if (reservedInstances.get(nsr_id).containsKey(vnfr_id)) {
+                if (reservedInstances.get(nsr_id).get(vnfr_id).containsKey(vdu_id)) {
+                    if (reservedInstances.get(nsr_id).get(vnfr_id).get(vdu_id).iterator().hasNext()) {
+                        returnedInstance = reservedInstances.get(nsr_id).get(vnfr_id).get(vdu_id).iterator().next();
+                        reservedInstances.get(nsr_id).get(vnfr_id).get(vdu_id).remove(returnedInstance);
+                    } else {
+                        //Allocate new Instance if no one was found
+                        returnedInstance = allocateNewInstance(nsr_id, vnfr_id, vdu_id);
+                    }
+                } else {
+                    log.warn("Reserved instances for VDU with id: " + vdu_id + " were not initialized properly");
+                }
+            } else {
+                log.warn("Reserved instances for VNFR with id: " + vnfr_id + " were not initialized properly");
+            }
+        } else {
+            log.warn("Reserved instances for NSR with id: " + nsr_id + " were not initialized properly");
+        }
+        return returnedInstance;
     }
 
-    public VNFCInstance allocateNewInstance(String nsr_id, String vnfr_id, String vdu_id) {
-        return null;
+    public VNFCInstance allocateNewInstance(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException, VimException {
+        NetworkServiceRecord nsr = null;
+        VirtualNetworkFunctionRecord vnfr = null;
+        VirtualDeploymentUnit vdu = null;
+        //Find NSR
+        try {
+            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        //Find VNFR
+        if (nsr != null) {
+            for (VirtualNetworkFunctionRecord vnfrFind : nsr.getVnfr()) {
+                if (vnfrFind.getId().equals(vnfr_id)) {
+                    vnfr = vnfrFind;
+                    break;
+                }
+            }
+        } else {
+            throw new NotFoundException("Not found NSR with id: " + nsr_id);
+        }
+        //Find VDU
+        if (vnfr != null) {
+            for (VirtualDeploymentUnit vduFind : vnfr.getVdu()) {
+                if (vduFind.getId().equals(vdu_id)) {
+                    vdu = vduFind;
+                    break;
+                }
+            }
+        } else {
+            throw new NotFoundException("Not found VNFR with id: " + vnfr_id);
+        }
+        if (vdu == null) {
+            throw new NotFoundException("Not found VDU with id: " + vdu_id);
+        }
+        return allocateNewInstance(nsr, vnfr, vdu);
     }
 
-    public VNFCInstance allocateNewInstance(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) {
+    public VNFCInstance allocateNewInstance(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException {
+        VNFCInstance vnfcInstance = null;
         if (vdu.getVnfc().iterator().hasNext()) {
             VNFComponent vnfComponentCopy = vdu.getVnfc().iterator().next();
             VNFComponent vnfComponentNew = new VNFComponent();
@@ -133,7 +213,6 @@ public class PoolManagement {
                 if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
                     floatgingIps.put(connectionPoint.getVirtual_link_reference(),connectionPoint.getFloatingIp());
             }
-            VNFCInstance vnfcInstance = null;
             try {
                 Future<VNFCInstance> vnfcInstanceFuture = resourceManagement.allocate(vdu, vnfr, vnfComponentNew, "", floatgingIps);
                 vnfcInstance = vnfcInstanceFuture.get();
@@ -148,7 +227,139 @@ public class PoolManagement {
             }
             return vnfcInstance;
         }
-        return null;
+        throw new VimException("Not able to allocate new VNFCInstance for the Pool");
     }
+
+    public void releaseReservedInstances(String nsr_id) throws NotFoundException, VimException {
+        NetworkServiceRecord nsr = null;
+        try {
+            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        //Find VNFR
+        if (nsr != null) {
+            releaseReservedInstances(nsr);
+        } else {
+            throw new NotFoundException("Not found NSR with id: " + nsr_id);
+        }
+    }
+
+    public void releaseReservedInstances(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException, VimException {
+        NetworkServiceRecord nsr = null;
+        VirtualNetworkFunctionRecord vnfr = null;
+        VirtualDeploymentUnit vdu = null;
+        //Find NSR
+        try {
+            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        //Find VNFR
+        if (nsr != null) {
+            for (VirtualNetworkFunctionRecord vnfrFind : nsr.getVnfr()) {
+                if (vnfrFind.getId().equals(vnfr_id)) {
+                    vnfr = vnfrFind;
+                    break;
+                }
+            }
+        } else {
+            throw new NotFoundException("Not found NSR with id: " + nsr_id);
+        }
+        //Find VDU
+        if (vnfr != null) {
+            for (VirtualDeploymentUnit vduFind : vnfr.getVdu()) {
+                if (vduFind.getId().equals(vdu_id)) {
+                    vdu = vduFind;
+                    break;
+                }
+            }
+        } else {
+            throw new NotFoundException("Not found VNFR with id: " + vnfr_id);
+        }
+        if (vdu == null) {
+            throw new NotFoundException("Not found VDU with id: " + vdu_id);
+        }
+        releaseReservedInstances(nsr, vnfr, vdu);
+    }
+
+    public void releaseReservedInstances(NetworkServiceRecord nsr) throws NotFoundException, VimException {
+        if (reservedInstances.containsKey(nsr.getId())) {
+            for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+                releaseReservedInstances(nsr, vnfr);
+            }
+            reservedInstances.remove(nsr.getId());
+        } else {
+            log.warn("Not found any reserved Instances for NSR with id: " + nsr.getId());
+        }
+    }
+
+    public void releaseReservedInstances(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr) throws VimException {
+        if (reservedInstances.containsKey(nsr.getId())) {
+            if (reservedInstances.get(nsr.getId()).containsKey(vnfr.getId())) {
+                for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                    releaseReservedInstances(nsr, vnfr, vdu);
+                }
+                reservedInstances.get(nsr.getId()).remove(vnfr.getId());
+            } else {
+                log.warn("Not found any reserved Instances for VNFR with id: " + vnfr.getId() + " of NSR with id: " + nsr.getId());
+            }
+        } else {
+            log.warn("Not found any reserved Instances for NSR with id: " + nsr.getId());
+        }
+
+    }
+
+    public void releaseReservedInstances(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException {
+        log.info("Releasing reserved Instances of NSR with id: " + nsr.getId() + " of VNFR with id: " + vnfr.getId() + " of VDU with id: " + vdu.getId());
+        if (reservedInstances.containsKey(nsr.getId())) {
+            if (reservedInstances.get(nsr.getId()).containsKey(vnfr.getId())) {
+                if (reservedInstances.get(nsr.getId()).get(vnfr.getId()).containsKey(vdu.getId())) {
+                    if (reservedInstances.get(nsr.getId()).get(vnfr.getId()).get(vdu.getId()) != null) {
+                        Set<VNFCInstance> vnfcInstances = reservedInstances.get(nsr.getId()).get(vnfr.getId()).get(vdu.getId());
+                        for (VNFCInstance vnfcInstance : vnfcInstances) {
+                            resourceManagement.release(vnfcInstance, vdu.getVimInstance());
+                        }
+                        reservedInstances.get(nsr.getId()).get(vnfr.getId()).remove(vdu.getId());
+                    }
+                } else {
+                    log.warn("Not found any reserved Instances for VDU with id: " + vdu.getId() + " of VNFR with id: " + vnfr.getId() + " of NSR with id: " + nsr.getId());
+                }
+            } else {
+                log.warn("Not found any reserved Instances for VNFR with id: " + vnfr.getId() + " of NSR with id: " + nsr.getId());
+            }
+        } else {
+            log.warn("Not found any reserved Instances for NSR with id: " + nsr.getId());
+        }
+    }
+
+    public void startPoolCheck(String nsr_id) throws NotFoundException {
+        log.debug("Activating Pool size checking for NSR with id: " + nsr_id);
+        if (!tasks.containsKey(nsr_id)) {
+            log.debug("Creating new PoolTask for NSR with id: " + nsr_id);
+            PoolTask poolTask = new PoolTask(nsr_id, pool_size);
+            ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(poolTask, pool_check_period * 1000);
+            log.debug("Activated Pool size checking for NSR with id: " + nsr_id);
+            tasks.put(nsr_id, scheduledFuture);
+        } else {
+            log.debug("Pool size checking of NSR with id: " + nsr_id + " were already activated");
+        }
+    }
+
+    public void stopPoolCheck(String nsr_id) {
+        log.debug("Activating Pool size checking for NSR with id: " + nsr_id);
+        if (tasks.containsKey(nsr_id)) {
+            tasks.get(nsr_id).cancel(true);
+            tasks.remove(nsr_id);
+        } else {
+            log.debug("Not Found PoolTask for NSR with id: " + nsr_id);
+        }
+        log.debug("Deactivated Pool size checking for NSR with id: " + nsr_id);
+    }
+
 
 }

@@ -66,4 +66,11 @@ public class ExecutionManagement {
             log.debug("Processing already an exection request for VNFR with id: " + vnfr_id + ". Cannot create another ExecutionTask for VNFR with id: " + vnfr_id);
         }
     }
+
+    public void finish(String vnfr_id) {
+        if (tasks.containsKey(vnfr_id)) {
+            log.debug("Finished execution of Actions for VNFR with id: " + vnfr_id);
+            tasks.remove(vnfr_id);
+        }
+    }
 }

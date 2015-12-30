@@ -2,6 +2,7 @@ package org.openbaton.autoscaling.core.execution.task;
 
 import org.openbaton.autoscaling.catalogue.ScalingStatus;
 import org.openbaton.autoscaling.core.execution.ExecutionEngine;
+import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAction;
@@ -53,6 +54,9 @@ public class ExecutionTask implements Runnable {
     @Autowired
     private ExecutionEngine executionEngine;
 
+    @Autowired
+    private ExecutionManagement executionManagement;
+
     public ExecutionTask(String nsr_id, String vnfr_id, Set<ScalingAction> actions, Properties properties) {
         log.debug("Initializing ExecutionTask for VNFR with id: " + vnfr_id + ". Actions: " + actions);
         this.properties = properties;
@@ -93,5 +97,6 @@ public class ExecutionTask implements Runnable {
                 log.error(e.getMessage(), e);
             }
         }
+        executionManagement.finish(vnfr_id);
     }
 }

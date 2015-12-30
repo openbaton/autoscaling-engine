@@ -161,6 +161,7 @@ public class DetectionManagement {
         if (tasks.containsKey(nsr_id)) {
             if (tasks.get(nsr_id).containsKey(vnfr_id)) {
                 if (tasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
+                    tasks.get(vnfr_id);
                     tasks.remove(vnfr_id);
                     log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
                 } else {

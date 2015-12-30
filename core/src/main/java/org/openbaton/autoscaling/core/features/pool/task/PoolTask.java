@@ -37,7 +37,7 @@ public class PoolTask implements Runnable {
 
     private String name;
 
-    public PoolTask(String nsr_id) throws NotFoundException {
+    public PoolTask(String nsr_id, int pool_size) throws NotFoundException {
         this.nsr_id = nsr_id;
         this.name = "PoolTask#" + nsr_id;
     }

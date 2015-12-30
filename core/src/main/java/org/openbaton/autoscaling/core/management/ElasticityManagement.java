@@ -6,7 +6,9 @@ import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,6 @@ public class ElasticityManagement {
     @Autowired
     private ExecutionManagement executionManagement;
 
-    @Autowired
     private PoolManagement poolManagement;
 
     private NFVORequestor nfvoRequestor;
@@ -50,11 +51,12 @@ public class ElasticityManagement {
         decisionManagement.init(properties);
         executionManagement.init(properties);
         if (properties.getProperty("pool_activated").equals(true)) {
+            poolManagement = new PoolManagement();
             poolManagement.init(properties);
         }
     }
 
-    public void activate(String nsr_id) throws NotFoundException {
+    public void activate(String nsr_id) throws NotFoundException, VimException, VimDriverException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.activate(nsr_id);
         if (properties.getProperty("pool_activated").equals(true)) {
