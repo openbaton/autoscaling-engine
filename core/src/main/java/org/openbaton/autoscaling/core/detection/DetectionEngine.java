@@ -150,6 +150,8 @@ public class DetectionEngine {
 
 class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
 
+    protected Logger log = LoggerFactory.getLogger(this.getClass());
+
     private Properties properties;
 
     private String monitoringIp;
@@ -175,26 +177,39 @@ class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
 
     @Override
     public List<Item> queryPMJob(List<String> hostnames, List<String> metrics, String period) throws MonitoringException {
-        try {
-            URL url = new URL("http://" + monitoringIp + ":" + monitoringPort + "/monitor/");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
-            if (conn.getResponseCode() != 200) {
-                throw new RuntimeException("Failed : HTTP error code : "
-                        + conn.getResponseCode());
+        log.debug("Requesting measurement results for hosts: " + hostnames + " on metrics: " + metrics + " (period: " + period + ")");
+        List<Item> items = new ArrayList<>();
+        for (String metric : metrics) {
+            for (String hostName : hostnames) {
+                try {
+                    URL url = new URL("http://" + monitoringIp + ":" + monitoringPort + "/monitor/" + hostName + "/" + metric);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("Accept", "application/json");
+                    if (conn.getResponseCode() != 200) {
+                        throw new RuntimeException("Failed : HTTP error code : "
+                                + conn.getResponseCode());
+                    }
+                    BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+                    String output;
+                    System.out.println("Response of measurement request: .... \n");
+                    while ((output = br.readLine()) != null) {
+                        System.out.println(output);
+                    }
+                    Item item = new Item();
+                    item.setHostname(hostName);
+                    item.setHostId(hostName);
+                    item.setLastValue(output);
+                    item.setValue(output);
+                    item.setMetric(metric);
+                    items.add(item);
+                    conn.disconnect();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-            BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
-            String output;
-            System.out.println("Output from Server .... \n");
-            while ((output = br.readLine()) != null) {
-                System.out.println(output);
-            }
-            conn.disconnect();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return null;
     }

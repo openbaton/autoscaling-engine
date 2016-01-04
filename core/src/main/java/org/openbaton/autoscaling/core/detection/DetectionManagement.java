@@ -2,6 +2,7 @@ package org.openbaton.autoscaling.core.detection;
 
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
+import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.monitoring.ObjectSelection;
 import org.openbaton.catalogue.mano.common.monitoring.ThresholdDetails;
@@ -23,6 +24,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 
@@ -41,17 +43,15 @@ public class DetectionManagement {
 
     private Properties properties;
 
-    @Autowired
     private NFVORequestor nfvoRequestor;
 
     @Autowired
     private VnfrMonitor vnfrMonitor;
 
-    //@PostConstruct
-    public void init(Properties properties) {
-        log.debug("======================");
-        log.debug(properties.toString());
-        this.properties = properties;
+    @PostConstruct
+    public void init() {
+        this.properties = Utils.loadProperties();
+        this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("openbaton-username"), this.properties.getProperty("openbaton-password"), this.properties.getProperty("openbaton-url"), this.properties.getProperty("openbaton-port"), "1");
         this.tasks = new HashMap<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);

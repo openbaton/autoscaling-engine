@@ -1,31 +1,31 @@
 package org.openbaton.autoscaling.core.execution;
 
-import org.openbaton.autoscaling.core.management.VnfrMonitor;
-import org.openbaton.autoscaling.core.detection.task.DetectionTask;
-import org.openbaton.catalogue.mano.common.AutoScalePolicy;
-import org.openbaton.catalogue.mano.common.DeploymentFlavour;
-import org.openbaton.catalogue.mano.common.ScalingAction;
+import org.openbaton.autoscaling.core.features.pool.PoolManagement;
+import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
-import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimException;
+import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
+import javax.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Created by mpa on 27.10.15.
@@ -37,30 +37,55 @@ public class ExecutionEngine {
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
+    private ConfigurableApplicationContext context;
+
     private NFVORequestor nfvoRequestor;
+
+    private ResourceManagement resourceManagement;
 
     private Properties properties;
 
-    public ExecutionEngine(Properties properties) {
-        this.properties = properties;
+    @Autowired
+    private PoolManagement poolManagement;
+
+//    public ExecutionEngine(Properties properties) {
+//        this.properties = properties;
+//        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
+//        resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
+//    }
+
+    @PostConstruct
+    public void init() {
+        this.properties = Utils.loadProperties();
         this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
+        resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
     }
 
-    public void scaleOut(String nsr_id, String vnfr_id) throws SDKException, NotFoundException {
+    public void scaleOut(String nsr_id, String vnfr_id) throws SDKException, NotFoundException, VimException, VimDriverException {
         VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            if (vdu.getVnfc().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
-                VNFComponent vnfComponent_copy = vdu.getVnfc().iterator().next();
-                VNFComponent vnfComponent_new = new VNFComponent();
-                vnfComponent_new.setConnection_point(new HashSet<VNFDConnectionPoint>());
-                for (VNFDConnectionPoint vnfdConnectionPoint_copy : vnfComponent_copy.getConnection_point()) {
-                    VNFDConnectionPoint vnfdConnectionPoint_new = new VNFDConnectionPoint();
-                    vnfdConnectionPoint_new.setVirtual_link_reference(vnfdConnectionPoint_copy.getVirtual_link_reference());
-                    vnfdConnectionPoint_new.setType(vnfdConnectionPoint_copy.getType());
-                    vnfdConnectionPoint_new.setFloatingIp(vnfdConnectionPoint_copy.getFloatingIp());
-                    vnfComponent_new.getConnection_point().add(vnfdConnectionPoint_new);
+            if (properties.getProperty("pool_activated", "false").equals("false")) {
+                if (vdu.getVnfc().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
+                    VNFComponent vnfComponent_copy = vdu.getVnfc().iterator().next();
+                    VNFComponent vnfComponent_new = new VNFComponent();
+                    vnfComponent_new.setConnection_point(new HashSet<VNFDConnectionPoint>());
+                    for (VNFDConnectionPoint vnfdConnectionPoint_copy : vnfComponent_copy.getConnection_point()) {
+                        VNFDConnectionPoint vnfdConnectionPoint_new = new VNFDConnectionPoint();
+                        vnfdConnectionPoint_new.setVirtual_link_reference(vnfdConnectionPoint_copy.getVirtual_link_reference());
+                        vnfdConnectionPoint_new.setType(vnfdConnectionPoint_copy.getType());
+                        vnfdConnectionPoint_new.setFloatingIp(vnfdConnectionPoint_copy.getFloatingIp());
+                        vnfComponent_new.getConnection_point().add(vnfdConnectionPoint_new);
+                    }
+                    Map<String, String> floatgingIps = new HashMap<>();
+                    for (VNFDConnectionPoint connectionPoint : vnfComponent_new.getConnection_point()) {
+                        if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
+                            floatgingIps.put(connectionPoint.getVirtual_link_reference(), connectionPoint.getFloatingIp());
+                        resourceManagement.allocate(vdu, vnfr, vnfComponent_new, "", floatgingIps);
+                        //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
+                    }
+                } else {
+                    poolManagement.getReservedInstance(nsr_id, vnfr_id, vdu.getId());
                 }
-                nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
                 log.debug("SCALING: Added new Component to VDU " + vdu.getId());
                 return;
             } else {
@@ -72,7 +97,7 @@ public class ExecutionEngine {
 
     }
 
-    public void scaleOutTo(String nsr_id, String vnfr_id, int value) throws SDKException, NotFoundException {
+    public void scaleOutTo(String nsr_id, String vnfr_id, int value) throws SDKException, NotFoundException, VimException, VimDriverException {
         VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         int vnfci_counter = 0;
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {

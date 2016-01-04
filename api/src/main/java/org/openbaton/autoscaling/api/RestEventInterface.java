@@ -21,6 +21,8 @@ import org.openbaton.autoscaling.core.management.ElasticityManagement;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimException;
+import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +46,7 @@ public class RestEventInterface {
      */
     @RequestMapping(value = "INSTANTIATE_FINISH", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public void activate(@RequestBody String msg) throws NotFoundException {
+    public void activate(@RequestBody String msg) throws NotFoundException, VimException, VimDriverException {
         log.debug("========================");
         log.debug("msg=" + msg);
         JsonParser jsonParser = new JsonParser();
@@ -54,7 +56,7 @@ public class RestEventInterface {
         log.debug("ACTION=" + action);
         NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
         log.debug("NSR=" + nsr);
-        elasticityManagement.activate(nsr);
+        elasticityManagement.activate(nsr.getId());
     }
 
     /**
@@ -74,7 +76,7 @@ public class RestEventInterface {
         log.debug("ACTION=" + action);
         NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
         log.debug("NSR=" + nsr);
-        elasticityManagement.deactivate(nsr);
+        elasticityManagement.deactivate(nsr.getId());
     }
 
     /**

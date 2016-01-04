@@ -3,6 +3,7 @@ package org.openbaton.autoscaling.core.execution;
 import org.openbaton.autoscaling.core.execution.task.ExecutionTask;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
+import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 
@@ -35,24 +37,21 @@ public class ExecutionManagement {
     @Autowired
     private VnfrMonitor vnfrMonitor;
 
-    private NFVORequestor nfvoRequestor;
-
     private Properties properties;
 
+    @Autowired
     private ExecutionEngine executionEngine;
 
-//    @PostConstruct
-    public void init(Properties properties) {
-        log.debug("======================");
-        log.debug(properties.toString());
-        this.properties = properties;
+    @PostConstruct
+    public void init() {
+        this.properties = Utils.loadProperties();
         //this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
         this.tasks = new HashMap<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
         this.taskScheduler.initialize();
-        executionEngine = new ExecutionEngine(properties);
+        //executionEngine = new ExecutionEngine(properties);
     }
 
     public void execute(String nsr_id, String vnfr_id, Set<ScalingAction> actions) {
@@ -63,7 +62,7 @@ public class ExecutionManagement {
             ScheduledFuture scheduledFuture = taskScheduler.schedule(executionTask, new Date());
             tasks.put(vnfr_id, scheduledFuture);
         } else {
-            log.debug("Processing already an exection request for VNFR with id: " + vnfr_id + ". Cannot create another ExecutionTask for VNFR with id: " + vnfr_id);
+            log.debug("Processing already an execution request for VNFR with id: " + vnfr_id + ". Cannot create another ExecutionTask for VNFR with id: " + vnfr_id);
         }
     }
 

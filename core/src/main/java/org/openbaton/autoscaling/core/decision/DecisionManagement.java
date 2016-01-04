@@ -4,6 +4,7 @@ import org.openbaton.autoscaling.core.decision.task.DecisionTask;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
+import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 
@@ -37,11 +39,9 @@ public class DecisionManagement {
     @Autowired
     private ExecutionManagement executionManagement;
 
-    //@PostConstruct
-    public void init(Properties properties) {
-        log.debug("======================");
-        log.debug(properties.toString());
-        this.properties = properties;
+    @PostConstruct
+    public void init() {
+        this.properties = Utils.loadProperties();
         this.tasks = new HashMap<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);

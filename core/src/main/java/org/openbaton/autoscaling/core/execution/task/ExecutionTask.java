@@ -16,9 +16,11 @@ import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimException;
 import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -95,6 +97,10 @@ public class ExecutionTask implements Runnable {
                 log.error(e.getMessage(), e);
             } catch (NotFoundException e) {
                 log.error(e.getMessage(), e);
+            } catch (VimException e) {
+                e.printStackTrace();
+            } catch (VimDriverException e) {
+                e.printStackTrace();
             }
         }
         executionManagement.finish(vnfr_id);

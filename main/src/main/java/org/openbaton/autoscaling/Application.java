@@ -30,8 +30,8 @@ import java.util.Properties;
 /**
  * Created by mpa on 27.10.15.
  */
-@SpringBootApplication
-@ComponentScan("org.openbaton.autoscaling")
+//@SpringBootApplication
+//@ComponentScan("org.openbaton.autoscaling")
 //@PropertySource({
 //        "classpath:autoscaling.properties",
 //        "classpath:openbaton.properties"

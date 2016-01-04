@@ -20,7 +20,9 @@ dependencies {
 
     runtime project(':vim-impl')
 
-    compile 'org.openbaton:sdk:0.15'
+    compile ('org.openbaton:sdk:0.15') {
+        exclude module: 'catalogue'
+    }
     //compile 'org.openbaton:monitoring:0.15-SNAPSHOT'
     //compile 'org.openbaton:vim-int:0.15'
 
