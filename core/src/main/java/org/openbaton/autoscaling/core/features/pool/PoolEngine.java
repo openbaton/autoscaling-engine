@@ -242,4 +242,7 @@ public class PoolEngine {
         }
     }
 
+    public Map<String, Map<String, Set<VNFCInstance>>> getReservedInstances(String nsr_id) {
+        return poolManagement.getReservedInstances(nsr_id);
+    }
 }

@@ -68,24 +68,27 @@ public class ElasticityManagement {
         //startPlugins();
 
         waitForNfvo();
-        subscribe(Action.INSTANTIATE_FINISH);
-        subscribe(Action.RELEASE_RESOURCES_FINISH);
-        subscribe(Action.ERROR);
+        //subscribe(Action.INSTANTIATE_FINISH);
+        //subscribe(Action.RELEASE_RESOURCES_FINISH);
+        //subscribe(Action.ERROR);
 
         //fetchNSRsFromNFVO();
     }
 
     @PreDestroy
     private void exit() throws SDKException {
-        unsubscribe();
+        //unsubscribe();
         //destroyPlugins();
     }
 
     public void activate(String nsr_id) throws NotFoundException, VimException, VimDriverException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.activate(nsr_id);
-        if (properties.getProperty("pool_activated").equals(true)) {
+        if (properties.getProperty("pool_activated", "false").equals("true")) {
+            log.debug("Activating pool mechanism");
             poolManagement.activate(nsr_id);
+        } else {
+            log.debug("pool mechanism is disabled");
         }
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }

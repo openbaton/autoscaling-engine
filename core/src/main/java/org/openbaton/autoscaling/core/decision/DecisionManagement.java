@@ -2,14 +2,9 @@ package org.openbaton.autoscaling.core.decision;
 
 import org.openbaton.autoscaling.core.decision.task.DecisionTask;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
-import org.openbaton.autoscaling.core.management.VnfrMonitor;
-import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAction;
-import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
-import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.openbaton.exceptions.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +32,7 @@ public class DecisionManagement {
     private Properties properties;
 
     @Autowired
-    private ExecutionManagement executionManagement;
+    private DecisionEngine decisionEngine;
 
     @PostConstruct
     public void init() {
@@ -53,7 +48,7 @@ public class DecisionManagement {
         log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         if (tasks.get(autoScalePolicy.getId()) == null) {
             log.debug("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-            DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties);
+            DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties, decisionEngine);
             ScheduledFuture scheduledFuture = taskScheduler.schedule(decisionTask, new Date());
             tasks.put(autoScalePolicy.getId(), scheduledFuture);
         } else {
@@ -64,10 +59,6 @@ public class DecisionManagement {
     public void finished(String vnfr_id, AutoScalePolicy autoScalePolicy) {
         log.debug("Finished Decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         tasks.remove(autoScalePolicy.getId());
-    }
-
-    public void sendToExecutor(String nsr_id, String vnfr_id, Set<ScalingAction> actions) {
-        executionManagement.execute(nsr_id, vnfr_id, actions);
     }
 
 }

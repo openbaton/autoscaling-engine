@@ -53,16 +53,14 @@ public class ExecutionTask implements Runnable {
 
     private String name;
 
-    @Autowired
     private ExecutionEngine executionEngine;
 
-    @Autowired
-    private ExecutionManagement executionManagement;
-
-    public ExecutionTask(String nsr_id, String vnfr_id, Set<ScalingAction> actions, Properties properties) {
+    public ExecutionTask(String nsr_id, String vnfr_id, Set<ScalingAction> actions, Properties properties, ExecutionEngine executionEngine) {
         log.debug("Initializing ExecutionTask for VNFR with id: " + vnfr_id + ". Actions: " + actions);
-        this.properties = properties;
+        this.nsr_id = nsr_id;
         this.vnfr_id = vnfr_id;
+        this.properties = properties;
+        this.executionEngine = executionEngine;
         this.actions = actions;
         this.name = "ExecutionTask#" + nsr_id + ":" + vnfr_id;
     }
@@ -103,6 +101,6 @@ public class ExecutionTask implements Runnable {
                 e.printStackTrace();
             }
         }
-        executionManagement.finish(vnfr_id);
+        executionEngine.finish(vnfr_id);
     }
 }

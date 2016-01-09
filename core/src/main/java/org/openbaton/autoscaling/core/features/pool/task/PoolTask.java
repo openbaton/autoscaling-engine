@@ -32,10 +32,6 @@ public class PoolTask implements Runnable {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    private PoolManagement poolManagement;
-
-    @Autowired
     private PoolEngine poolEngine;
 
     private String nsr_id;
@@ -44,9 +40,10 @@ public class PoolTask implements Runnable {
 
     private String name;
 
-    public PoolTask(String nsr_id, int pool_size) throws NotFoundException {
+    public PoolTask(String nsr_id, int pool_size, PoolEngine poolEngine) throws NotFoundException {
         this.nsr_id = nsr_id;
         this.pool_size = pool_size;
+        this.poolEngine = poolEngine;
         this.name = "PoolTask#" + nsr_id;
 
     }
@@ -54,19 +51,19 @@ public class PoolTask implements Runnable {
     @Override
     public void run() {
         log.debug("Checking the pool of reserved VNFCInstances for NSR with id: " + nsr_id);
-        Map<String, Map<String, Set<VNFCInstance>>> reservedInstances = poolManagement.getReservedInstances(nsr_id);
+        Map<String, Map<String, Set<VNFCInstance>>> reservedInstances = poolEngine.getReservedInstances(nsr_id);
         log.debug("Currently reserved VNFCInstances: " + reservedInstances);
         for (String vnfr_id : reservedInstances.keySet()) {
             for (String vdu_id : reservedInstances.get(vnfr_id).keySet()) {
                 int currentPoolSize = reservedInstances.get(vnfr_id).get(vdu_id).size();
-                log.debug("Current pool size of NSR-VNFR-VDU: " + nsr_id + "-" + vnfr_id + "-" + vdu_id + " -> " + currentPoolSize);
+                log.debug("Current pool size of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + currentPoolSize);
                 Set<VNFCInstance> newReservedInstances = new HashSet<>();
                 for (int i = currentPoolSize; i <= pool_size ; i++) {
-                    log.debug("Allocating new reserved Instance to the pool of NSR-VNFR-VDU: " + nsr_id + "-" + vnfr_id + "-" + vdu_id);
+                    log.debug("Allocating new reserved Instance to the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id);
                     try {
                         VNFCInstance newReservedInstance = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id);
                         newReservedInstances.add(newReservedInstance);
-                        log.debug("Allocated new reserved Instance to the pool of NSR-VNFR-VDU: " + nsr_id + "-" + vnfr_id + "-" + vdu_id + " -> " + newReservedInstance);
+                        log.debug("Allocated new reserved Instance to the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + newReservedInstance);
                     } catch (NotFoundException e) {
                         log.error(e.getMessage(), e);
                     } catch (VimException e) {

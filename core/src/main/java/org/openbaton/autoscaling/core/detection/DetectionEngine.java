@@ -1,7 +1,9 @@
 package org.openbaton.autoscaling.core.detection;
 
+import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
+import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAlarm;
 import org.openbaton.catalogue.mano.common.monitoring.ObjectSelection;
 import org.openbaton.catalogue.mano.common.monitoring.ThresholdDetails;
@@ -21,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -40,10 +43,14 @@ public class DetectionEngine {
 
     private VirtualisedResourcesPerformanceManagement monitor;
 
-    public void init() throws NotFoundException {
+    @Autowired
+    private DecisionManagement decisionManagement;
+
+    @PostConstruct
+    public void init() {
         this.monitor = new EmmMonitor();
         if (monitor == null) {
-            throw new NotFoundException("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
+            log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
         }
     }
 
@@ -125,8 +132,18 @@ public class DetectionEngine {
                     return true;
                 }
                 break;
+            case ">=":
+                if (result >= threshold) {
+                    return true;
+                }
+                break;
             case "<":
                 if (result < threshold) {
+                    return true;
+                }
+                break;
+            case "<=":
+                if (result <= threshold) {
                     return true;
                 }
                 break;
@@ -146,6 +163,9 @@ public class DetectionEngine {
         return false;
     }
 
+    public void sendAlarm(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        decisionManagement.decide(nsr_id, vnfr_id, autoScalePolicy);
+    }
 }
 
 class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
@@ -192,17 +212,16 @@ class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
                     }
                     BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
                     String output;
-                    System.out.println("Response of measurement request: .... \n");
                     while ((output = br.readLine()) != null) {
-                        System.out.println(output);
+                        log.debug("Measurement result for host " + hostName + " on metric " + metric + " is " + output);
+                        Item item = new Item();
+                        item.setHostname(hostName);
+                        item.setHostId(hostName);
+                        item.setLastValue(output);
+                        item.setValue(output);
+                        item.setMetric(metric);
+                        items.add(item);
                     }
-                    Item item = new Item();
-                    item.setHostname(hostName);
-                    item.setHostId(hostName);
-                    item.setLastValue(output);
-                    item.setValue(output);
-                    item.setMetric(metric);
-                    items.add(item);
                     conn.disconnect();
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
@@ -211,7 +230,7 @@ class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
                 }
             }
         }
-        return null;
+        return items;
     }
 
     @Override

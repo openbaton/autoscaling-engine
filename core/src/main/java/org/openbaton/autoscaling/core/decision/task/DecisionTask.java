@@ -1,5 +1,6 @@
 package org.openbaton.autoscaling.core.decision.task;
 
+import org.openbaton.autoscaling.core.decision.DecisionEngine;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionEngine;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
@@ -35,20 +36,20 @@ public class DecisionTask implements Runnable {
 
     private String name;
 
-    @Autowired
-    private DecisionManagement decisionManagement;
+    private DecisionEngine decisionEngine;
 
-    public DecisionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, Properties properties) {
+    public DecisionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, Properties properties, DecisionEngine decisionEngine) {
         this.properties = properties;
         this.nsr_id = nsr_id;
         this.vnfr_id = vnfr_id;
         this.autoScalePolicy = autoScalePolicy;
+        this.decisionEngine = decisionEngine;
         this.name = "DecisionTask#" + nsr_id + ":" + vnfr_id;
     }
 
 
     @Override
     public void run() {
-        decisionManagement.sendToExecutor(nsr_id, vnfr_id, autoScalePolicy.getActions());
+        decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions());
     }
 }

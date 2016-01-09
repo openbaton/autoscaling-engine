@@ -1,34 +1,24 @@
 package org.openbaton.autoscaling.core.features.pool;
 
-import org.openbaton.autoscaling.core.detection.DetectionManagement;
-import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.autoscaling.core.features.pool.task.PoolTask;
 import org.openbaton.autoscaling.utils.Utils;
-import org.openbaton.catalogue.mano.common.AutoScalePolicy;
-import org.openbaton.catalogue.mano.descriptor.VNFComponent;
-import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
-import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -75,7 +65,7 @@ public class PoolManagement {
     }
 
 
-    public void activate(String nsr_id) throws NotFoundException, VimDriverException, VimException {
+    public void activate(String nsr_id) throws NotFoundException {
         log.debug("Activating pool mechanism for VNFR " + nsr_id);
         log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + pool_size);
         NetworkServiceRecord nsr = null;
@@ -97,7 +87,11 @@ public class PoolManagement {
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 Set<VNFCInstance> vnfcInstances = new HashSet<>();
                 for (int i = 1; i <= pool_size ; i++) {
-                    vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
+                    try {
+                        vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
+                    } catch (VimException e) {
+                        log.warn(e.getMessage(), e);
+                    }
                 }
                 vduMap.put(vdu.getId(), vnfcInstances);
             }
@@ -164,7 +158,7 @@ public class PoolManagement {
         log.debug("Activating Pool size checking for NSR with id: " + nsr_id);
         if (!tasks.containsKey(nsr_id)) {
             log.debug("Creating new PoolTask for NSR with id: " + nsr_id);
-            PoolTask poolTask = new PoolTask(nsr_id, pool_size);
+            PoolTask poolTask = new PoolTask(nsr_id, pool_size, poolEngine);
             ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(poolTask, pool_check_period * 1000);
             log.debug("Activated Pool size checking for NSR with id: " + nsr_id);
             tasks.put(nsr_id, scheduledFuture);

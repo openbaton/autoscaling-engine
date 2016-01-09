@@ -4,17 +4,11 @@ import org.openbaton.autoscaling.core.detection.task.DetectionTask;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
-import org.openbaton.catalogue.mano.common.monitoring.ObjectSelection;
-import org.openbaton.catalogue.mano.common.monitoring.ThresholdDetails;
-import org.openbaton.catalogue.mano.common.monitoring.ThresholdType;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.openbaton.catalogue.nfvo.Item;
 
 
-import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
-import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
@@ -47,6 +41,9 @@ public class DetectionManagement {
 
     @Autowired
     private VnfrMonitor vnfrMonitor;
+
+    @Autowired
+    private DetectionEngine detectionEngine;
 
     @PostConstruct
     public void init() {
@@ -109,7 +106,7 @@ public class DetectionManagement {
         }
         if (!tasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
             log.debug("Creating new DetectionTask for AutoScalingPolicy " + autoScalePolicy.getName() + " with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-            DetectionTask detectionTask = new DetectionTask(nsr_id, vnfr_id, autoScalePolicy, properties);
+            DetectionTask detectionTask = new DetectionTask(nsr_id, vnfr_id, autoScalePolicy, properties, detectionEngine);
             ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, autoScalePolicy.getPeriod() * 1000);
             tasks.get(nsr_id).get(vnfr_id).put(autoScalePolicy.getId(), scheduledFuture);
             log.info("Activated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);

@@ -3,6 +3,7 @@ package org.openbaton.autoscaling.core.detection.task;
 import org.openbaton.autoscaling.catalogue.ScalingStatus;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionEngine;
+import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
@@ -57,10 +58,6 @@ public class DetectionTask implements Runnable {
 
     private NFVORequestor nfvoRequestor;
 
-    @Autowired
-    private DecisionManagement decisionManagement;
-
-    @Autowired
     private DetectionEngine detectionEngine;
 
     private Properties properties;
@@ -77,13 +74,15 @@ public class DetectionTask implements Runnable {
 
     private boolean fired;
 
-    public DetectionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, Properties properties) throws NotFoundException {
-        this.properties = properties;
-        this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("openbaton-username"), this.properties.getProperty("openbaton-password"), this.properties.getProperty("openbaton-url"), this.properties.getProperty("openbaton-port"), "1");
+    public DetectionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, Properties properties, DetectionEngine detectionEngine) throws NotFoundException {
         this.nsr_id = nsr_id;
         this.vnfr_id = vnfr_id;
         this.autoScalePolicy = autoScalePolicy;
-        this.name = "DecisionTask#" + nsr_id + ":" + vnfr_id;
+        this.properties = properties;
+        this.detectionEngine = detectionEngine;
+
+        this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("openbaton-username"), this.properties.getProperty("openbaton-password"), this.properties.getProperty("openbaton-url"), this.properties.getProperty("openbaton-port"), "1");
+        this.name = "DetectionTask#" + nsr_id + ":" + vnfr_id;
         this.first_time = true;
         this.fired = false;
     }
@@ -125,24 +124,24 @@ public class DetectionTask implements Runnable {
                 } else {
                     log.debug("DetectionTask: Alarm with id: " + alarm.getId() + " of AutoScalePolicy with id " + autoScalePolicy.getId() + " is not fired");
                 }
-                log.debug("DetectionTask: Finished check of all Alarms of AutoScalePolicy with id " + autoScalePolicy.getId());
             }
+            log.debug("Finished check of all Alarms of AutoScalePolicy with id " + autoScalePolicy.getId());
             //Check if Alarm must be fired for this AutoScalingPolicy
             double finalResult = (100 * alarmsWeightFired) / alarmsWeightCount;
-            log.debug("DetectionTask: Checking if AutoScalingPolicy with id " + autoScalePolicy.getId() + " must be executed");
+            log.debug("Checking if AutoScalingPolicy with id " + autoScalePolicy.getId() + " must be executed");
             if (detectionEngine.checkThreshold(autoScalePolicy.getComparisonOperator(), autoScalePolicy.getThreshold(), finalResult)) {
                 if (fired == false) {
-                    log.info("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                    log.info("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                     fired = true;
-                    decisionManagement.decide(nsr_id, vnfr_id, autoScalePolicy);
+                    detectionEngine.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
                 } else {
-                    log.debug("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                 }
             } else {
                 if (fired == false) {
-                    log.debug("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed -> " + finalResult + autoScalePolicy.getComparisonOperator() + autoScalePolicy.getThreshold());
                 } else {
-                    log.info("DetectionTask: Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed anymore. This means that the Alarm is cleared -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                    log.info("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed anymore. This means that the Alarm is cleared -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                     fired = false;
                     //ToDo throw event CLEARED
                 }
@@ -151,7 +150,6 @@ public class DetectionTask implements Runnable {
             log.error("DetectionTask: Not found VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         }
         log.debug("DetectionTask: Starting sleeping period (" + autoScalePolicy.getPeriod() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
-
     }
 }
 
