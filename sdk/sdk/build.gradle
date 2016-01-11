@@ -1,0 +1,20 @@
+apply plugin: 'java'
+repositories {
+    mavenCentral()
+    maven {
+        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+    }
+}
+dependencies {
+    compile 'org.openbaton:catalogue:0.15'
+
+    compile 'org.slf4j:slf4j-api:1.7.12'
+    compile 'com.google.code.gson:gson:2.5'
+    compile 'com.mashape.unirest:unirest-java:1.4.5'
+
+    compile 'net.minidev:json-smart:2.2'
+
+    testCompile 'com.google.code.gson:gson:2.3.1'
+    testCompile "junit:junit:4.12"
+
+}

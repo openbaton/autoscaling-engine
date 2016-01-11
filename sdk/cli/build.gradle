@@ -1,0 +1,30 @@
+repositories {
+    mavenCentral()
+    maven {
+        url "http://193.175.132.176:8081/nexus/content/groups/public"
+    }
+}
+dependencies {
+    compile project(":sdk")
+    compile 'org.apache.commons:commons-lang3:3.0'
+    compile 'jline:jline:2.12.1'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'org.project.openbaton.cli.NFVOCommandLineInterface'
+    }
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'org.project.openbaton.cli.NFVOCommandLineInterface',
+                'Implementation-Version': version,
+                'Main-Class': 'org.project.openbaton.cli.NFVOCommandLineInterface'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+jar.dependsOn fatJar
