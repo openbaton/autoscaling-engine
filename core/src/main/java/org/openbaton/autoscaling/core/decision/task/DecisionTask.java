@@ -1,16 +1,9 @@
 package org.openbaton.autoscaling.core.decision.task;
 
 import org.openbaton.autoscaling.core.decision.DecisionEngine;
-import org.openbaton.autoscaling.core.decision.DecisionManagement;
-import org.openbaton.autoscaling.core.detection.DetectionEngine;
-import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
-import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.openbaton.exceptions.NotFoundException;
-import org.openbaton.sdk.NFVORequestor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -50,6 +43,6 @@ public class DecisionTask implements Runnable {
 
     @Override
     public void run() {
-        decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions());
+        decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions(), autoScalePolicy.getCooldown());
     }
 }

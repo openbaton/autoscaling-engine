@@ -30,7 +30,7 @@ public class DecisionEngine {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public void sendDecision(String nsr_id, String vnfr_id, Set<ScalingAction> actions) {
-        executionManagement.execute(nsr_id, vnfr_id, actions);
+    public void sendDecision(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {
+        executionManagement.execute(nsr_id, vnfr_id, actions, cooldown);
     }
 }

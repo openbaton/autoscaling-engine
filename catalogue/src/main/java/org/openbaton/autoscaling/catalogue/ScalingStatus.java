@@ -5,5 +5,6 @@ package org.openbaton.autoscaling.catalogue;
  */
 public enum ScalingStatus {
     READY,
-    BUSY;
+    BUSY,
+    COOLDOWN, SCALING;
 }

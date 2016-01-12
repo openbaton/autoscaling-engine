@@ -1,6 +1,7 @@
 package org.openbaton.autoscaling.core.execution;
 
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
+import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
@@ -23,10 +24,7 @@ import org.springframework.stereotype.Service;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -52,6 +50,9 @@ public class ExecutionEngine {
 
     @Autowired
     private PoolManagement poolManagement;
+
+    @Autowired
+    private VnfrMonitor vnfrMonitor;
 
 //    public ExecutionEngine(Properties properties) {
 //        this.properties = properties;
@@ -114,7 +115,7 @@ public class ExecutionEngine {
             //throw new NotFoundException("Not found any VDU to scale out a VNFComponent. Limits are reached.");
         }
         //vnfr.setStatus(Status.ACTIVE);
-        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
+        nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
     }
 
     public void scaleOutTo(String nsr_id, String vnfr_id, int value) throws SDKException, NotFoundException, VimException, VimDriverException {
@@ -155,7 +156,6 @@ public class ExecutionEngine {
             log.warn("Not found any VDU to scale in a VNFComponent. Limits are reached.");
             //throw new NotFoundException("Not found any VDU to scale in a VNFComponent. Limits are reached.");
         }
-        vnfr.setStatus(Status.ACTIVE);
         nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
     }
 
@@ -174,7 +174,39 @@ public class ExecutionEngine {
         throw new NotImplementedException();
     }
 
-    public void finish(String vnfr_id) {
+    public void waitForCooldown(String vnfr_id, long cooldown) {
+        List<String> vnfrIds = new ArrayList<>();
+        vnfrIds.add(vnfr_id);
+        try {
+            vnfrMonitor.startCooldown(vnfrIds);
+            log.debug("Starting cooldown period (" + cooldown + "s) for VNFR: " + vnfr_id);
+            Thread.sleep(cooldown * 1000);
+            log.debug("Finished cooldown period (" + cooldown + "s) for VNFR: " + vnfr_id);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateVNFRStatus(String nsr_id, String vnfr_id, Status status) {
+        try {
+            VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+            vnfr.setStatus(status);
+            nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    public boolean requestScaling(String vnfr_id) {
+        List<String> vnfrIds = new ArrayList<>();
+        vnfrIds.add(vnfr_id);
+        return vnfrMonitor.requestScaling(vnfrIds);
+    }
+
+    public void finishedScaling(String vnfr_id) {
+        List<String> vnfrIds = new ArrayList<>();
+        vnfrIds.add(vnfr_id);
+        vnfrMonitor.finishedScaling(vnfrIds);
         executionManagement.finish(vnfr_id);
     }
 }

@@ -37,16 +37,24 @@ public class VnfrMonitor {
         return states.get(vnfrId);
     }
 
-    public synchronized boolean requestScaling(List<String> allVnfrIds) {
-        for (String otherVnfrId : allVnfrIds) {
-            if (states.get(otherVnfrId) == ScalingStatus.BUSY) {
+    public synchronized boolean requestScaling(List<String> vnfrIds) {
+        for (String vnfrId : vnfrIds) {
+            if (!states.containsKey(vnfrId)) {
+                addVnfr(vnfrId);
+            } else if (states.get(vnfrId) == ScalingStatus.SCALING || states.get(vnfrId) == ScalingStatus.COOLDOWN) {
                 return false;
             }
         }
-        for (String otherVnfrId : allVnfrIds) {
-            states.put(otherVnfrId, ScalingStatus.BUSY);
+        for (String vnfrId : vnfrIds) {
+            states.put(vnfrId, ScalingStatus.SCALING);
         }
         return true;
+    }
+
+    public synchronized void startCooldown(List<String> allVnfrIds) {
+        for (String otherVnfrId : allVnfrIds) {
+            states.put(otherVnfrId, ScalingStatus.COOLDOWN);
+        }
     }
 
     @Override
@@ -56,7 +64,7 @@ public class VnfrMonitor {
                 '}';
     }
 
-    public void release(List<String> allVnfrIds) {
+    public void finishedScaling(List<String> allVnfrIds) {
         for (String otherVnfrId : allVnfrIds) {
             states.put(otherVnfrId, ScalingStatus.READY);
         }
