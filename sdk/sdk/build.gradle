@@ -6,7 +6,8 @@ repositories {
     }
 }
 dependencies {
-    compile 'org.openbaton:catalogue:0.15'
+    compile project(':catalogue')
+    //compile 'org.openbaton:catalogue:0.15'
 
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'com.google.code.gson:gson:2.5'
