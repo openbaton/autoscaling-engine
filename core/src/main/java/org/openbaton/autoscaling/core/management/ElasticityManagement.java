@@ -96,6 +96,13 @@ public class ElasticityManagement {
     public void deactivate(String nsr_id) throws NotFoundException {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.deactivate(nsr_id);
+        if (properties.getProperty("pool_activated", "false").equals("true")) {
+            try {
+                poolManagement.deactivate(nsr_id);
+            } catch (VimException e) {
+                log.warn(e.getMessage(), e);
+            }
+        }
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
     }
 

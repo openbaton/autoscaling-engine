@@ -58,7 +58,7 @@ public class PoolTask implements Runnable {
                 int currentPoolSize = reservedInstances.get(vnfr_id).get(vdu_id).size();
                 log.debug("Current pool size of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + currentPoolSize);
                 Set<VNFCInstance> newReservedInstances = new HashSet<>();
-                for (int i = currentPoolSize; i <= pool_size ; i++) {
+                for (int i = currentPoolSize; i < pool_size ; i++) {
                     log.debug("Allocating new reserved Instance to the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id);
                     try {
                         VNFCInstance newReservedInstance = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id);

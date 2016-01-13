@@ -9,6 +9,13 @@ import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.openbaton.catalogue.nfvo.Action;
+import org.openbaton.catalogue.nfvo.messages.Interfaces.NFVMessage;
+import org.openbaton.catalogue.nfvo.messages.OrVnfmGenericMessage;
+import org.openbaton.catalogue.nfvo.messages.VnfmOrGenericMessage;
+import org.openbaton.common.vnfm_sdk.VnfmHelper;
+import org.openbaton.common.vnfm_sdk.amqp.VnfmSpringHelperRabbit;
+import org.openbaton.common.vnfm_sdk.utils.VnfmUtils;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
@@ -54,6 +61,8 @@ public class ExecutionEngine {
     @Autowired
     private VnfrMonitor vnfrMonitor;
 
+    private VnfmHelper vnfmHelper;
+
 //    public ExecutionEngine(Properties properties) {
 //        this.properties = properties;
 //        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
@@ -64,7 +73,8 @@ public class ExecutionEngine {
     public void init() {
         this.properties = Utils.loadProperties();
         this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
-        resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
+        this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
+        this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
     }
 
     public void scaleOut(String nsr_id, String vnfr_id) throws SDKException, NotFoundException, VimException, VimDriverException {
@@ -115,7 +125,8 @@ public class ExecutionEngine {
             //throw new NotFoundException("Not found any VDU to scale out a VNFComponent. Limits are reached.");
         }
         //vnfr.setStatus(Status.ACTIVE);
-        nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
+        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
+        updateVNFR(vnfr);
     }
 
     public void scaleOutTo(String nsr_id, String vnfr_id, int value) throws SDKException, NotFoundException, VimException, VimDriverException {
@@ -191,7 +202,8 @@ public class ExecutionEngine {
         try {
             VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
             vnfr.setStatus(status);
-            nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
+            updateVNFR(vnfr);
+            //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
         } catch (SDKException e) {
             log.error(e.getMessage(), e);
         }
@@ -208,5 +220,17 @@ public class ExecutionEngine {
         vnfrIds.add(vnfr_id);
         vnfrMonitor.finishedScaling(vnfrIds);
         executionManagement.finish(vnfr_id);
+    }
+
+    public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
+        OrVnfmGenericMessage response = null;
+        try {
+            vnfmHelper.sendToNfvo(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
+            //response = (OrVnfmGenericMessage) vnfmHelper.sendToNfvo(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return null;
+        //return response.getVnfr();
     }
 }
