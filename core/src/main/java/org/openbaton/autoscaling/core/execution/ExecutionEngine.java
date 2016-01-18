@@ -72,7 +72,7 @@ public class ExecutionEngine {
     @PostConstruct
     public void init() {
         this.properties = Utils.loadProperties();
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
+        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
         this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
     }

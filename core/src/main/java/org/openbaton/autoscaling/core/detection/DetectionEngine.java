@@ -180,8 +180,8 @@ class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
 
     public EmmMonitor() {
         properties = Utils.loadProperties();
-        monitoringIp = properties.getProperty("monitoring_ip");
-        monitoringPort = properties.getProperty("monitoring_port");
+        monitoringIp = properties.getProperty("emm.monitor.ip");
+        monitoringPort = properties.getProperty("emm.monitor.port");
 
     }
 

@@ -50,15 +50,15 @@ public class PoolManagement {
     @PostConstruct
     public void init() {
         this.properties = Utils.loadProperties();
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
+        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
         this.tasks = new HashMap<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
         this.taskScheduler.initialize();
 
-        this.pool_size = Integer.parseInt(properties.getProperty("pool_size"));
-        this.pool_check_period = Integer.parseInt(properties.getProperty("pool_check_period"));
+        this.pool_size = Integer.parseInt(properties.getProperty("autoscaling.pool.size"));
+        this.pool_check_period = Integer.parseInt(properties.getProperty("autoscaling.pool.period"));
         //poolEngine = new PoolEngine(properties);
 
         reservedInstances = new HashMap<>();

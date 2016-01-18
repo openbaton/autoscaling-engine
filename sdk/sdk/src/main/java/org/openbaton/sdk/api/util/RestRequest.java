@@ -34,7 +34,7 @@ import java.util.List;
  * OpenBaton api request request abstraction for all requester. Shares common data and methods.
  */
 public abstract class RestRequest {
-    private Logger log = LoggerFactory.getLogger("cli");
+    private Logger log = LoggerFactory.getLogger(this.getClass());
     protected final String baseUrl;
 
 //	protected final String url;
@@ -369,14 +369,14 @@ public abstract class RestRequest {
 
         } catch (UnirestException e) {
             // catch request exceptions here
-            throw new SDKException("Could not http-get properly");
+            throw new SDKException("Could not http-get properly", e);
         } catch (SDKException e) {
             if (jsonResponse.getStatus() == HttpStatus.SC_UNAUTHORIZED) {
                 token = null;
                 return requestGetWithStatus(url, httpStatus, type);
             } else {
                 e.printStackTrace();
-                throw new SDKException("Could not authorize");
+                throw new SDKException("Could not authorize", e);
             }
         }
     }

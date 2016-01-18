@@ -55,7 +55,7 @@ public class ElasticityManagement {
     public void init() throws SDKException {
         properties = Utils.loadProperties();
         log.debug("Properties: " + properties.toString());
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
+        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
 //        detectionManagment.init(properties);
 //        decisionManagement.init(properties);
 //        executionManagement.init(properties);
@@ -84,7 +84,7 @@ public class ElasticityManagement {
     public void activate(String nsr_id) throws NotFoundException, VimException, VimDriverException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.activate(nsr_id);
-        if (properties.getProperty("pool_activated", "false").equals("true")) {
+        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
             log.debug("Activating pool mechanism");
             poolManagement.activate(nsr_id);
         } else {
@@ -123,7 +123,7 @@ public class ElasticityManagement {
     }
 
     private void waitForNfvo() {
-        if (!Utils.isNfvoStarted(properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"))) {
+        if (!Utils.isNfvoStarted(properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"))) {
             log.error("After 150 sec the Nfvo is not started yet. Is there an error?");
             System.exit(1); // 1 stands for the error in running nfvo TODO define error codes (doing)
         }
