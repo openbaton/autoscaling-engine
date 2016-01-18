@@ -103,23 +103,14 @@ public class PoolEngine {
     public VNFCInstance allocateNewInstance(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException {
         VNFCInstance vnfcInstance = null;
         if (vdu.getVnfc().iterator().hasNext()) {
-            VNFComponent vnfComponentCopy = vdu.getVnfc().iterator().next();
-            VNFComponent vnfComponentNew = new VNFComponent();
-            vnfComponentNew.setConnection_point(new HashSet<VNFDConnectionPoint>());
-            for (VNFDConnectionPoint vnfdConnectionPointCopy : vnfComponentCopy.getConnection_point()) {
-                VNFDConnectionPoint vnfdConnectionPointNew = new VNFDConnectionPoint();
-                vnfdConnectionPointNew.setFloatingIp(vnfdConnectionPointCopy.getFloatingIp());
-                vnfdConnectionPointNew.setVirtual_link_reference(vnfdConnectionPointCopy.getVirtual_link_reference());
-                vnfdConnectionPointNew.setType(vnfdConnectionPointCopy.getType());
-                vnfComponentNew.getConnection_point().add(vnfdConnectionPointNew);
-            }
+            VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
             Map<String, String> floatgingIps = new HashMap<>();
-            for (VNFDConnectionPoint connectionPoint : vnfComponentNew.getConnection_point()){
+            for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()){
                 if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
                     floatgingIps.put(connectionPoint.getVirtual_link_reference(),connectionPoint.getFloatingIp());
             }
             try {
-                Future<VNFCInstance> vnfcInstanceFuture = resourceManagement.allocate(vdu, vnfr, vnfComponentNew, "", floatgingIps);
+                Future<VNFCInstance> vnfcInstanceFuture = resourceManagement.allocate(vdu, vnfr, vnfComponent, "", floatgingIps);
                 vnfcInstance = vnfcInstanceFuture.get();
             } catch (VimException e) {
                 log.error(e.getMessage(), e);

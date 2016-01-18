@@ -85,23 +85,14 @@ public class ExecutionEngine {
         //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             if (properties.getProperty("pool_activated", "false").equals("false")) {
-                if (vdu.getVnfc().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
-                    VNFComponent vnfComponent_copy = vdu.getVnfc().iterator().next();
-                    VNFComponent vnfComponent_new = new VNFComponent();
-                    vnfComponent_new.setConnection_point(new HashSet<VNFDConnectionPoint>());
-                    for (VNFDConnectionPoint vnfdConnectionPoint_copy : vnfComponent_copy.getConnection_point()) {
-                        VNFDConnectionPoint vnfdConnectionPoint_new = new VNFDConnectionPoint();
-                        vnfdConnectionPoint_new.setVirtual_link_reference(vnfdConnectionPoint_copy.getVirtual_link_reference());
-                        vnfdConnectionPoint_new.setType(vnfdConnectionPoint_copy.getType());
-                        vnfdConnectionPoint_new.setFloatingIp(vnfdConnectionPoint_copy.getFloatingIp());
-                        vnfComponent_new.getConnection_point().add(vnfdConnectionPoint_new);
-                    }
+                if (vdu.getVnfc_instance().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
+                    VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
                     Map<String, String> floatgingIps = new HashMap<>();
-                    for (VNFDConnectionPoint connectionPoint : vnfComponent_new.getConnection_point()) {
+                    for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()) {
                         if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
                             floatgingIps.put(connectionPoint.getVirtual_link_reference(), connectionPoint.getFloatingIp());
                         try {
-                            vnfcInstance = resourceManagement.allocate(vdu, vnfr, vnfComponent_new, "", floatgingIps).get();
+                            vnfcInstance = resourceManagement.allocate(vdu, vnfr, vnfComponent, "", floatgingIps).get();
                         } catch (InterruptedException e) {
                             log.warn(e.getMessage(), e);
                         } catch (ExecutionException e) {
@@ -114,7 +105,6 @@ public class ExecutionEngine {
                 vnfcInstance = poolManagement.getReservedInstance(nsr_id, vnfr_id, vdu.getId());
             }
             if (vnfcInstance != null) {
-                vdu.getVnfc().add(vnfcInstance.getVnfComponent());
                 vdu.getVnfc_instance().add(vnfcInstance);
                 log.debug("SCALING: Added new Component to VDU " + vdu.getId());
                 break;
@@ -147,8 +137,8 @@ public class ExecutionEngine {
     public void scaleIn(String nsr_id, String vnfr_id) throws SDKException, NotFoundException, VimException {
         VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         VNFCInstance vnfcInstance_remove = null;
-        vnfr.setStatus(Status.SCALING);
-        nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
+        //vnfr.setStatus(Status.SCALING);
+        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
         vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
@@ -157,7 +147,6 @@ public class ExecutionEngine {
                 //nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
             }
             if (vnfcInstance_remove != null) {
-                vdu.getVnfc().remove(vnfcInstance_remove.getVnfComponent());
                 vdu.getVnfc_instance().remove((vnfcInstance_remove));
                 log.debug("SCALING: Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
                 break;
