@@ -117,18 +117,13 @@ public class DetectionManagement {
 
     public void deactivate(String nsr_id) throws NotFoundException {
         log.debug("Deactivating Alarm Detection of NSR with id: " + nsr_id);
-        NetworkServiceRecord nsr = null;
+        List<VirtualNetworkFunctionRecord> vnfrs = new ArrayList<>();
         try {
-            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+            vnfrs = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecords(nsr_id);
         } catch (SDKException e) {
             log.error(e.getMessage(), e);
-        } catch (ClassNotFoundException e) {
-            log.error(e.getMessage(), e);
         }
-        if (nsr == null) {
-            throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
-        }
-        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+        for (VirtualNetworkFunctionRecord vnfr : vnfrs) {
             deactivate(nsr_id, vnfr.getId());
         }
         log.info("Deactivated Alarm Detection of NSR with id: " + nsr_id);

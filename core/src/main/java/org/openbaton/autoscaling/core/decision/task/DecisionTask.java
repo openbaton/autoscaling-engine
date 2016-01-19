@@ -43,6 +43,8 @@ public class DecisionTask implements Runnable {
 
     @Override
     public void run() {
-        decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions(), autoScalePolicy.getCooldown());
+        if (decisionEngine.requestScaling(nsr_id, vnfr_id)) {
+            decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions(), autoScalePolicy.getCooldown());
+        }
     }
 }

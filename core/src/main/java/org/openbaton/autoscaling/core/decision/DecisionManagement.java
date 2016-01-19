@@ -46,19 +46,19 @@ public class DecisionManagement {
 
     public void decide(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
         log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        if (tasks.get(autoScalePolicy.getId()) == null) {
+        if (tasks.get(vnfr_id) == null) {
             log.debug("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
             DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties, decisionEngine);
             ScheduledFuture scheduledFuture = taskScheduler.schedule(decisionTask, new Date());
-            tasks.put(autoScalePolicy.getId(), scheduledFuture);
+            tasks.put(vnfr_id, scheduledFuture);
         } else {
-            log.debug("Processing already a decision request for this AutoScalePolicy. Cannot create another DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
+            log.debug("Processing already a decision request for this VNFR. Cannot create another DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         }
     }
 
-    public void finished(String vnfr_id, AutoScalePolicy autoScalePolicy) {
-        log.debug("Finished Decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        tasks.remove(autoScalePolicy.getId());
+    public void finished(String vnfr_id) {
+        log.debug("Finished Decision request of VNFR with id " + vnfr_id + " of VNFR with id: " + vnfr_id);
+        tasks.remove(vnfr_id);
     }
 
 }

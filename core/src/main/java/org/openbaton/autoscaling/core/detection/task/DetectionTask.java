@@ -130,13 +130,13 @@ public class DetectionTask implements Runnable {
             double finalResult = (100 * alarmsWeightFired) / alarmsWeightCount;
             log.debug("Checking if AutoScalingPolicy with id " + autoScalePolicy.getId() + " must be executed");
             if (detectionEngine.checkThreshold(autoScalePolicy.getComparisonOperator(), autoScalePolicy.getThreshold(), finalResult)) {
-                if (fired == false) {
+                //if (fired == false) {
                     log.info("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                     fired = true;
                     detectionEngine.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
-                } else {
-                    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
-                }
+                //} else {
+                //    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                //}
             } else {
                 if (fired == false) {
                     log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed -> " + finalResult + autoScalePolicy.getComparisonOperator() + autoScalePolicy.getThreshold());

@@ -14,6 +14,7 @@ dependencies {
     compile project(':repository')
     compile project(':monitoring')
     compile project(':vim-int')
+    compile project(':core-impl')
 
     //compile project(':vnfm-sdk')
     compile project(':vnfm-sdk-amqp')
