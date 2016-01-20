@@ -174,14 +174,12 @@ class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
 
     private Properties properties;
 
-    private String monitoringIp;
+    private String monitoringURL;
 
-    private String monitoringPort;
 
     public EmmMonitor() {
         properties = Utils.loadProperties();
-        monitoringIp = properties.getProperty("emm.monitor.ip");
-        monitoringPort = properties.getProperty("emm.monitor.port");
+        monitoringURL = properties.getProperty("emm.monitor.url");
 
     }
 
@@ -202,7 +200,7 @@ class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
         for (String metric : metrics) {
             for (String hostName : hostnames) {
                 try {
-                    URL url = new URL("http://" + monitoringIp + ":" + monitoringPort + "/monitor/" + hostName + "/" + metric);
+                    URL url = new URL("http://" + monitoringURL + "/monitor/" + hostName + "/" + metric);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
                     conn.setRequestProperty("Accept", "application/json");

@@ -4,6 +4,10 @@ import org.openbaton.autoscaling.core.execution.task.ExecutionTask;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.ScalingAction;
+import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
+import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -33,10 +38,12 @@ public class ExecutionManagement {
     @Autowired
     private ExecutionEngine executionEngine;
 
+    private NFVORequestor nfvoRequestor;
+
     @PostConstruct
     public void init() {
         this.properties = Utils.loadProperties();
-        //this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
+        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
         this.tasks = new HashMap<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
@@ -61,6 +68,44 @@ public class ExecutionManagement {
         if (tasks.containsKey(vnfr_id)) {
             log.debug("Finished execution of Actions for VNFR with id: " + vnfr_id);
             tasks.remove(vnfr_id);
+        }
+    }
+
+    public void stop(String nsr_id) {
+        log.debug("Stopping ExecutionTask for all VNFRs of NSR with id: " + nsr_id);
+        NetworkServiceRecord nsr = null;
+        try {
+            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        if (nsr != null && nsr.getVnfr() != null) {
+            for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+                stop(nsr_id, vnfr.getId());
+            }
+        }
+    }
+
+    public void stop(String nsr_id, String vnfr_id) {
+        log.debug("Stopping ExecutionTask for VNFR with id: " + vnfr_id);
+        if (tasks.containsKey(vnfr_id)) {
+            //tasks.get(vnfr_id).cancel(false);
+            try {
+                tasks.get(vnfr_id).get();
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            } catch (ExecutionException e) {
+                log.error(e.getMessage(), e);
+            }
+//            while (!tasks.get(vnfr_id).isDone()) {
+//                log.debug("Waiting for finishing ExecutionTask for VNFR with id: " + vnfr_id);
+//            }
+            tasks.remove(vnfr_id);
+            log.debug("Stopped ExecutionTask for VNFR with id: " + vnfr_id);
+        } else {
+            log.debug("No ExecutionTask was running for VNFR with id: " + vnfr_id);
         }
     }
 }

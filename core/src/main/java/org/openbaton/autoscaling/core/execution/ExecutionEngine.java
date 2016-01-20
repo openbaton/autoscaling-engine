@@ -1,6 +1,5 @@
 package org.openbaton.autoscaling.core.execution;
 
-import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
@@ -11,11 +10,8 @@ import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
-import org.openbaton.catalogue.nfvo.messages.Interfaces.NFVMessage;
 import org.openbaton.catalogue.nfvo.messages.OrVnfmGenericMessage;
-import org.openbaton.catalogue.nfvo.messages.VnfmOrGenericMessage;
 import org.openbaton.common.vnfm_sdk.VnfmHelper;
-import org.openbaton.common.vnfm_sdk.amqp.VnfmSpringHelperRabbit;
 import org.openbaton.common.vnfm_sdk.utils.VnfmUtils;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
@@ -23,7 +19,6 @@ import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.openbaton.vim.drivers.exceptions.VimDriverException;
-import org.openbaton.vnfm.catalogue.MediaServer;
 import org.openbaton.vnfm.core.api.MediaServerManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,51 +78,54 @@ public class ExecutionEngine {
         this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
     }
 
-    public void scaleOut(VirtualNetworkFunctionRecord vnfr) throws SDKException, NotFoundException, VimException, VimDriverException {
+    public void scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException, VimException, VimDriverException {
         //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         VNFCInstance vnfcInstance = null;
         //vnfr.setStatus(Status.SCALING);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
         //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            if (properties.getProperty("autoscaling.pool.activate", "false").equals("false")) {
-                if (vdu.getVnfc_instance().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
-                    VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
-                    Map<String, String> floatgingIps = new HashMap<>();
-                    for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()) {
-                        if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
-                            floatgingIps.put(connectionPoint.getVirtual_link_reference(), connectionPoint.getFloatingIp());
-                        try {
-                            vnfcInstance = resourceManagement.allocate(vdu, vnfr, vnfComponent, "", floatgingIps).get();
-                        } catch (InterruptedException e) {
-                            log.warn(e.getMessage(), e);
-                        } catch (ExecutionException e) {
-                            log.warn(e.getMessage(), e);
+        for (int i = 1; i <= numberOfInstances ; i++) {
+            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                if (properties.getProperty("autoscaling.pool.activate", "false").equals("false")) {
+                    if (vdu.getVnfc_instance().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
+                        VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
+                        Map<String, String> floatgingIps = new HashMap<>();
+                        for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()) {
+                            if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
+                                floatgingIps.put(connectionPoint.getVirtual_link_reference(), connectionPoint.getFloatingIp());
+                            try {
+                                vnfcInstance = resourceManagement.allocate(vdu, vnfr, vnfComponent, "", floatgingIps).get();
+                            } catch (InterruptedException e) {
+                                log.warn(e.getMessage(), e);
+                            } catch (ExecutionException e) {
+                                log.warn(e.getMessage(), e);
+                            }
+                            //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
                         }
-                        //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
                     }
+                } else {
+                    vnfcInstance = poolManagement.getReservedInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId());
                 }
-            } else {
-                vnfcInstance = poolManagement.getReservedInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId());
+                if (vnfcInstance != null) {
+                    vdu.getVnfc_instance().add(vnfcInstance);
+                    log.debug("SCALING: Added new Component to VDU " + vdu.getId());
+                    break;
+                }
             }
-            if (vnfcInstance != null) {
-                vdu.getVnfc_instance().add(vnfcInstance);
-                log.debug("SCALING: Added new Component to VDU " + vdu.getId());
-                break;
+            if (vnfcInstance == null) {
+                log.warn("Not found any VDU to scale out a VNFComponent. Limits are reached.");
+                return;
+                //throw new NotFoundException("Not found any VDU to scale out a VNFComponent. Limits are reached.");
             }
-        }
-        if (vnfcInstance == null) {
-            log.warn("Not found any VDU to scale out a VNFComponent. Limits are reached.");
-            //throw new NotFoundException("Not found any VDU to scale out a VNFComponent. Limits are reached.");
-        }
-        //vnfr.setStatus(Status.ACTIVE);
-        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
-        vnfr = updateVNFR(vnfr);
-        //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            for (VNFCInstance vnfcInstance_new : vdu.getVnfc_instance()) {
-                if (vnfcInstance_new.getHostname().equals(vnfcInstance.getHostname())) {
-                    mediaServerManagement.add(vnfr.getId(), vnfcInstance);
+            //vnfr.setStatus(Status.ACTIVE);
+            //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
+            vnfr = updateVNFR(vnfr);
+            //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                for (VNFCInstance vnfcInstance_new : vdu.getVnfc_instance()) {
+                    if (vnfcInstance_new.getHostname().equals(vnfcInstance.getHostname())) {
+                        mediaServerManagement.add(vnfr.getId(), vnfcInstance_new);
+                    }
                 }
             }
         }
@@ -139,7 +137,7 @@ public class ExecutionEngine {
             vnfci_counter += vdu.getVnfc_instance().size();
         }
         for (int i = vnfci_counter + 1; i <= value; i++) {
-            scaleOut(vnfr);
+            scaleOut(vnfr, 1);
         }
     }
 
@@ -147,30 +145,32 @@ public class ExecutionEngine {
         throw new NotImplementedException();
     }
 
-    public void scaleIn(VirtualNetworkFunctionRecord vnfr) throws SDKException, NotFoundException, VimException {
+    public void scaleIn(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException, VimException {
         //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         VNFCInstance vnfcInstance_remove = null;
         //vnfr.setStatus(Status.SCALING);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
         //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
-                vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
-                resourceManagement.release(vnfcInstance_remove, vdu.getVimInstance());
-                //nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
+        for (int i = 1; i <= numberOfInstances; i++) {
+            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
+                    vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
+                    resourceManagement.release(vnfcInstance_remove, vdu.getVimInstance());
+                    //nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
+                }
+                if (vnfcInstance_remove != null) {
+                    vdu.getVnfc_instance().remove((vnfcInstance_remove));
+                    log.debug("SCALING: Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
+                    mediaServerManagement.delete(vnfr.getId(), vnfcInstance_remove.getHostname());
+                    break;
+                }
             }
-            if (vnfcInstance_remove != null) {
-                vdu.getVnfc_instance().remove((vnfcInstance_remove));
-                log.debug("SCALING: Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
-                mediaServerManagement.delete(vnfr.getId(), vnfcInstance_remove.getHostname());
-                break;
+            if (vnfcInstance_remove == null) {
+                log.warn("Not found any VDU to scale in a VNFComponent. Limits are reached.");
+                //throw new NotFoundException("Not found any VDU to scale in a VNFComponent. Limits are reached.");
             }
+            updateVNFR(vnfr);
         }
-        if (vnfcInstance_remove == null) {
-            log.warn("Not found any VDU to scale in a VNFComponent. Limits are reached.");
-            //throw new NotFoundException("Not found any VDU to scale in a VNFComponent. Limits are reached.");
-        }
-        updateVNFR(vnfr);
     }
 
     public void scaleInTo(VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException {
@@ -179,7 +179,7 @@ public class ExecutionEngine {
             vnfci_counter += vdu.getVnfc_instance().size();
         }
         for (int i = vnfci_counter; i > value; i--) {
-            scaleIn(vnfr);
+            scaleIn(vnfr, 1);
         }
     }
 
@@ -222,14 +222,20 @@ public class ExecutionEngine {
 
     public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
         OrVnfmGenericMessage response = null;
+        log.debug("Updating VNFR on NFVO: " + vnfr);
         try {
             response = (OrVnfmGenericMessage) vnfmHelper.sendAndReceive(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
             //response = (OrVnfmGenericMessage) vnfmHelper.sendToNfvo(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        if (vnfr == null)
+        if (response.getVnfr() == null) {
+            log.error("Problems while updating VNFR on NFVO. Returned VNFR is null.");
             return vnfr;
-        return response.getVnfr();
+        } else {
+            vnfr = response.getVnfr();
+        }
+        log.debug("Updated VNFR on NFVO: " + vnfr);
+        return vnfr;
     }
 }

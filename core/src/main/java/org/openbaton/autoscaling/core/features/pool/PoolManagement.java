@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -80,12 +81,26 @@ public class PoolManagement {
             throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
         }
         //Prepare data structure
-        Map<String, Map<String, Set<VNFCInstance>>> vnfrMap = new HashMap<String, Map<String, Set<VNFCInstance>>>();
+        Map<String, Map<String, Set<VNFCInstance>>> vnfrMap;
+        if (reservedInstances.containsKey(nsr_id)) {
+            vnfrMap = reservedInstances.get(nsr_id);
+        } else {
+            vnfrMap = new HashMap<String, Map<String, Set<VNFCInstance>>>();
+        }
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            vnfrMap.put(vnfr.getId(), new HashMap<String, Set<VNFCInstance>>());
-            Map<String, Set<VNFCInstance>> vduMap = new HashMap<String, Set<VNFCInstance>>();
+            Map<String, Set<VNFCInstance>> vduMap;
+            if (vnfrMap.containsKey(vnfr.getId())) {
+                vduMap = vnfrMap.get(vnfr.getId());
+            } else {
+                vduMap = new HashMap<String, Set<VNFCInstance>>();
+            }
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                Set<VNFCInstance> vnfcInstances = new HashSet<>();
+                Set<VNFCInstance> vnfcInstances;
+                if (vduMap.containsKey(vdu.getId())) {
+                    vnfcInstances = vduMap.get(vdu.getId());
+                } else {
+                    vnfcInstances = new HashSet<>();
+                }
                 if (properties.getProperty("autoscaling.pool.prepare", "false").equals("true")) {
                     for (int i = 1; i <= pool_size; i++) {
                         try {
@@ -118,14 +133,28 @@ public class PoolManagement {
             throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
         }
         //Prepare data structure
-        Map<String, Map<String, Set<VNFCInstance>>> vnfrMap = new HashMap<String, Map<String, Set<VNFCInstance>>>();
+        Map<String, Map<String, Set<VNFCInstance>>> vnfrMap;
+        if (reservedInstances.containsKey(nsr_id)) {
+            vnfrMap = reservedInstances.get(nsr_id);
+        } else {
+            vnfrMap = new HashMap<String, Map<String, Set<VNFCInstance>>>();
+        }
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            vnfrMap.put(vnfr.getId(), new HashMap<String, Set<VNFCInstance>>());
-            Map<String, Set<VNFCInstance>> vduMap = new HashMap<String, Set<VNFCInstance>>();
+            Map<String, Set<VNFCInstance>> vduMap;
+            if (vnfrMap.containsKey(vnfr_id)) {
+                vduMap = vnfrMap.get(vnfr_id);
+            } else {
+                vduMap = new HashMap<String, Set<VNFCInstance>>();
+            }
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                Set<VNFCInstance> vnfcInstances = new HashSet<>();
+                Set<VNFCInstance> vnfcInstances;
+                if (vduMap.containsKey(vdu.getId())) {
+                    vnfcInstances = vduMap.get(vdu.getId());
+                } else {
+                    vnfcInstances = new HashSet<>();
+                }
                 if (properties.getProperty("autoscaling.pool.prepare", "false").equals("true")) {
-                    for (int i = 1; i <= pool_size; i++) {
+                    for (int i = vnfcInstances.size() + 1; i <= pool_size; i++) {
                         try {
                             vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
                         } catch (VimException e) {
@@ -145,20 +174,25 @@ public class PoolManagement {
         log.debug("Deactivating pool mechanism for NSR " + nsr_id);
         stopPoolCheck(nsr_id);
         poolEngine.releaseReservedInstances(nsr_id);
-        log.debug("Deactivated pool mechanism for NSR " + nsr_id);
+        log.info("Deactivated pool mechanism for NSR " + nsr_id);
     }
 
     public void deactivate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
         log.debug("Deactivating pool mechanism for NSR " + nsr_id);
+        if (reservedInstances.containsKey(nsr_id)) {
+            if (reservedInstances.get(nsr_id).size() == 1) {
+                stopPoolCheck(nsr_id);
+            }
+        }
         poolEngine.releaseReservedInstances(nsr_id, vnfr_id);
-        log.debug("Deactivated pool mechanism for NSR " + nsr_id);
+        log.info("Deactivated pool mechanism for NSR " + nsr_id);
     }
 
     public void deactivate(NetworkServiceRecord nsr) throws NotFoundException, VimException {
         log.debug("Deactivating pool mechanism for NSR " + nsr.getId());
         stopPoolCheck(nsr.getId());
         poolEngine.releaseReservedInstances(nsr);
-        log.debug("Deactivated pool mechanism for NSR " + nsr.getId());
+        log.info("Deactivated pool mechanism for NSR " + nsr.getId());
     }
 
     public Map<String, Map<String, Set<VNFCInstance>>> getReservedInstances(String nsr_id) {
@@ -214,9 +248,19 @@ public class PoolManagement {
     }
 
     public void stopPoolCheck(String nsr_id) {
-        log.debug("Activating Pool size checking for NSR with id: " + nsr_id);
+        log.debug("Deactivating Pool size checking for NSR with id: " + nsr_id);
         if (tasks.containsKey(nsr_id)) {
-            tasks.get(nsr_id).cancel(true);
+            tasks.get(nsr_id).cancel(false);
+            try {
+                tasks.get(nsr_id).get();
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            } catch (ExecutionException e) {
+                log.error(e.getMessage(), e);
+            }
+//            while (!tasks.get(nsr_id).isDone()) {
+//                log.debug("Waiting for finishing PoolTask for NSR with id: " + nsr_id);
+//            }
             tasks.remove(nsr_id);
         } else {
             log.debug("Not Found PoolTask for NSR with id: " + nsr_id);

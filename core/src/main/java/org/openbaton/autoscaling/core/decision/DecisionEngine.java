@@ -43,30 +43,14 @@ public class DecisionEngine {
 
     private NFVORequestor nfvoRequestor;
 
-    private ThreadPoolTaskScheduler taskScheduler;
-
-    private Map<String, ScheduledFuture> tasks;
-
     @PostConstruct
     public void init() {
         this.properties = Utils.loadProperties();
         this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("nfvo.username"), this.properties.getProperty("nfvo.password"), this.properties.getProperty("nfvo.ip"), this.properties.getProperty("nfvo.port"), "1");
-        this.tasks = new HashMap<>();
-        this.taskScheduler = new ThreadPoolTaskScheduler();
-        this.taskScheduler.setPoolSize(10);
-        this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
-        this.taskScheduler.initialize();
     }
 
     public void startDecisionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
-        if (tasks.get(vnfr_id) == null) {
-            log.debug("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-            DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties, this);
-            ScheduledFuture scheduledFuture = taskScheduler.schedule(decisionTask, new Date());
-            tasks.put(vnfr_id, scheduledFuture);
-        } else {
-            log.debug("Processing already a decision request for this VNFR. Cannot create another DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        }
+
     }
 
     public void sendDecision(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {
@@ -74,8 +58,7 @@ public class DecisionEngine {
     }
 
     public void finished(String vnfr_id) {
-        log.debug("Finished Decision request of VNFR with id " + vnfr_id + " of VNFR with id: " + vnfr_id);
-        tasks.remove(vnfr_id);
+        decisionManagement.finished(vnfr_id);
     }
 
     public Status getStatus(String nsr_id, String vnfr_id) {
