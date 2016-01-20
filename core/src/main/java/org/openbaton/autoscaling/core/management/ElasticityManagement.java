@@ -93,15 +93,36 @@ public class ElasticityManagement {
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 
+    public void activate(String nsr_id, String vnfr_id) throws NotFoundException, VimException, VimDriverException {
+        log.debug("Activating Elasticity for NSR with id: " + nsr_id);
+        detectionManagment.activate(nsr_id, vnfr_id);
+        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
+            log.debug("Activating pool mechanism");
+            poolManagement.activate(nsr_id, vnfr_id);
+        } else {
+            log.debug("pool mechanism is disabled");
+        }
+        log.info("Activated Elasticity for NSR with id: " + nsr_id);
+    }
+
     public void deactivate(String nsr_id) throws NotFoundException {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.deactivate(nsr_id);
-        if (properties.getProperty("pool_activated", "false").equals("true")) {
+        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
             try {
                 poolManagement.deactivate(nsr_id);
             } catch (VimException e) {
                 log.warn(e.getMessage(), e);
             }
+        }
+        log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
+    }
+
+    public void deactivate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
+        log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
+        detectionManagment.deactivate(nsr_id, vnfr_id);
+        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
+            poolManagement.deactivate(nsr_id, vnfr_id);
         }
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
     }

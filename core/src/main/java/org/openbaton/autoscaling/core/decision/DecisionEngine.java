@@ -1,5 +1,6 @@
 package org.openbaton.autoscaling.core.decision;
 
+import org.openbaton.autoscaling.core.decision.task.DecisionTask;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
@@ -42,29 +43,54 @@ public class DecisionEngine {
 
     private NFVORequestor nfvoRequestor;
 
+    private ThreadPoolTaskScheduler taskScheduler;
+
+    private Map<String, ScheduledFuture> tasks;
+
     @PostConstruct
     public void init() {
         this.properties = Utils.loadProperties();
         this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("nfvo.username"), this.properties.getProperty("nfvo.password"), this.properties.getProperty("nfvo.ip"), this.properties.getProperty("nfvo.port"), "1");
+        this.tasks = new HashMap<>();
+        this.taskScheduler = new ThreadPoolTaskScheduler();
+        this.taskScheduler.setPoolSize(10);
+        this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
+        this.taskScheduler.initialize();
+    }
+
+    public void startDecisionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        if (tasks.get(vnfr_id) == null) {
+            log.debug("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
+            DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties, this);
+            ScheduledFuture scheduledFuture = taskScheduler.schedule(decisionTask, new Date());
+            tasks.put(vnfr_id, scheduledFuture);
+        } else {
+            log.debug("Processing already a decision request for this VNFR. Cannot create another DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
+        }
     }
 
     public void sendDecision(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {
         executionManagement.execute(nsr_id, vnfr_id, actions, cooldown);
-        decisionManagement.finished(vnfr_id);
     }
 
-    public boolean requestScaling(String nsr_id, String vnfr_id) {
+    public void finished(String vnfr_id) {
+        log.debug("Finished Decision request of VNFR with id " + vnfr_id + " of VNFR with id: " + vnfr_id);
+        tasks.remove(vnfr_id);
+    }
+
+    public Status getStatus(String nsr_id, String vnfr_id) {
+        log.debug("Check Status of VNFR with id: " + vnfr_id);
         VirtualNetworkFunctionRecord vnfr = null;
         try {
             vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         } catch (SDKException e) {
             log.warn(e.getMessage(), e);
-            return false;
+            return Status.NULL;
         }
-        if (vnfr.getStatus() == Status.ACTIVE) {
-            return true;
+        if (vnfr == null || vnfr.getStatus() == null) {
+            return Status.NULL;
         }
-        return false;
+        return vnfr.getStatus();
     }
 
 }

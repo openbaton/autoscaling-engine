@@ -1,5 +1,6 @@
 package org.openbaton.autoscaling.core.execution;
 
+import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
@@ -82,8 +83,8 @@ public class ExecutionEngine {
         this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
     }
 
-    public void scaleOut(String nsr_id, String vnfr_id) throws SDKException, NotFoundException, VimException, VimDriverException {
-        VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+    public void scaleOut(VirtualNetworkFunctionRecord vnfr) throws SDKException, NotFoundException, VimException, VimDriverException {
+        //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         VNFCInstance vnfcInstance = null;
         //vnfr.setStatus(Status.SCALING);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
@@ -107,7 +108,7 @@ public class ExecutionEngine {
                     }
                 }
             } else {
-                vnfcInstance = poolManagement.getReservedInstance(nsr_id, vnfr_id, vdu.getId());
+                vnfcInstance = poolManagement.getReservedInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId());
             }
             if (vnfcInstance != null) {
                 vdu.getVnfc_instance().add(vnfcInstance);
@@ -121,38 +122,37 @@ public class ExecutionEngine {
         }
         //vnfr.setStatus(Status.ACTIVE);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
-        updateVNFR(vnfr);
-        vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+        vnfr = updateVNFR(vnfr);
+        //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             for (VNFCInstance vnfcInstance_new : vdu.getVnfc_instance()) {
                 if (vnfcInstance_new.getHostname().equals(vnfcInstance.getHostname())) {
-                    mediaServerManagement.add(vnfr_id, vnfcInstance);
+                    mediaServerManagement.add(vnfr.getId(), vnfcInstance);
                 }
             }
         }
     }
 
-    public void scaleOutTo(String nsr_id, String vnfr_id, int value) throws SDKException, NotFoundException, VimException, VimDriverException {
-        VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+    public void scaleOutTo(VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException, VimDriverException {
         int vnfci_counter = 0;
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             vnfci_counter += vdu.getVnfc_instance().size();
         }
         for (int i = vnfci_counter + 1; i <= value; i++) {
-            scaleOut(nsr_id, vnfr_id);
+            scaleOut(vnfr);
         }
     }
 
-    public void scaleOutToFlavour(String nsr_id, String vnfr_id, String flavour_id) throws SDKException, NotFoundException {
+    public void scaleOutToFlavour(VirtualNetworkFunctionRecord vnfr, String flavour_id) throws SDKException, NotFoundException {
         throw new NotImplementedException();
     }
 
-    public void scaleIn(String nsr_id, String vnfr_id) throws SDKException, NotFoundException, VimException {
-        VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+    public void scaleIn(VirtualNetworkFunctionRecord vnfr) throws SDKException, NotFoundException, VimException {
+        //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         VNFCInstance vnfcInstance_remove = null;
         //vnfr.setStatus(Status.SCALING);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
-        vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+        //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
                 vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
@@ -162,7 +162,7 @@ public class ExecutionEngine {
             if (vnfcInstance_remove != null) {
                 vdu.getVnfc_instance().remove((vnfcInstance_remove));
                 log.debug("SCALING: Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
-                mediaServerManagement.delete(vnfr_id, vnfcInstance_remove.getHostname());
+                mediaServerManagement.delete(vnfr.getId(), vnfcInstance_remove.getHostname());
                 break;
             }
         }
@@ -173,18 +173,17 @@ public class ExecutionEngine {
         updateVNFR(vnfr);
     }
 
-    public void scaleInTo(String nsr_id, String vnfr_id, int value) throws SDKException, NotFoundException, VimException {
-        VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+    public void scaleInTo(VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException {
         int vnfci_counter = 0;
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             vnfci_counter += vdu.getVnfc_instance().size();
         }
         for (int i = vnfci_counter; i > value; i--) {
-            scaleIn(nsr_id, vnfr_id);
+            scaleIn(vnfr);
         }
     }
 
-    public void scaleInToFlavour(String nsr_id, String vnfr_id, String flavour_id) throws SDKException, NotFoundException {
+    public void scaleInToFlavour(VirtualNetworkFunctionRecord vnfr, String flavour_id) throws SDKException, NotFoundException {
         throw new NotImplementedException();
     }
 
@@ -201,15 +200,11 @@ public class ExecutionEngine {
         }
     }
 
-    public void updateVNFRStatus(String nsr_id, String vnfr_id, Status status) {
-        try {
-            VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-            vnfr.setStatus(status);
-            updateVNFR(vnfr);
-            //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
-        } catch (SDKException e) {
-            log.error(e.getMessage(), e);
-        }
+    public VirtualNetworkFunctionRecord updateVNFRStatus(String nsr_id, String vnfr_id, Status status) throws SDKException {
+        VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+        vnfr.setStatus(status);
+        return updateVNFR(vnfr);
+        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
     }
 
     public boolean requestScaling(String vnfr_id) {
@@ -228,12 +223,13 @@ public class ExecutionEngine {
     public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
         OrVnfmGenericMessage response = null;
         try {
-            vnfmHelper.sendAndReceive(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
+            response = (OrVnfmGenericMessage) vnfmHelper.sendAndReceive(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
             //response = (OrVnfmGenericMessage) vnfmHelper.sendToNfvo(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        return null;
-        //return response.getVnfr();
+        if (vnfr == null)
+            return vnfr;
+        return response.getVnfr();
     }
 }

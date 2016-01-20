@@ -1,7 +1,6 @@
 package org.openbaton.autoscaling.core.detection;
 
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
-import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
@@ -38,9 +37,6 @@ public class DetectionManagement {
     private Properties properties;
 
     private NFVORequestor nfvoRequestor;
-
-    @Autowired
-    private VnfrMonitor vnfrMonitor;
 
     @Autowired
     private DetectionEngine detectionEngine;
@@ -117,13 +113,15 @@ public class DetectionManagement {
 
     public void deactivate(String nsr_id) throws NotFoundException {
         log.debug("Deactivating Alarm Detection of NSR with id: " + nsr_id);
-        List<VirtualNetworkFunctionRecord> vnfrs = new ArrayList<>();
+        NetworkServiceRecord nsr = null;
         try {
-            vnfrs = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecords(nsr_id);
+            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
         } catch (SDKException e) {
             log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
         }
-        for (VirtualNetworkFunctionRecord vnfr : vnfrs) {
+        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
             deactivate(nsr_id, vnfr.getId());
         }
         log.info("Deactivated Alarm Detection of NSR with id: " + nsr_id);
@@ -153,8 +151,8 @@ public class DetectionManagement {
         if (tasks.containsKey(nsr_id)) {
             if (tasks.get(nsr_id).containsKey(vnfr_id)) {
                 if (tasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
-                    tasks.get(vnfr_id);
-                    tasks.remove(vnfr_id);
+                    tasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
+                    tasks.get(nsr_id).get(vnfr_id).remove(autoScalePolicy.getId());
                     log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
                 } else {
                     log.debug("Not Found DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
@@ -165,7 +163,6 @@ public class DetectionManagement {
         } else {
             log.debug("Not Found any DetectionTasks for NSR with id: " + nsr_id);
         }
-        vnfrMonitor.removeVnfr(vnfr_id);
         log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
     }
 }

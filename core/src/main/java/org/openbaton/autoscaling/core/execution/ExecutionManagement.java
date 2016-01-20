@@ -28,9 +28,6 @@ public class ExecutionManagement {
 
     private Map<String, ScheduledFuture> tasks;
 
-    @Autowired
-    private VnfrMonitor vnfrMonitor;
-
     private Properties properties;
 
     @Autowired

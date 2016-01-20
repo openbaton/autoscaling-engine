@@ -135,9 +135,24 @@ public class PoolEngine {
         } catch (ClassNotFoundException e) {
             log.error(e.getMessage(), e);
         }
-        //Find VNFR
         if (nsr != null) {
             releaseReservedInstances(nsr);
+        } else {
+            throw new NotFoundException("Not found NSR with id: " + nsr_id);
+        }
+    }
+
+    public void releaseReservedInstances(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
+        VirtualNetworkFunctionRecord vnfr = null;
+        try {
+            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        }
+        if (vnfr != null) {
+            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                releaseReservedInstances(nsr_id, vnfr_id, vdu.getId());
+            }
         } else {
             throw new NotFoundException("Not found NSR with id: " + nsr_id);
         }

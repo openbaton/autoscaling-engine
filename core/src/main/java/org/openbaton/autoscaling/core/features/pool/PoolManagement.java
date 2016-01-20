@@ -66,7 +66,7 @@ public class PoolManagement {
 
 
     public void activate(String nsr_id) throws NotFoundException {
-        log.debug("Activating pool mechanism for VNFR " + nsr_id);
+        log.debug("Activating pool mechanism for NSR " + nsr_id);
         log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + pool_size);
         NetworkServiceRecord nsr = null;
         try {
@@ -86,11 +86,51 @@ public class PoolManagement {
             Map<String, Set<VNFCInstance>> vduMap = new HashMap<String, Set<VNFCInstance>>();
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 Set<VNFCInstance> vnfcInstances = new HashSet<>();
-                for (int i = 1; i <= pool_size ; i++) {
-                    try {
-                        vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
-                    } catch (VimException e) {
-                        log.warn(e.getMessage(), e);
+                if (properties.getProperty("autoscaling.pool.prepare", "false").equals("true")) {
+                    for (int i = 1; i <= pool_size; i++) {
+                        try {
+                            vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
+                        } catch (VimException e) {
+                            log.warn(e.getMessage(), e);
+                        }
+                    }
+                }
+                vduMap.put(vdu.getId(), vnfcInstances);
+            }
+            vnfrMap.put(vnfr.getId(), vduMap);
+        }
+        reservedInstances.put(nsr_id, vnfrMap);
+        startPoolCheck(nsr_id);
+    }
+
+    public void activate(String nsr_id, String vnfr_id) throws NotFoundException {
+        log.debug("Activating pool mechanism for VNFR " + vnfr_id);
+        log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + pool_size);
+        NetworkServiceRecord nsr = null;
+        try {
+            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        if (nsr == null) {
+            throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
+        }
+        //Prepare data structure
+        Map<String, Map<String, Set<VNFCInstance>>> vnfrMap = new HashMap<String, Map<String, Set<VNFCInstance>>>();
+        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+            vnfrMap.put(vnfr.getId(), new HashMap<String, Set<VNFCInstance>>());
+            Map<String, Set<VNFCInstance>> vduMap = new HashMap<String, Set<VNFCInstance>>();
+            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                Set<VNFCInstance> vnfcInstances = new HashSet<>();
+                if (properties.getProperty("autoscaling.pool.prepare", "false").equals("true")) {
+                    for (int i = 1; i <= pool_size; i++) {
+                        try {
+                            vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
+                        } catch (VimException e) {
+                            log.warn(e.getMessage(), e);
+                        }
                     }
                 }
                 vduMap.put(vdu.getId(), vnfcInstances);
@@ -105,6 +145,12 @@ public class PoolManagement {
         log.debug("Deactivating pool mechanism for NSR " + nsr_id);
         stopPoolCheck(nsr_id);
         poolEngine.releaseReservedInstances(nsr_id);
+        log.debug("Deactivated pool mechanism for NSR " + nsr_id);
+    }
+
+    public void deactivate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
+        log.debug("Deactivating pool mechanism for NSR " + nsr_id);
+        poolEngine.releaseReservedInstances(nsr_id, vnfr_id);
         log.debug("Deactivated pool mechanism for NSR " + nsr_id);
     }
 

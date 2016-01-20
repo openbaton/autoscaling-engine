@@ -2,6 +2,7 @@ package org.openbaton.autoscaling.core.decision.task;
 
 import org.openbaton.autoscaling.core.decision.DecisionEngine;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
+import org.openbaton.catalogue.mano.record.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -43,8 +44,13 @@ public class DecisionTask implements Runnable {
 
     @Override
     public void run() {
-        if (decisionEngine.requestScaling(nsr_id, vnfr_id)) {
+        log.debug("Requested Decision-making for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
+        if (decisionEngine.getStatus(nsr_id, vnfr_id) == Status.ACTIVE) {
+            log.debug("Status is ACTIVE. So send actions to ExecutionEngine");
             decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions(), autoScalePolicy.getCooldown());
+        } else {
+            log.debug("Status is not ACTIVE. So do not send actions to ExecutionEngine. Do nothing!");
         }
+        decisionEngine.finished(vnfr_id);
     }
 }

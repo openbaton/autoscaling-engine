@@ -61,27 +61,36 @@ public class ExecutionTask implements Runnable {
         if (executionEngine.requestScaling(vnfr_id) == false) {
             log.warn("Scaling request was rejected by the ExecutionEngine. The VNFR is currently either in SCALING or COOLDOWN period. Actions will not be executed for VNFR " + vnfr_id);
         }
-        executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.SCALING);
+        VirtualNetworkFunctionRecord vnfr = null;
+        try {
+            vnfr = executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.SCALING);
+        } catch (SDKException e) {
+            log.error("Problems with SDK. Cannot update the VNFR. Scaling will not be executed");
+            if (log.isDebugEnabled()) {
+                log.error(e.getMessage(), e);
+            }
+            return;
+        }
         for (ScalingAction action : actions) {
             try {
                 switch (action.getType()) {
                     case SCALE_OUT:
-                        executionEngine.scaleOut(nsr_id, vnfr_id);
+                        executionEngine.scaleOut(vnfr);
                         break;
                     case SCALE_OUT_TO:
-                        executionEngine.scaleOutTo(nsr_id, vnfr_id, Integer.parseInt(action.getValue()));
+                        executionEngine.scaleOutTo(vnfr, Integer.parseInt(action.getValue()));
                         break;
                     case SCALE_OUT_TO_FLAVOUR:
-                        executionEngine.scaleOutToFlavour(nsr_id, vnfr_id, action.getValue());
+                        executionEngine.scaleOutToFlavour(vnfr, action.getValue());
                         break;
                     case SCALE_IN:
-                        executionEngine.scaleIn(nsr_id, vnfr_id);
+                        executionEngine.scaleIn(vnfr);
                         break;
                     case SCALE_IN_TO:
-                        executionEngine.scaleInTo(nsr_id, vnfr_id, Integer.parseInt(action.getValue()));
+                        executionEngine.scaleInTo(vnfr, Integer.parseInt(action.getValue()));
                         break;
                     case SCALE_IN_TO_FLAVOUR:
-                        executionEngine.scaleInToFlavour(nsr_id, vnfr_id, action.getValue());
+                        executionEngine.scaleInToFlavour(vnfr, action.getValue());
                         break;
                     default:
                         break;
@@ -91,11 +100,18 @@ public class ExecutionTask implements Runnable {
             } catch (NotFoundException e) {
                 log.error(e.getMessage(), e);
             } catch (VimException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             } catch (VimDriverException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             } finally {
-                executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
+                try {
+                    executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
+                } catch (SDKException e) {
+                    log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in SCALING");
+                    if (log.isDebugEnabled()) {
+                        log.error(e.getMessage(), e);
+                    }
+                }
                 executionEngine.waitForCooldown(vnfr_id, cooldown);
                 executionEngine.finishedScaling(vnfr_id);
             }

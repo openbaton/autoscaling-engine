@@ -25,40 +25,18 @@ public class DecisionManagement {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private ThreadPoolTaskScheduler taskScheduler;
-
-    private Map<String, ScheduledFuture> tasks;
-
-    private Properties properties;
+    //private Properties properties;
 
     @Autowired
     private DecisionEngine decisionEngine;
 
     @PostConstruct
     public void init() {
-        this.properties = Utils.loadProperties();
-        this.tasks = new HashMap<>();
-        this.taskScheduler = new ThreadPoolTaskScheduler();
-        this.taskScheduler.setPoolSize(10);
-        this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
-        this.taskScheduler.initialize();
+        //this.properties = Utils.loadProperties();
     }
 
     public void decide(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
         log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        if (tasks.get(vnfr_id) == null) {
-            log.debug("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-            DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties, decisionEngine);
-            ScheduledFuture scheduledFuture = taskScheduler.schedule(decisionTask, new Date());
-            tasks.put(vnfr_id, scheduledFuture);
-        } else {
-            log.debug("Processing already a decision request for this VNFR. Cannot create another DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        }
+        decisionEngine.startDecisionTask(nsr_id, vnfr_id, autoScalePolicy);
     }
-
-    public void finished(String vnfr_id) {
-        log.debug("Finished Decision request of VNFR with id " + vnfr_id + " of VNFR with id: " + vnfr_id);
-        tasks.remove(vnfr_id);
-    }
-
 }
