@@ -19,8 +19,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by mpa on 27.10.15.
@@ -33,7 +33,9 @@ public class PoolManagement {
 
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Map<String, ScheduledFuture> tasks;
+    private Map<String, ScheduledFuture> poolTasks;
+
+    private Set<String> terminatingTasks;
 
     private NFVORequestor nfvoRequestor;
 
@@ -52,10 +54,12 @@ public class PoolManagement {
     public void init() {
         this.properties = Utils.loadProperties();
         this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
-        this.tasks = new HashMap<>();
+        this.poolTasks = new HashMap<>();
+        this.terminatingTasks = new HashSet<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
+        this.taskScheduler.setRemoveOnCancelPolicy(true);
         this.taskScheduler.initialize();
 
         this.pool_size = Integer.parseInt(properties.getProperty("autoscaling.pool.size"));
@@ -236,12 +240,12 @@ public class PoolManagement {
 
     public void startPoolCheck(String nsr_id) throws NotFoundException {
         log.debug("Activating Pool size checking for NSR with id: " + nsr_id);
-        if (!tasks.containsKey(nsr_id)) {
+        if (!poolTasks.containsKey(nsr_id)) {
             log.debug("Creating new PoolTask for NSR with id: " + nsr_id);
             PoolTask poolTask = new PoolTask(nsr_id, pool_size, poolEngine);
             ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(poolTask, pool_check_period * 1000);
             log.debug("Activated Pool size checking for NSR with id: " + nsr_id);
-            tasks.put(nsr_id, scheduledFuture);
+            poolTasks.put(nsr_id, scheduledFuture);
         } else {
             log.debug("Pool size checking of NSR with id: " + nsr_id + " were already activated");
         }
@@ -249,22 +253,43 @@ public class PoolManagement {
 
     public void stopPoolCheck(String nsr_id) {
         log.debug("Deactivating Pool size checking for NSR with id: " + nsr_id);
-        if (tasks.containsKey(nsr_id)) {
-            tasks.get(nsr_id).cancel(false);
-            try {
-                tasks.get(nsr_id).get();
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-            } catch (ExecutionException e) {
-                log.error(e.getMessage(), e);
+        if (poolTasks.containsKey(nsr_id)) {
+            terminate(nsr_id);
+            while (poolTasks.containsKey(nsr_id)) {
+                log.debug("Waiting for finishing PoolTask for NSR with id: " + nsr_id);
+                try {
+                    Thread.sleep(3_000);
+                } catch (InterruptedException e) {
+                    log.error(e.getMessage(), e);
+                }
             }
-//            while (!tasks.get(nsr_id).isDone()) {
-//                log.debug("Waiting for finishing PoolTask for NSR with id: " + nsr_id);
-//            }
-            tasks.remove(nsr_id);
         } else {
             log.debug("Not Found PoolTask for NSR with id: " + nsr_id);
         }
         log.debug("Deactivated Pool size checking for NSR with id: " + nsr_id);
     }
+
+    public void terminate(String nsr_id) {
+        if (poolTasks.containsKey(nsr_id)) {
+            poolTasks.get(nsr_id).cancel(false);
+            terminatingTasks.add(nsr_id);
+
+        }
+    }
+
+    public boolean isTerminating(String nsr_id) {
+        if (terminatingTasks.contains(nsr_id)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void terminated(String nsr_id) {
+        if (poolTasks.containsKey(nsr_id)) {
+            poolTasks.remove(nsr_id);
+            terminatingTasks.remove(nsr_id);
+        }
+    }
+
 }

@@ -50,11 +50,23 @@ public class PoolTask implements Runnable {
 
     @Override
     public void run() {
+        if (poolEngine.isTerminating(nsr_id)) {
+            poolEngine.terminated(nsr_id);
+            return;
+        }
         log.debug("Checking the pool of reserved VNFCInstances for NSR with id: " + nsr_id);
         Map<String, Map<String, Set<VNFCInstance>>> reservedInstances = poolEngine.getReservedInstances(nsr_id);
         log.debug("Currently reserved VNFCInstances: " + reservedInstances);
         for (String vnfr_id : reservedInstances.keySet()) {
+            if (poolEngine.isTerminating(nsr_id)) {
+                poolEngine.terminated(nsr_id);
+                return;
+            }
             for (String vdu_id : reservedInstances.get(vnfr_id).keySet()) {
+                if (poolEngine.isTerminating(nsr_id)) {
+                    poolEngine.terminated(nsr_id);
+                    return;
+                }
                 int currentPoolSize = reservedInstances.get(vnfr_id).get(vdu_id).size();
                 log.debug("Current pool size of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + currentPoolSize);
                 Set<VNFCInstance> newReservedInstances = new HashSet<>();
@@ -72,6 +84,10 @@ public class PoolTask implements Runnable {
                 }
                 reservedInstances.get(vnfr_id).get(vdu_id).addAll(newReservedInstances);
             }
+        }
+        if (poolEngine.isTerminating(nsr_id)) {
+            poolEngine.terminated(nsr_id);
+            return;
         }
     }
 }

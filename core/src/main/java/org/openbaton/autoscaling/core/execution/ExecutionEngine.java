@@ -187,17 +187,29 @@ public class ExecutionEngine {
         throw new NotImplementedException();
     }
 
-    public void waitForCooldown(String vnfr_id, long cooldown) {
+    public void startCooldown(String nsr_id, String vnfr_id, long cooldown) {
         List<String> vnfrIds = new ArrayList<>();
         vnfrIds.add(vnfr_id);
-        try {
-            vnfrMonitor.startCooldown(vnfrIds);
-            log.debug("Starting cooldown period (" + cooldown + "s) for VNFR: " + vnfr_id);
-            Thread.sleep(cooldown * 1000);
-            log.debug("Finished cooldown period (" + cooldown + "s) for VNFR: " + vnfr_id);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        vnfrMonitor.startCooldown(vnfrIds);
+        executionManagement.executeCooldown(nsr_id, vnfr_id, cooldown);
+//        List<String> vnfrIds = new ArrayList<>();
+//        vnfrIds.add(vnfr_id);
+//        try {
+//            vnfrMonitor.startCooldown(vnfrIds);
+//            log.debug("Starting cooldown period (" + cooldown + "s) for VNFR: " + vnfr_id);
+//            Thread.sleep(cooldown * 1000);
+//            log.debug("Finished cooldown period (" + cooldown + "s) for VNFR: " + vnfr_id);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+    }
+
+    public void finishedCooldown(String nsr_id, String vnfr_id) {
+        executionManagement.finishedCooldown(nsr_id, vnfr_id);
+        List<String> vnfrIds = new ArrayList<>();
+        vnfrIds.add(vnfr_id);
+        vnfrMonitor.finishedScaling(vnfrIds);
+        executionManagement.finishedScaling(vnfr_id);
     }
 
     public VirtualNetworkFunctionRecord updateVNFRStatus(String nsr_id, String vnfr_id, Status status) throws SDKException {
@@ -211,13 +223,6 @@ public class ExecutionEngine {
         List<String> vnfrIds = new ArrayList<>();
         vnfrIds.add(vnfr_id);
         return vnfrMonitor.requestScaling(vnfrIds);
-    }
-
-    public void finishedScaling(String vnfr_id) {
-        List<String> vnfrIds = new ArrayList<>();
-        vnfrIds.add(vnfr_id);
-        vnfrMonitor.finishedScaling(vnfrIds);
-        executionManagement.finish(vnfr_id);
     }
 
     public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
@@ -238,4 +243,13 @@ public class ExecutionEngine {
         log.debug("Updated VNFR on NFVO: " + vnfr);
         return vnfr;
     }
+
+    public boolean isTerminating(String vnfr_id) {
+        return executionManagement.isTerminating(vnfr_id);
+    }
+
+    public void terminated(String vnfr_id) {
+        executionManagement.terminated(vnfr_id);
+    }
+
 }

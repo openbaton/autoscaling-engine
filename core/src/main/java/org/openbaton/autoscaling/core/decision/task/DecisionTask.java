@@ -44,9 +44,17 @@ public class DecisionTask implements Runnable {
 
     @Override
     public void run() {
+        if (decisionEngine.isTerminating(vnfr_id)) {
+            decisionEngine.terminated(vnfr_id);
+            return;
+        }
         log.debug("Requested Decision-making for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         if (decisionEngine.getStatus(nsr_id, vnfr_id) == Status.ACTIVE) {
             log.debug("Status is ACTIVE. So send actions to ExecutionEngine");
+            if (decisionEngine.isTerminating(vnfr_id)) {
+                decisionEngine.terminated(vnfr_id);
+                return;
+            }
             decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions(), autoScalePolicy.getCooldown());
         } else {
             log.debug("Status is not ACTIVE. So do not send actions to ExecutionEngine. Do nothing!");

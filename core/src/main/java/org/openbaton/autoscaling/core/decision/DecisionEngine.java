@@ -54,7 +54,7 @@ public class DecisionEngine {
     }
 
     public void sendDecision(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {
-        executionManagement.execute(nsr_id, vnfr_id, actions, cooldown);
+        executionManagement.executeActions(nsr_id, vnfr_id, actions, cooldown);
     }
 
     public void finished(String vnfr_id) {
@@ -76,4 +76,11 @@ public class DecisionEngine {
         return vnfr.getStatus();
     }
 
+    public boolean isTerminating(String vnfr_id) {
+        return decisionManagement.isTerminating(vnfr_id);
+    }
+
+    public void terminated(String vnfr_id) {
+        decisionManagement.terminated(vnfr_id);
+    }
 }

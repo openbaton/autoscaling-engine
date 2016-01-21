@@ -251,4 +251,13 @@ public class PoolEngine {
     public Map<String, Map<String, Set<VNFCInstance>>> getReservedInstances(String nsr_id) {
         return poolManagement.getReservedInstances(nsr_id);
     }
+
+    public boolean isTerminating(String nsr_id) {
+        return poolManagement.isTerminating(nsr_id);
+    }
+
+    public void terminated(String nsr_id) {
+        poolManagement.terminated(nsr_id);
+    }
+
 }

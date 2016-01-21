@@ -44,7 +44,7 @@ public class DetectionEngine {
     private VirtualisedResourcesPerformanceManagement monitor;
 
     @Autowired
-    private DecisionManagement decisionManagement;
+    private DetectionManagement detectionManagement;
 
     @PostConstruct
     public void init() {
@@ -164,8 +164,17 @@ public class DetectionEngine {
     }
 
     public void sendAlarm(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
-        decisionManagement.decide(nsr_id, vnfr_id, autoScalePolicy);
+        detectionManagement.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
     }
+
+    public boolean isTerminating(String autoScalePolicyId) {
+        return detectionManagement.isTerminating(autoScalePolicyId);
+    }
+
+    public void terminated(String autoScalePolicyId) {
+        detectionManagement.terminated(autoScalePolicyId);
+    }
+
 }
 
 class EmmMonitor implements VirtualisedResourcesPerformanceManagement{

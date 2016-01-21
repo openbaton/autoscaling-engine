@@ -89,6 +89,10 @@ public class DetectionTask implements Runnable {
 
     @Override
     public void run() {
+        if (detectionEngine.isTerminating(autoScalePolicy.getId())) {
+            detectionEngine.terminated(autoScalePolicy.getId());
+            return;
+        }
         double alarmsWeightFired = 0;
         double alarmsWeightCount = 0;
         if (first_time == true) {
@@ -100,6 +104,10 @@ public class DetectionTask implements Runnable {
                 log.error(e.getMessage(), e);
             }
         }
+        if (detectionEngine.isTerminating(autoScalePolicy.getId())) {
+            detectionEngine.terminated(autoScalePolicy.getId());
+            return;
+        }
         log.debug("DetectionTask: Checking AutoScalingPolicy " + autoScalePolicy.getName() + " with id: " + autoScalePolicy.getId() + " VNFR with id: " + vnfr_id);
         VirtualNetworkFunctionRecord vnfr = null;
         try {
@@ -107,8 +115,13 @@ public class DetectionTask implements Runnable {
         } catch (SDKException e) {
             log.error(e.getMessage());
         }
+
         if (vnfr != null) {
             for (ScalingAlarm alarm : autoScalePolicy.getAlarms()) {
+                if (detectionEngine.isTerminating(autoScalePolicy.getId())) {
+                    detectionEngine.terminated(autoScalePolicy.getId());
+                    return;
+                }
                 alarmsWeightCount =+ alarm.getWeight();
                 List<Item> measurementResults = null;
                 try {
@@ -129,6 +142,10 @@ public class DetectionTask implements Runnable {
             //Check if Alarm must be fired for this AutoScalingPolicy
             double finalResult = (100 * alarmsWeightFired) / alarmsWeightCount;
             log.debug("Checking if AutoScalingPolicy with id " + autoScalePolicy.getId() + " must be executed");
+            if (detectionEngine.isTerminating(autoScalePolicy.getId())) {
+                detectionEngine.terminated(autoScalePolicy.getId());
+                return;
+            }
             if (detectionEngine.checkThreshold(autoScalePolicy.getComparisonOperator(), autoScalePolicy.getThreshold(), finalResult)) {
                 //if (fired == false) {
                     log.info("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);

@@ -58,6 +58,10 @@ public class ExecutionTask implements Runnable {
 
     @Override
     public void run() {
+        if (executionEngine.isTerminating(vnfr_id)) {
+            executionEngine.terminated(vnfr_id);
+            return;
+        }
         if (executionEngine.requestScaling(vnfr_id) == false) {
             log.warn("Scaling request was rejected by the ExecutionEngine. The VNFR is currently either in SCALING or COOLDOWN period. Actions will not be executed for VNFR " + vnfr_id);
         }
@@ -69,6 +73,10 @@ public class ExecutionTask implements Runnable {
             if (log.isDebugEnabled()) {
                 log.error(e.getMessage(), e);
             }
+            return;
+        }
+        if (executionEngine.isTerminating(vnfr_id)) {
+            executionEngine.terminated(vnfr_id);
             return;
         }
         for (ScalingAction action : actions) {
@@ -112,8 +120,7 @@ public class ExecutionTask implements Runnable {
                         log.error(e.getMessage(), e);
                     }
                 }
-                executionEngine.waitForCooldown(vnfr_id, cooldown);
-                executionEngine.finishedScaling(vnfr_id);
+                executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
             }
         }
     }
