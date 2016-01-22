@@ -187,7 +187,6 @@ public class DetectionManagement {
         } else {
             log.debug("Not Found any DetectionTasks for NSR with id: " + nsr_id);
         }
-        log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
     }
 
     public void sendAlarm(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {

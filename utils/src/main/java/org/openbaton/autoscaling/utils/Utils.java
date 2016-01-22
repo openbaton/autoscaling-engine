@@ -1,5 +1,9 @@
 package org.openbaton.autoscaling.utils;
 
+import org.openbaton.catalogue.nfvo.VimInstance;
+import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -11,6 +15,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -90,4 +96,31 @@ public class Utils {
             }
         }
     }
+
+    public static VimInstance getVimInstance(String name, List<VimInstance> vimInstances) throws NotFoundException {
+        for (VimInstance vimInstance : vimInstances) {
+            if (vimInstance.getName().equals(name)) {
+                return vimInstance;
+            }
+        }
+        throw new NotFoundException("VimInstance with name: " + name + " was not found in the provided list of VimInstances.");
+    }
+
+    public static VimInstance getVimInstance(String name, NFVORequestor nfvoRequestor) throws NotFoundException {
+        List<VimInstance> vimInstances = new ArrayList<>();
+        try {
+            vimInstances = nfvoRequestor.getVimInstanceAgent().findAll();
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        for (VimInstance vimInstance : vimInstances) {
+            if (vimInstance.getName().equals(name)) {
+                return vimInstance;
+            }
+        }
+        throw new NotFoundException("VimInstance with name: " + name + " was not found in the provided list of VimInstances.");
+    }
+
 }

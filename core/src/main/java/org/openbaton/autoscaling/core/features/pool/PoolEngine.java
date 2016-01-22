@@ -7,12 +7,13 @@ import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.openbaton.catalogue.nfvo.VimInstance;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimDriverException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,9 +101,11 @@ public class PoolEngine {
         return allocateNewInstance(nsr, vnfr, vdu);
     }
 
-    public VNFCInstance allocateNewInstance(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException {
+    public VNFCInstance allocateNewInstance(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException, NotFoundException {
         VNFCInstance vnfcInstance = null;
-        if (vdu.getVnfc().iterator().hasNext()) {
+        int reservedInstances = getNumberOfReservedInstances(nsr.getId(), vnfr.getId(), vdu.getId());
+        if ((vdu.getVnfc_instance().size() + reservedInstances < vdu.getScale_in_out()) && vdu.getVnfc().iterator().hasNext()) {
+            VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
             VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
             Map<String, String> floatgingIps = new HashMap<>();
             for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()){
@@ -110,20 +113,21 @@ public class PoolEngine {
                     floatgingIps.put(connectionPoint.getVirtual_link_reference(),connectionPoint.getFloatingIp());
             }
             try {
-                Future<VNFCInstance> vnfcInstanceFuture = resourceManagement.allocate(vdu, vnfr, vnfComponent, "", floatgingIps);
+                Future<VNFCInstance> vnfcInstanceFuture = resourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent, "", floatgingIps);
                 vnfcInstance = vnfcInstanceFuture.get();
             } catch (VimException e) {
-                log.error(e.getMessage(), e);
-            } catch (VimDriverException e) {
                 log.error(e.getMessage(), e);
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
             } catch (ExecutionException e) {
                 log.error(e.getMessage(), e);
+            } catch (VimDriverException e) {
+                log.error(e.getMessage(), e);
             }
-            return vnfcInstance;
+        } else {
+            log.warn("Not able to allocate new VNFCInstance for the Pool. Maximum number of VNFCInstances for VDU with id: " + vdu.getId() + " is reached");
         }
-        throw new VimException("Not able to allocate new VNFCInstance for the Pool");
+        return vnfcInstance;
     }
 
     public void releaseReservedInstances(String nsr_id) throws NotFoundException, VimException {
@@ -213,7 +217,11 @@ public class PoolEngine {
         if (!poolManagement.getReservedInstances(nsr.getId()).isEmpty()) {
             if (poolManagement.getReservedInstances(nsr.getId()).containsKey(vnfr.getId())) {
                 for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                    releaseReservedInstances(nsr, vnfr, vdu);
+                    try {
+                        releaseReservedInstances(nsr, vnfr, vdu);
+                    } catch (NotFoundException e) {
+                        log.error(e.getMessage(), e);
+                    }
                 }
                 poolManagement.getReservedInstances(nsr.getId()).remove(vnfr.getId());
             } else {
@@ -225,15 +233,16 @@ public class PoolEngine {
 
     }
 
-    public void releaseReservedInstances(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException {
+    public void releaseReservedInstances(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException, NotFoundException {
         log.info("Releasing reserved Instances of NSR with id: " + nsr.getId() + " of VNFR with id: " + vnfr.getId() + " of VDU with id: " + vdu.getId());
         if (!poolManagement.getReservedInstances(nsr.getId()).isEmpty()) {
             if (poolManagement.getReservedInstances(nsr.getId()).containsKey(vnfr.getId())) {
                 if (poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).containsKey(vdu.getId())) {
                     if (poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).get(vdu.getId()) != null) {
                         Set<VNFCInstance> vnfcInstances = poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).get(vdu.getId());
+                        VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                         for (VNFCInstance vnfcInstance : vnfcInstances) {
-                            resourceManagement.release(vnfcInstance, vdu.getVimInstance());
+                            resourceManagement.release(vnfcInstance, vimInstance);
                         }
                         poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).remove(vdu.getId());
                     }
@@ -250,5 +259,15 @@ public class PoolEngine {
 
     public Map<String, Map<String, Set<VNFCInstance>>> getReservedInstances(String nsr_id) {
         return poolManagement.getReservedInstances(nsr_id);
+    }
+
+    public int getNumberOfReservedInstances(String nsr_id, String vnfr_id, String vdu_id) {
+        Map<String, Map<String, Set<VNFCInstance>>> reservedInstances = getReservedInstances(nsr_id);
+        if (reservedInstances.containsKey(vnfr_id)) {
+            if (reservedInstances.get(vnfr_id).containsKey(vdu_id)) {
+                return reservedInstances.get(vnfr_id).get(vdu_id).size();
+            }
+        }
+        return 0;
     }
 }

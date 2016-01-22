@@ -1,4 +1,8 @@
 dependencies {
+    compile project(':catalogue')
+    compile project(':exception')
+    compile project(':sdk')
+
     compile 'org.slf4j:slf4j-api:1.6.1'
 
     compile 'org.springframework:spring-core:4.0.0.RELEASE'

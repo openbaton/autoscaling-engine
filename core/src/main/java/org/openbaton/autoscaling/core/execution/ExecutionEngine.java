@@ -10,15 +10,16 @@ import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
+import org.openbaton.catalogue.nfvo.VimInstance;
 import org.openbaton.catalogue.nfvo.messages.OrVnfmGenericMessage;
 import org.openbaton.common.vnfm_sdk.VnfmHelper;
 import org.openbaton.common.vnfm_sdk.utils.VnfmUtils;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimDriverException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.openbaton.vnfm.core.api.MediaServerManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,8 +57,7 @@ public class ExecutionEngine {
     @Autowired
     private PoolManagement poolManagement;
 
-    @Autowired
-    private ActionMonitor scalingMonitor;
+    private ActionMonitor actionMonitor;
 
     private VnfmHelper vnfmHelper;
 
@@ -78,30 +78,46 @@ public class ExecutionEngine {
         this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
     }
 
-    public void scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException, VimException, VimDriverException {
+    public void setActionMonitor(ActionMonitor actionMonitor) {
+        this.actionMonitor = actionMonitor;
+    }
+
+    public void scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException, VimException {
         //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         VNFCInstance vnfcInstance = null;
         //vnfr.setStatus(Status.SCALE);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
         //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (int i = 1; i <= numberOfInstances ; i++) {
+            if (actionMonitor.isTerminating(vnfr.getId())) {
+                actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
+                return;
+            }
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 if (properties.getProperty("autoscaling.pool.activate", "false").equals("false")) {
+                    VimInstance vimInstance = null;
                     if (vdu.getVnfc_instance().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
+                        if (vimInstance == null) {
+                            vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
+                        }
                         VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
                         Map<String, String> floatgingIps = new HashMap<>();
                         for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()) {
                             if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
                                 floatgingIps.put(connectionPoint.getVirtual_link_reference(), connectionPoint.getFloatingIp());
                             try {
-                                vnfcInstance = resourceManagement.allocate(vdu, vnfr, vnfComponent, "", floatgingIps).get();
+                                vnfcInstance = resourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent, "", floatgingIps).get();
                             } catch (InterruptedException e) {
                                 log.warn(e.getMessage(), e);
                             } catch (ExecutionException e) {
                                 log.warn(e.getMessage(), e);
+                            } catch (VimDriverException e) {
+                                log.error(e.getMessage(), e);
                             }
                             //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
                         }
+                    } else {
+                        log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");
                     }
                 } else {
                     vnfcInstance = poolManagement.getReservedInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId());
@@ -109,6 +125,7 @@ public class ExecutionEngine {
                 if (vnfcInstance != null) {
                     vdu.getVnfc_instance().add(vnfcInstance);
                     log.debug("SCALE: Added new Component to VDU " + vdu.getId());
+                    actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
                     break;
                 }
             }
@@ -152,10 +169,19 @@ public class ExecutionEngine {
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
         //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (int i = 1; i <= numberOfInstances; i++) {
+            if (actionMonitor.isTerminating(vnfr.getId())) {
+                actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
+                return;
+            }
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                VimInstance vimInstance = null;
                 if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
+                    if (vimInstance == null) {
+                        vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
+                    }
                     vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
-                    resourceManagement.release(vnfcInstance_remove, vdu.getVimInstance());
+                    resourceManagement.release(vnfcInstance_remove, vimInstance);
+                    actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
                     //nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
                 }
                 if (vnfcInstance_remove != null) {

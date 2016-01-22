@@ -1,20 +1,20 @@
 package org.openbaton.autoscaling.core.execution.task;
 
+import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.core.execution.ExecutionEngine;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.messages.Interfaces.NFVMessage;
 import org.openbaton.catalogue.nfvo.messages.OrVnfmScalingMessage;
 import org.openbaton.catalogue.nfvo.messages.VnfmOrGenericMessage;
 import org.openbaton.common.vnfm_sdk.VnfmHelper;
 import org.openbaton.common.vnfm_sdk.amqp.VnfmSpringHelperRabbit;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimDriverException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -103,18 +103,22 @@ public class ExecutionTask implements Runnable {
             log.error(e.getMessage(), e);
         }catch(VimException e){
             log.error(e.getMessage(), e);
-        }catch(VimDriverException e) {
-            log.error(e.getMessage(), e);
+        } catch (VimDriverException e) {
+            e.printStackTrace();
         } finally {
             try {
                 executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
             } catch (SDKException e) {
-                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in SCALE");
+                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in in SCALE");
                 if (log.isDebugEnabled()) {
                     log.error(e.getMessage(), e);
-                    }
+                }
             }
-            executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
+            if (actionMonitor.getAction(vnfr_id) == Action.SCALED) {
+                executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
+            } else {
+                actionMonitor.finishedAction(vnfr_id);
+            }
         }
     }
 }

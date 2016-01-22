@@ -45,6 +45,7 @@ public class ExecutionManagement {
     public void init() {
         this.properties = Utils.loadProperties();
         this.actionMonitor = new ActionMonitor();
+        this.executionEngine.setActionMonitor(actionMonitor);
         this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
@@ -102,13 +103,14 @@ public class ExecutionManagement {
                 stop(nsr_id, vnfr.getId());
             }
         }
+        log.debug("Stopped all ExecutionTasks for NSR with id: " + nsr_id);
     }
 
     public void stop(String nsr_id, String vnfr_id) {
         log.debug("Stopping ExecutionTask/CooldownTask for VNFR with id: " + vnfr_id);
-        while (!actionMonitor.isTerminated(vnfr_id)) {
+        while (!actionMonitor.isTerminated(vnfr_id) && actionMonitor.getAction(vnfr_id) != Action.INACTIVE) {
             actionMonitor.terminate(vnfr_id);
-            log.debug("Waiting for finishing ExecutionTask for VNFR with id: " + vnfr_id);
+            log.debug("Waiting for finishing ExecutionTask/Cooldown for VNFR with id: " + vnfr_id);
             try {
                 Thread.sleep(5_000);
             } catch (InterruptedException e) {

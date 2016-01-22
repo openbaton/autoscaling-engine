@@ -165,7 +165,10 @@ public class PoolManagement {
                 if (properties.getProperty("autoscaling.pool.prepare", "false").equals("true")) {
                     for (int i = vnfcInstances.size() + 1; i <= pool_size; i++) {
                         try {
-                            vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
+                            VNFCInstance vnfcInstance = poolEngine.allocateNewInstance(nsr, vnfr, vdu);
+                            if (vnfcInstance != null) {
+                                vnfcInstances.add(vnfcInstance);
+                            }
                         } catch (VimException e) {
                             log.warn(e.getMessage(), e);
                         }
@@ -219,7 +222,8 @@ public class PoolManagement {
                         getReservedInstances(nsr_id).get(vnfr_id).get(vdu_id).remove(returnedInstance);
                     } else {
                         //Allocate new Instance if no one was found
-                        returnedInstance = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id);
+                        //returnedInstance = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id);
+                        log.warn("No VNFCInstances left in pool for VDU with id: " + vdu_id);
                     }
                 } else {
                     log.warn("Reserved instances for VDU with id: " + vdu_id + " were not initialized properly");

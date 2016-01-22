@@ -38,7 +38,7 @@ public class ActionMonitor {
             if (states.get(id) == Action.INACTIVE) {
                 states.put(id, action);
                 return true;
-            } else if (action == Action.COOLDOWN && states.get(id) == Action.SCALE) {
+            } else if (action == Action.COOLDOWN && states.get(id) == Action.SCALED) {
                 states.put(id, action);
                 return true;
             } else {
@@ -52,13 +52,17 @@ public class ActionMonitor {
 
     public synchronized void finishedAction(String id) {
         if (states.containsKey(id)) {
-            states.put(id, Action.INACTIVE);
+            if (states.get(id) != Action.TERMINATING && states.get(id) != Action.TERMINATED) {
+                states.put(id, Action.INACTIVE);
+            }
         }
     }
 
     public synchronized void finishedAction(String id, Action nextAction) {
         if (states.containsKey(id)) {
-            states.put(id, nextAction);
+            if (nextAction == Action.TERMINATED || (states.get(id) != Action.TERMINATING && states.get(id) != Action.TERMINATED)) {
+                states.put(id, nextAction);
+            }
         }
     }
 
@@ -70,7 +74,7 @@ public class ActionMonitor {
 
     public boolean isTerminating(String id) {
         if (states.containsKey(id)) {
-            if (states.get(id) == Action.TERMINATING) {
+            if (states.get(id) == Action.TERMINATING || states.get(id) == Action.TERMINATED) {
                 return true;
             } else {
                 return false;

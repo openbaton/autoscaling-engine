@@ -8,6 +8,7 @@ public enum Action {
     DETECT,
     DECIDE,
     SCALE,
+    SCALED,
     COOLDOWN,
     TERMINATING,
     TERMINATED;

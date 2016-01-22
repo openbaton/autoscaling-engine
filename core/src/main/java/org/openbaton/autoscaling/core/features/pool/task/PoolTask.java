@@ -76,8 +76,10 @@ public class PoolTask implements Runnable {
                     log.debug("Allocating new reserved Instance to the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id);
                     try {
                         VNFCInstance newReservedInstance = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id);
-                        newReservedInstances.add(newReservedInstance);
-                        log.debug("Allocated new reserved Instance to the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + newReservedInstance);
+                        if (newReservedInstance != null) {
+                            newReservedInstances.add(newReservedInstance);
+                            log.debug("Allocated new reserved Instance to the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + newReservedInstance);
+                        }
                     } catch (NotFoundException e) {
                         log.error(e.getMessage(), e);
                     } catch (VimException e) {

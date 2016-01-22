@@ -22,7 +22,6 @@ import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +45,7 @@ public class RestEventInterface {
      */
     @RequestMapping(value = "INSTANTIATE_FINISH", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public void activate(@RequestBody String msg) throws NotFoundException, VimException, VimDriverException {
+    public void activate(@RequestBody String msg) throws NotFoundException, VimException {
         log.debug("========================");
         log.debug("msg=" + msg);
         JsonParser jsonParser = new JsonParser();

@@ -12,7 +12,6 @@ import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +80,7 @@ public class ElasticityManagement {
         //destroyPlugins();
     }
 
-    public void activate(String nsr_id) throws NotFoundException, VimException, VimDriverException {
+    public void activate(String nsr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.start(nsr_id);
         if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
@@ -93,7 +92,7 @@ public class ElasticityManagement {
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 
-    public void activate(String nsr_id, String vnfr_id) throws NotFoundException, VimException, VimDriverException {
+    public void activate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.start(nsr_id, vnfr_id);
         if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
@@ -107,27 +106,51 @@ public class ElasticityManagement {
 
     public void deactivate(String nsr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
-        try {
-            detectionManagment.stop(nsr_id);
-        } catch (NotFoundException e) {
-            log.error(e.getMessage(), e);
-        }
-        executionManagement.stop(nsr_id);
-        decisionManagement.stop(nsr_id);
         if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
             try {
                 poolManagement.deactivate(nsr_id);
             } catch (NotFoundException e) {
-                log.error(e.getMessage(), e);
+                log.warn(e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
             } catch (VimException e) {
+                log.warn(e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+        }
+        try {
+            detectionManagment.stop(nsr_id);
+        } catch (NotFoundException e) {
+            log.warn(e.getMessage());
+            if (log.isDebugEnabled()) {
                 log.error(e.getMessage(), e);
             }
         }
+        decisionManagement.stop(nsr_id);
+        executionManagement.stop(nsr_id);
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
     }
 
     public void deactivate(String nsr_id, String vnfr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
+        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
+            try {
+                poolManagement.deactivate(nsr_id, vnfr_id);
+            } catch (NotFoundException e) {
+                log.warn(e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            } catch (VimException e) {
+                log.warn(e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+        }
         try {
             detectionManagment.stop(nsr_id, vnfr_id);
         } catch (NotFoundException e) {
@@ -135,15 +158,7 @@ public class ElasticityManagement {
         }
         decisionManagement.stop(nsr_id, vnfr_id);
         executionManagement.stop(nsr_id, vnfr_id);
-        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
-            try {
-                poolManagement.deactivate(nsr_id, vnfr_id);
-            } catch (NotFoundException e) {
-                log.error(e.getMessage(), e);
-            } catch (VimException e) {
-                log.error(e.getMessage(), e);
-            }
-        }
+
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
     }
 

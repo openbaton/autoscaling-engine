@@ -9,7 +9,6 @@ import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -57,10 +56,11 @@ public class CooldownTask implements Runnable {
     public void run() {
         try {
             int i = 0;
+            int increment = 5;
             while ( i < cooldown) {
-                Thread.sleep(1000);
-                log.debug("Waiting for Cooldown ... " + i + "w");
-                i++;
+                log.debug("Waiting for Cooldown ... " + (cooldown - i) + "s");
+                Thread.sleep(increment * 1000);
+                i = i + increment;
                 //terminate gracefully at this point in time if suggested from the outside
                 if (actionMonitor.isTerminating(vnfr_id)) {
                     actionMonitor.finishedAction(vnfr_id, Action.TERMINATED);
