@@ -1,6 +1,7 @@
 package org.openbaton.autoscaling.core.execution.task;
 
 import org.openbaton.autoscaling.core.execution.ExecutionEngine;
+import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
@@ -45,7 +46,10 @@ public class ExecutionTask implements Runnable {
 
     private long cooldown;
 
-    public ExecutionTask(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown, Properties properties, ExecutionEngine executionEngine) {
+    private ActionMonitor actionMonitor;
+
+    public ExecutionTask(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown, Properties properties, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
+        this.actionMonitor = actionMonitor;
         log.debug("Initializing ExecutionTask for VNFR with id: " + vnfr_id + ". Actions: " + actions);
         this.nsr_id = nsr_id;
         this.vnfr_id = vnfr_id;
@@ -58,13 +62,6 @@ public class ExecutionTask implements Runnable {
 
     @Override
     public void run() {
-        if (executionEngine.isTerminating(vnfr_id)) {
-            executionEngine.terminated(vnfr_id);
-            return;
-        }
-        if (executionEngine.requestScaling(vnfr_id) == false) {
-            log.warn("Scaling request was rejected by the ExecutionEngine. The VNFR is currently either in SCALING or COOLDOWN period. Actions will not be executed for VNFR " + vnfr_id);
-        }
         VirtualNetworkFunctionRecord vnfr = null;
         try {
             vnfr = executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.SCALING);
@@ -75,12 +72,8 @@ public class ExecutionTask implements Runnable {
             }
             return;
         }
-        if (executionEngine.isTerminating(vnfr_id)) {
-            executionEngine.terminated(vnfr_id);
-            return;
-        }
-        for (ScalingAction action : actions) {
-            try {
+        try {
+            for (ScalingAction action : actions) {
                 switch (action.getType()) {
                     case SCALE_OUT:
                         executionEngine.scaleOut(vnfr, Integer.parseInt(action.getValue()));
@@ -103,25 +96,25 @@ public class ExecutionTask implements Runnable {
                     default:
                         break;
                 }
-            } catch (SDKException e) {
-                log.error(e.getMessage(), e);
-            } catch (NotFoundException e) {
-                log.error(e.getMessage(), e);
-            } catch (VimException e) {
-                log.error(e.getMessage(), e);
-            } catch (VimDriverException e) {
-                log.error(e.getMessage(), e);
-            } finally {
-                try {
-                    executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
-                } catch (SDKException e) {
-                    log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in SCALING");
-                    if (log.isDebugEnabled()) {
-                        log.error(e.getMessage(), e);
-                    }
-                }
-                executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
             }
+        }catch(SDKException e){
+            log.error(e.getMessage(), e);
+        }catch(NotFoundException e){
+            log.error(e.getMessage(), e);
+        }catch(VimException e){
+            log.error(e.getMessage(), e);
+        }catch(VimDriverException e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            try {
+                executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
+            } catch (SDKException e) {
+                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in SCALE");
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                    }
+            }
+            executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
         }
     }
 }

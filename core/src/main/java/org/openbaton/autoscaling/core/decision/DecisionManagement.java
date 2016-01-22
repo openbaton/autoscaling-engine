@@ -1,6 +1,8 @@
 package org.openbaton.autoscaling.core.decision;
 
+import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.core.decision.task.DecisionTask;
+import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
@@ -36,17 +38,17 @@ public class DecisionManagement {
 
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Map<String, ScheduledFuture> decisionTasks;
+    private Map<String, Set<ScheduledFuture>> decisionTasks;
 
-    private Set<String> terminatingTasks;
+    private ActionMonitor actionMonitor;
 
     @PostConstruct
     public void init() {
         this.properties = Utils.loadProperties();
+        this.actionMonitor = new ActionMonitor();
         this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
 
         this.decisionTasks = new HashMap<>();
-        this.terminatingTasks = new HashSet<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
@@ -56,19 +58,10 @@ public class DecisionManagement {
 
     public void decide(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
         log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        if (decisionTasks.get(vnfr_id) == null) {
-            log.debug("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-            DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties, decisionEngine);
-            ScheduledFuture scheduledFuture = taskScheduler.schedule(decisionTask, new Date());
-            decisionTasks.put(vnfr_id, scheduledFuture);
-        } else {
-            log.debug("Processing already a decision request for this VNFR. Cannot create another DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        }
-    }
-
-    public void finished(String vnfr_id) {
-        log.debug("Finished Decision request of VNFR with id " + vnfr_id + " of VNFR with id: " + vnfr_id);
-        decisionTasks.remove(vnfr_id);
+        log.trace("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
+        actionMonitor.requestAction(vnfr_id, Action.DECIDE);
+        DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties, decisionEngine, actionMonitor);
+        taskScheduler.execute(decisionTask);
     }
 
     public void stop(String nsr_id) {
@@ -89,45 +82,7 @@ public class DecisionManagement {
     }
 
     public void stop(String nsr_id, String vnfr_id) {
-        log.debug("Stopping DecisionTask for VNFR with id: " + vnfr_id);
-        if (decisionTasks.containsKey(vnfr_id)) {
-            terminate(nsr_id, vnfr_id);
-            while (decisionTasks.containsKey(vnfr_id)) {
-                log.debug("Waiting for finishing DecisionTask for VNFR with id: " + vnfr_id);
-                try {
-                    Thread.sleep(2_000);
-                } catch (InterruptedException e) {
-                    log.error(e.getMessage(), e);
-                }
-            }
-            log.debug("Stopped DecisionTask for VNFR with id: " + vnfr_id);
-        } else {
-            log.debug("No DecisionTask was running for VNFR with id: " + vnfr_id);
-        }
+        log.debug("Invoking termination of all DecisionTasks for VNFR with id: " + vnfr_id);
+        actionMonitor.removeId(vnfr_id);
     }
-
-    public void terminate(String nsr_id, String vnfr_id) {
-        if (decisionTasks.containsKey(vnfr_id)) {
-            terminatingTasks.add(vnfr_id);
-
-        }
-    }
-
-    public boolean isTerminating(String autoScalePolicyId) {
-        if (terminatingTasks.contains(autoScalePolicyId)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public void terminated(String autoScalePolicyId) {
-        if (decisionTasks.containsKey(autoScalePolicyId)) {
-            decisionTasks.remove(autoScalePolicyId);
-            terminatingTasks.remove(autoScalePolicyId);
-        }
-    }
-
-
-
 }

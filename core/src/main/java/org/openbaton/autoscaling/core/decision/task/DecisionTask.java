@@ -1,6 +1,7 @@
 package org.openbaton.autoscaling.core.decision.task;
 
 import org.openbaton.autoscaling.core.decision.DecisionEngine;
+import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.Status;
 import org.slf4j.Logger;
@@ -32,33 +33,31 @@ public class DecisionTask implements Runnable {
 
     private DecisionEngine decisionEngine;
 
-    public DecisionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, Properties properties, DecisionEngine decisionEngine) {
+    private ActionMonitor actionMonitor;
+
+    public DecisionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, Properties properties, DecisionEngine decisionEngine, ActionMonitor actionMonitor) {
         this.properties = properties;
         this.nsr_id = nsr_id;
         this.vnfr_id = vnfr_id;
         this.autoScalePolicy = autoScalePolicy;
         this.decisionEngine = decisionEngine;
+        this.actionMonitor = actionMonitor;
         this.name = "DecisionTask#" + nsr_id + ":" + vnfr_id;
     }
 
 
     @Override
     public void run() {
-        if (decisionEngine.isTerminating(vnfr_id)) {
-            decisionEngine.terminated(vnfr_id);
-            return;
-        }
         log.debug("Requested Decision-making for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         if (decisionEngine.getStatus(nsr_id, vnfr_id) == Status.ACTIVE) {
             log.debug("Status is ACTIVE. So send actions to ExecutionEngine");
-            if (decisionEngine.isTerminating(vnfr_id)) {
-                decisionEngine.terminated(vnfr_id);
+            if (actionMonitor.isTerminating(vnfr_id)) {
                 return;
             }
             decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions(), autoScalePolicy.getCooldown());
+            actionMonitor.finishedAction(vnfr_id);
         } else {
             log.debug("Status is not ACTIVE. So do not send actions to ExecutionEngine. Do nothing!");
-        }
-        decisionEngine.finished(vnfr_id);
+        };
     }
 }

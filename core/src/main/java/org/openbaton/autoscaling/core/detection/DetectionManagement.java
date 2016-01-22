@@ -1,7 +1,9 @@
 package org.openbaton.autoscaling.core.detection;
 
+import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
+import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
@@ -36,8 +38,6 @@ public class DetectionManagement {
 
     private Map<String, Map<String, Map<String, ScheduledFuture>>> detectionTasks;
 
-    private Set<String> terminatingTasks;
-
     private Properties properties;
 
     private NFVORequestor nfvoRequestor;
@@ -48,12 +48,14 @@ public class DetectionManagement {
     @Autowired
     private DecisionManagement decisionManagement;
 
+    private ActionMonitor actionMonitor;
+
     @PostConstruct
     public void init() {
         this.properties = Utils.loadProperties();
+        this.actionMonitor = new ActionMonitor();
         this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("nfvo.username"), this.properties.getProperty("nfvo.password"), this.properties.getProperty("nfvo.ip"), this.properties.getProperty("nfvo.port"), "1");
         this.detectionTasks = new HashMap<>();
-        this.terminatingTasks = new HashSet<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
@@ -103,15 +105,19 @@ public class DetectionManagement {
 
     public void start(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) throws NotFoundException {
         log.debug("Activating Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
-        if (!detectionTasks.containsKey(nsr_id)) {
-            detectionTasks.put(nsr_id, new HashMap<String, Map<String, ScheduledFuture>>());
-        }
-        if (!detectionTasks.get(nsr_id).containsKey(vnfr_id)) {
-            detectionTasks.get(nsr_id).put(vnfr_id, new HashMap<String, ScheduledFuture>());
-        }
-        if (!detectionTasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
+        if (actionMonitor.requestAction(autoScalePolicy.getId(), Action.INACTIVE)) {
+            if (!detectionTasks.containsKey(nsr_id)) {
+                detectionTasks.put(nsr_id, new HashMap<String, Map<String, ScheduledFuture>>());
+            }
+            if (!detectionTasks.get(nsr_id).containsKey(vnfr_id)) {
+                detectionTasks.get(nsr_id).put(vnfr_id, new HashMap<String, ScheduledFuture>());
+            }
+            if (detectionTasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
+                log.debug("Restarting Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
+                detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
+            }
             log.debug("Creating new DetectionTask for AutoScalingPolicy " + autoScalePolicy.getName() + " with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-            DetectionTask detectionTask = new DetectionTask(nsr_id, vnfr_id, autoScalePolicy, properties, detectionEngine);
+            DetectionTask detectionTask = new DetectionTask(nsr_id, vnfr_id, autoScalePolicy, properties, detectionEngine, actionMonitor);
             ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, autoScalePolicy.getPeriod() * 1000);
             detectionTasks.get(nsr_id).get(vnfr_id).put(autoScalePolicy.getId(), scheduledFuture);
             log.info("Activated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
@@ -158,10 +164,11 @@ public class DetectionManagement {
     public void stop(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
         log.debug("Deactivating Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " for VNFR with id" + vnfr_id);
         if (detectionTasks.containsKey(nsr_id)) {
-            terminate(nsr_id, vnfr_id, autoScalePolicy.getId());
             if (detectionTasks.get(nsr_id).containsKey(vnfr_id)) {
                 if (detectionTasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
-                    while (detectionTasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
+                    detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
+                    while (!actionMonitor.isTerminated(autoScalePolicy.getId()) && actionMonitor.getAction(autoScalePolicy.getId()) != Action.INACTIVE) {
+                        actionMonitor.terminate(autoScalePolicy.getId());
                         log.debug("Waiting for finishing DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
                         try {
                             Thread.sleep(2_000);
@@ -169,6 +176,7 @@ public class DetectionManagement {
                             log.error(e.getMessage(), e);
                         }
                     }
+                    detectionTasks.get(nsr_id).get(vnfr_id).remove(autoScalePolicy.getId());
                     log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
                 } else {
                     log.debug("Not Found DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
@@ -182,33 +190,11 @@ public class DetectionManagement {
         log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
     }
 
-    public void terminate(String nsr_id, String vnfr_id, String autoScalePolicyId) {
-        if (detectionTasks.containsKey(nsr_id)) {
-            if (detectionTasks.get(nsr_id).containsKey(vnfr_id)) {
-                if (detectionTasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicyId)) {
-                    detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicyId).cancel(false);
-                    terminatingTasks.add(autoScalePolicyId);
-                }
-            }
-        }
-    }
-
-    public boolean isTerminating(String autoScalePolicyId) {
-        if (terminatingTasks.contains(autoScalePolicyId)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public void terminated(String autoScalePolicyId) {
-        if (detectionTasks.containsKey(autoScalePolicyId)) {
-            detectionTasks.remove(autoScalePolicyId);
-            terminatingTasks.remove(autoScalePolicyId);
-        }
-    }
-
     public void sendAlarm(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
+            actionMonitor.finishedAction(autoScalePolicy.getId(), Action.TERMINATED);
+            return;
+        }
         decisionManagement.decide(nsr_id, vnfr_id, autoScalePolicy);
     }
 

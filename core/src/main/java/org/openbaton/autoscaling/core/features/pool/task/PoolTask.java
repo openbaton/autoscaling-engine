@@ -1,9 +1,11 @@
 package org.openbaton.autoscaling.core.features.pool.task;
 
+import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionEngine;
 import org.openbaton.autoscaling.core.features.pool.PoolEngine;
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
+import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAlarm;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
@@ -34,37 +36,37 @@ public class PoolTask implements Runnable {
 
     private PoolEngine poolEngine;
 
+    private ActionMonitor actionMonitor;
+
     private String nsr_id;
 
     private int pool_size;
 
     private String name;
 
-    public PoolTask(String nsr_id, int pool_size, PoolEngine poolEngine) throws NotFoundException {
+    public PoolTask(String nsr_id, int pool_size, PoolEngine poolEngine, ActionMonitor actionMonitor) throws NotFoundException {
         this.nsr_id = nsr_id;
         this.pool_size = pool_size;
         this.poolEngine = poolEngine;
+        this.actionMonitor = actionMonitor;
         this.name = "PoolTask#" + nsr_id;
 
     }
 
     @Override
     public void run() {
-        if (poolEngine.isTerminating(nsr_id)) {
-            poolEngine.terminated(nsr_id);
-            return;
-        }
+        actionMonitor.finishedAction(nsr_id, Action.DECIDE);
         log.debug("Checking the pool of reserved VNFCInstances for NSR with id: " + nsr_id);
         Map<String, Map<String, Set<VNFCInstance>>> reservedInstances = poolEngine.getReservedInstances(nsr_id);
         log.debug("Currently reserved VNFCInstances: " + reservedInstances);
         for (String vnfr_id : reservedInstances.keySet()) {
-            if (poolEngine.isTerminating(nsr_id)) {
-                poolEngine.terminated(nsr_id);
+            if (actionMonitor.isTerminating(nsr_id)) {
+                actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
                 return;
             }
             for (String vdu_id : reservedInstances.get(vnfr_id).keySet()) {
-                if (poolEngine.isTerminating(nsr_id)) {
-                    poolEngine.terminated(nsr_id);
+                if (actionMonitor.isTerminating(nsr_id)) {
+                    actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
                     return;
                 }
                 int currentPoolSize = reservedInstances.get(vnfr_id).get(vdu_id).size();
@@ -85,9 +87,6 @@ public class PoolTask implements Runnable {
                 reservedInstances.get(vnfr_id).get(vdu_id).addAll(newReservedInstances);
             }
         }
-        if (poolEngine.isTerminating(nsr_id)) {
-            poolEngine.terminated(nsr_id);
-            return;
-        }
+        actionMonitor.finishedAction(nsr_id);
     }
 }

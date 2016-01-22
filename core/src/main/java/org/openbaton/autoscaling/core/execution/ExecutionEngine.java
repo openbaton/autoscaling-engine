@@ -1,7 +1,7 @@
 package org.openbaton.autoscaling.core.execution;
 
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
-import org.openbaton.autoscaling.core.management.VnfrMonitor;
+import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
@@ -57,7 +57,7 @@ public class ExecutionEngine {
     private PoolManagement poolManagement;
 
     @Autowired
-    private VnfrMonitor vnfrMonitor;
+    private ActionMonitor scalingMonitor;
 
     private VnfmHelper vnfmHelper;
 
@@ -81,7 +81,7 @@ public class ExecutionEngine {
     public void scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException, VimException, VimDriverException {
         //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         VNFCInstance vnfcInstance = null;
-        //vnfr.setStatus(Status.SCALING);
+        //vnfr.setStatus(Status.SCALE);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
         //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (int i = 1; i <= numberOfInstances ; i++) {
@@ -108,7 +108,7 @@ public class ExecutionEngine {
                 }
                 if (vnfcInstance != null) {
                     vdu.getVnfc_instance().add(vnfcInstance);
-                    log.debug("SCALING: Added new Component to VDU " + vdu.getId());
+                    log.debug("SCALE: Added new Component to VDU " + vdu.getId());
                     break;
                 }
             }
@@ -148,7 +148,7 @@ public class ExecutionEngine {
     public void scaleIn(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException, VimException {
         //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         VNFCInstance vnfcInstance_remove = null;
-        //vnfr.setStatus(Status.SCALING);
+        //vnfr.setStatus(Status.SCALE);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
         //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         for (int i = 1; i <= numberOfInstances; i++) {
@@ -160,7 +160,7 @@ public class ExecutionEngine {
                 }
                 if (vnfcInstance_remove != null) {
                     vdu.getVnfc_instance().remove((vnfcInstance_remove));
-                    log.debug("SCALING: Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
+                    log.debug("Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
                     mediaServerManagement.delete(vnfr.getId(), vnfcInstance_remove.getHostname());
                     break;
                 }
@@ -190,7 +190,7 @@ public class ExecutionEngine {
     public void startCooldown(String nsr_id, String vnfr_id, long cooldown) {
         List<String> vnfrIds = new ArrayList<>();
         vnfrIds.add(vnfr_id);
-        vnfrMonitor.startCooldown(vnfrIds);
+
         executionManagement.executeCooldown(nsr_id, vnfr_id, cooldown);
 //        List<String> vnfrIds = new ArrayList<>();
 //        vnfrIds.add(vnfr_id);
@@ -204,25 +204,11 @@ public class ExecutionEngine {
 //        }
     }
 
-    public void finishedCooldown(String nsr_id, String vnfr_id) {
-        executionManagement.finishedCooldown(nsr_id, vnfr_id);
-        List<String> vnfrIds = new ArrayList<>();
-        vnfrIds.add(vnfr_id);
-        vnfrMonitor.finishedScaling(vnfrIds);
-        executionManagement.finishedScaling(vnfr_id);
-    }
-
     public VirtualNetworkFunctionRecord updateVNFRStatus(String nsr_id, String vnfr_id, Status status) throws SDKException {
         VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         vnfr.setStatus(status);
         return updateVNFR(vnfr);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
-    }
-
-    public boolean requestScaling(String vnfr_id) {
-        List<String> vnfrIds = new ArrayList<>();
-        vnfrIds.add(vnfr_id);
-        return vnfrMonitor.requestScaling(vnfrIds);
     }
 
     public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
@@ -242,14 +228,6 @@ public class ExecutionEngine {
         }
         log.debug("Updated VNFR on NFVO: " + vnfr);
         return vnfr;
-    }
-
-    public boolean isTerminating(String vnfr_id) {
-        return executionManagement.isTerminating(vnfr_id);
-    }
-
-    public void terminated(String vnfr_id) {
-        executionManagement.terminated(vnfr_id);
     }
 
 }

@@ -1,7 +1,5 @@
 package org.openbaton.autoscaling.core.detection;
 
-import org.openbaton.autoscaling.core.decision.DecisionManagement;
-import org.openbaton.autoscaling.core.management.VnfrMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAlarm;
@@ -9,14 +7,11 @@ import org.openbaton.catalogue.mano.common.monitoring.ObjectSelection;
 import org.openbaton.catalogue.mano.common.monitoring.ThresholdDetails;
 import org.openbaton.catalogue.mano.common.monitoring.ThresholdType;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
-import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.exceptions.MonitoringException;
-import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
-import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -166,15 +161,6 @@ public class DetectionEngine {
     public void sendAlarm(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
         detectionManagement.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
     }
-
-    public boolean isTerminating(String autoScalePolicyId) {
-        return detectionManagement.isTerminating(autoScalePolicyId);
-    }
-
-    public void terminated(String autoScalePolicyId) {
-        detectionManagement.terminated(autoScalePolicyId);
-    }
-
 }
 
 class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
