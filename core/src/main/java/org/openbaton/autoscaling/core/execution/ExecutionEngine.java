@@ -21,6 +21,8 @@ import org.openbaton.exceptions.VimException;
 import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.AutoScalingProperties;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.openbaton.vnfm.core.api.MediaServerManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +52,6 @@ public class ExecutionEngine {
 
     private ResourceManagement resourceManagement;
 
-    private Properties properties;
-
     @Autowired
     private ExecutionManagement executionManagement;
 
@@ -65,6 +65,12 @@ public class ExecutionEngine {
     @Autowired
     private MediaServerManagement mediaServerManagement;
 
+    @Autowired
+    private NfvoProperties nfvoProperties;
+
+    @Autowired
+    private AutoScalingProperties autoScalingProperties;
+
 //    public ExecutionEngine(Properties properties) {
 //        this.properties = properties;
 //        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
@@ -73,8 +79,7 @@ public class ExecutionEngine {
 
     @PostConstruct
     public void init() {
-        this.properties = Utils.loadProperties();
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
     }
@@ -95,7 +100,7 @@ public class ExecutionEngine {
             }
             VNFCInstance vnfcInstance = null;
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
+                if (autoScalingProperties.getPool().isActivate()) {
                     log.debug("Getting VNFCInstance from pool");
                     vnfcInstance = poolManagement.getReservedInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId());
                     if (vnfcInstance != null) {

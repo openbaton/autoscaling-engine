@@ -9,6 +9,7 @@ import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +30,6 @@ public class DecisionManagement {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private Properties properties;
-
     @Autowired
     private DecisionEngine decisionEngine;
 
@@ -38,17 +37,15 @@ public class DecisionManagement {
 
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Map<String, Set<ScheduledFuture>> decisionTasks;
-
     private ActionMonitor actionMonitor;
+
+    @Autowired
+    private NfvoProperties nfvoProperties;
 
     @PostConstruct
     public void init() {
-        this.properties = Utils.loadProperties();
         this.actionMonitor = new ActionMonitor();
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
-
-        this.decisionTasks = new HashMap<>();
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
@@ -60,7 +57,7 @@ public class DecisionManagement {
         log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         log.trace("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         actionMonitor.requestAction(vnfr_id, Action.DECIDE);
-        DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, properties, decisionEngine, actionMonitor);
+        DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, decisionEngine, actionMonitor);
         taskScheduler.execute(decisionTask);
     }
 

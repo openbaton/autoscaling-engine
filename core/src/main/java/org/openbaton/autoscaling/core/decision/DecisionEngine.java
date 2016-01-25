@@ -8,6 +8,7 @@ import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,21 +26,18 @@ import java.util.*;
 public class DecisionEngine {
 
     @Autowired
-    private DecisionManagement decisionManagement;
-
-    @Autowired
     private ExecutionManagement executionManagement;
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private Properties properties;
-
     private NFVORequestor nfvoRequestor;
+
+    @Autowired
+    private NfvoProperties nfvoProperties;
 
     @PostConstruct
     public void init() {
-        this.properties = Utils.loadProperties();
-        this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("nfvo.username"), this.properties.getProperty("nfvo.password"), this.properties.getProperty("nfvo.ip"), this.properties.getProperty("nfvo.port"), "1");
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
     }
 
     public void sendDecision(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {

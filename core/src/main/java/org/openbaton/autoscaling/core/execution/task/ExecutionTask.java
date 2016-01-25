@@ -32,8 +32,6 @@ public class ExecutionTask implements Runnable {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private Properties properties;
-
     private String nsr_id;
 
     private String vnfr_id;
@@ -48,14 +46,13 @@ public class ExecutionTask implements Runnable {
 
     private ActionMonitor actionMonitor;
 
-    public ExecutionTask(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown, Properties properties, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
+    public ExecutionTask(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
         this.actionMonitor = actionMonitor;
         log.debug("Initializing ExecutionTask for VNFR with id: " + vnfr_id + ". Actions: " + actions);
         this.nsr_id = nsr_id;
         this.vnfr_id = vnfr_id;
         this.actions = actions;
         this.cooldown = cooldown;
-        this.properties = properties;
         this.executionEngine = executionEngine;
         this.name = "ExecutionTask#" + nsr_id + ":" + vnfr_id;
     }

@@ -14,6 +14,7 @@ import org.openbaton.exceptions.VimException;
 import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +44,11 @@ public class PoolEngine {
 
     private ResourceManagement resourceManagement;
 
-    private Properties properties;
-
     @Autowired
     private PoolManagement poolManagement;
+
+    @Autowired
+    private NfvoProperties nfvoProperties;
 
 //    public PoolEngine(Properties properties) {
 //        this.properties = properties;
@@ -56,10 +58,8 @@ public class PoolEngine {
 
     @PostConstruct
     public void init() {
-        this.properties = Utils.loadProperties();
         this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
-    }
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");    }
 
     public VNFCInstance allocateNewInstance(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException, VimException {
         NetworkServiceRecord nsr = null;

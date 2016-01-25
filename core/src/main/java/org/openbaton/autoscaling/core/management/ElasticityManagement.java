@@ -12,6 +12,8 @@ import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.AutoScalingProperties;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,15 +48,17 @@ public class ElasticityManagement {
 
     private NFVORequestor nfvoRequestor;
 
-    private Properties properties;
-
     private List<String> subscriptionIds;
+
+    @Autowired
+    private NfvoProperties nfvoProperties;
+
+    @Autowired
+    private AutoScalingProperties autoScalingProperties;
 
     @PostConstruct
     public void init() throws SDKException {
-        properties = Utils.loadProperties();
-        log.debug("Properties: " + properties.toString());
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
 //        detectionManagment.init(properties);
 //        decisionManagement.init(properties);
 //        executionManagement.init(properties);
@@ -83,7 +87,7 @@ public class ElasticityManagement {
     public void activate(String nsr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.start(nsr_id);
-        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
+        if (autoScalingProperties.getPool().isActivate()) {
             log.debug("Activating pool mechanism");
             poolManagement.activate(nsr_id);
         } else {
@@ -95,7 +99,7 @@ public class ElasticityManagement {
     public void activate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.start(nsr_id, vnfr_id);
-        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
+        if (autoScalingProperties.getPool().isActivate()) {
             log.debug("Activating pool mechanism");
             poolManagement.activate(nsr_id, vnfr_id);
         } else {
@@ -106,7 +110,7 @@ public class ElasticityManagement {
 
     public void deactivate(String nsr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
-        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
+        if (autoScalingProperties.getPool().isActivate()) {
             try {
                 poolManagement.deactivate(nsr_id);
             } catch (NotFoundException e) {
@@ -136,7 +140,7 @@ public class ElasticityManagement {
 
     public void deactivate(String nsr_id, String vnfr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
-        if (properties.getProperty("autoscaling.pool.activate", "false").equals("true")) {
+        if (autoScalingProperties.getPool().isActivate()) {
             try {
                 poolManagement.deactivate(nsr_id, vnfr_id);
             } catch (NotFoundException e) {
@@ -179,7 +183,7 @@ public class ElasticityManagement {
     }
 
     private void waitForNfvo() {
-        if (!Utils.isNfvoStarted(properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"))) {
+        if (!Utils.isNfvoStarted(nfvoProperties.getIp(), nfvoProperties.getPort())) {
             log.error("After 150 sec the Nfvo is not started yet. Is there an error?");
             System.exit(1); // 1 stands for the error in running nfvo TODO define error codes (doing)
         }

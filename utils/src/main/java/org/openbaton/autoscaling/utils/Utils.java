@@ -62,8 +62,8 @@ public class Utils {
 
         log.debug("Loading properties");
         try {
-            properties.load(Utils.class.getResourceAsStream("/openbaton.properties"));
-            properties.load(Utils.class.getResourceAsStream("/autoscaling.properties"));
+            //properties.load(Utils.class.getResourceAsStream("/openbaton.properties"));
+            //properties.load(Utils.class.getResourceAsStream("/autoscaling.properties"));
             if (properties.getProperty("external-properties-file") != null) {
                 File externalPropertiesFile = new File(properties.getProperty("external-properties-file"));
                 if (externalPropertiesFile.exists()) {

@@ -21,8 +21,6 @@ public class DecisionTask implements Runnable {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private Properties properties;
-
     private String nsr_id;
 
     private String vnfr_id;
@@ -35,8 +33,7 @@ public class DecisionTask implements Runnable {
 
     private ActionMonitor actionMonitor;
 
-    public DecisionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, Properties properties, DecisionEngine decisionEngine, ActionMonitor actionMonitor) {
-        this.properties = properties;
+    public DecisionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, DecisionEngine decisionEngine, ActionMonitor actionMonitor) {
         this.nsr_id = nsr_id;
         this.vnfr_id = vnfr_id;
         this.autoScalePolicy = autoScalePolicy;

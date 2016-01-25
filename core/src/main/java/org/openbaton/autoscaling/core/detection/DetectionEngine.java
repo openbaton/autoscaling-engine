@@ -12,10 +12,13 @@ import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
+import org.openbaton.vnfm.configuration.ApplicationProperties;
+import org.openbaton.vnfm.configuration.AutoScalingProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -41,9 +44,12 @@ public class DetectionEngine {
     @Autowired
     private DetectionManagement detectionManagement;
 
+    @Autowired
+    private AutoScalingProperties autoScalingProperties;
+
     @PostConstruct
     public void init() {
-        this.monitor = new EmmMonitor();
+        this.monitor = new EmmMonitor(autoScalingProperties.getMonitor().getUrl());
         if (monitor == null) {
             log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
         }
@@ -167,15 +173,10 @@ class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private Properties properties;
+    private String monitorUrl;
 
-    private String monitoringURL;
-
-
-    public EmmMonitor() {
-        properties = Utils.loadProperties();
-        monitoringURL = properties.getProperty("emm.monitor.url");
-
+    public EmmMonitor(String url) {
+        this.monitorUrl = url;
     }
 
     @Override
@@ -195,7 +196,7 @@ class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
         for (String metric : metrics) {
             for (String hostName : hostnames) {
                 try {
-                    URL url = new URL("http://" + monitoringURL + "/monitor/" + hostName + "/" + metric);
+                    URL url = new URL("http://" + monitorUrl + "/monitor/" + hostName + "/" + metric);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
                     conn.setRequestProperty("Accept", "application/json");

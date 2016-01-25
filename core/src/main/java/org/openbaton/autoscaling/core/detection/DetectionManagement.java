@@ -13,6 +13,7 @@ import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +39,6 @@ public class DetectionManagement {
 
     private Map<String, Map<String, Map<String, ScheduledFuture>>> detectionTasks;
 
-    private Properties properties;
-
     private NFVORequestor nfvoRequestor;
 
     @Autowired
@@ -50,11 +49,13 @@ public class DetectionManagement {
 
     private ActionMonitor actionMonitor;
 
+    @Autowired
+    private NfvoProperties nfvoProperties;
+
     @PostConstruct
     public void init() {
-        this.properties = Utils.loadProperties();
         this.actionMonitor = new ActionMonitor();
-        this.nfvoRequestor = new NFVORequestor(this.properties.getProperty("nfvo.username"), this.properties.getProperty("nfvo.password"), this.properties.getProperty("nfvo.ip"), this.properties.getProperty("nfvo.port"), "1");
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         this.detectionTasks = new HashMap<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
@@ -117,7 +118,7 @@ public class DetectionManagement {
                 detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
             }
             log.debug("Creating new DetectionTask for AutoScalingPolicy " + autoScalePolicy.getName() + " with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-            DetectionTask detectionTask = new DetectionTask(nsr_id, vnfr_id, autoScalePolicy, properties, detectionEngine, actionMonitor);
+            DetectionTask detectionTask = new DetectionTask(nsr_id, vnfr_id, autoScalePolicy, detectionEngine, nfvoProperties, actionMonitor);
             ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(detectionTask, autoScalePolicy.getPeriod() * 1000);
             detectionTasks.get(nsr_id).get(vnfr_id).put(autoScalePolicy.getId(), scheduledFuture);
             log.info("Activated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);

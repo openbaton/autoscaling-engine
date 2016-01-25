@@ -12,9 +12,11 @@ import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
@@ -43,22 +45,28 @@ public class PoolManagement {
 
     private Map<String, Map<String, Map<String, Set<VNFCInstance>>>> reservedInstances;
 
-    private Properties properties;
-
-    private int pool_size;
-
-    private int pool_check_period;
-
     private ActionMonitor actionMonitor;
 
     @Autowired
     private PoolEngine poolEngine;
 
+    @Autowired
+    private NfvoProperties nfvoProperties;
+
+    @Value("${autoscaling.pool.size}")
+    private int POOL_SIZE;
+
+    @Value("${autoscaling.pool.period}")
+    private int POOL_CHECK_PERIOD;
+
+    @Value("${autoscaling.pool.prepare}")
+    private boolean POOL_PREPARE;
+
+
     @PostConstruct
     public void init() {
-        this.properties = Utils.loadProperties();
         this.actionMonitor = new ActionMonitor();
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         this.poolTasks = new HashMap<>();
         this.terminatingTasks = new HashSet<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
@@ -67,17 +75,13 @@ public class PoolManagement {
         this.taskScheduler.setRemoveOnCancelPolicy(true);
         this.taskScheduler.initialize();
 
-        this.pool_size = Integer.parseInt(properties.getProperty("autoscaling.pool.size"));
-        this.pool_check_period = Integer.parseInt(properties.getProperty("autoscaling.pool.period"));
-        //poolEngine = new PoolEngine(properties);
-
         reservedInstances = new HashMap<>();
     }
 
 
     public void activate(String nsr_id) throws NotFoundException {
         log.debug("Activating pool mechanism for NSR " + nsr_id);
-        log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + pool_size);
+        log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + POOL_SIZE);
         NetworkServiceRecord nsr = null;
         try {
             nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -110,8 +114,8 @@ public class PoolManagement {
                 } else {
                     vnfcInstances = new HashSet<>();
                 }
-                if (properties.getProperty("autoscaling.pool.prepare", "false").equals("true")) {
-                    for (int i = 1; i <= pool_size; i++) {
+                if (POOL_PREPARE == true) {
+                    for (int i = 1; i <= POOL_SIZE; i++) {
                         try {
                             vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
                         } catch (VimException e) {
@@ -129,7 +133,7 @@ public class PoolManagement {
 
     public void activate(String nsr_id, String vnfr_id) throws NotFoundException {
         log.debug("Activating pool mechanism for VNFR " + vnfr_id);
-        log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + pool_size);
+        log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + POOL_SIZE);
         NetworkServiceRecord nsr = null;
         try {
             nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -162,8 +166,8 @@ public class PoolManagement {
                 } else {
                     vnfcInstances = new HashSet<>();
                 }
-                if (properties.getProperty("autoscaling.pool.prepare", "false").equals("true")) {
-                    for (int i = vnfcInstances.size() + 1; i <= pool_size; i++) {
+                if (POOL_PREPARE == true) {
+                    for (int i = vnfcInstances.size() + 1; i <= POOL_SIZE; i++) {
                         try {
                             VNFCInstance vnfcInstance = poolEngine.allocateNewInstance(nsr, vnfr, vdu);
                             if (vnfcInstance != null) {
@@ -246,8 +250,8 @@ public class PoolManagement {
         if (!poolTasks.containsKey(nsr_id)) {
             log.debug("Creating new PoolTask for NSR with id: " + nsr_id);
             actionMonitor.requestAction(nsr_id, Action.INACTIVE);
-            PoolTask poolTask = new PoolTask(nsr_id, pool_size, poolEngine, actionMonitor);
-            ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(poolTask, pool_check_period * 1000);
+            PoolTask poolTask = new PoolTask(nsr_id, POOL_SIZE, poolEngine, actionMonitor);
+            ScheduledFuture scheduledFuture = taskScheduler.scheduleAtFixedRate(poolTask, POOL_CHECK_PERIOD * 1000);
             log.debug("Activated Pool size checking for NSR with id: " + nsr_id);
             poolTasks.put(nsr_id, scheduledFuture);
         } else {

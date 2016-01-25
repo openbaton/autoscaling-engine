@@ -10,6 +10,7 @@ import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +33,6 @@ public class ExecutionManagement {
 
     private ThreadPoolTaskScheduler taskScheduler;
 
-    private Properties properties;
-
     @Autowired
     private ExecutionEngine executionEngine;
 
@@ -41,12 +40,14 @@ public class ExecutionManagement {
 
     private ActionMonitor actionMonitor;
 
+    @Autowired
+    private NfvoProperties nfvoProperties;
+
     @PostConstruct
     public void init() {
-        this.properties = Utils.loadProperties();
         this.actionMonitor = new ActionMonitor();
         this.executionEngine.setActionMonitor(actionMonitor);
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("nfvo.username"), properties.getProperty("nfvo.password"), properties.getProperty("nfvo.ip"), properties.getProperty("nfvo.port"), "1");
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
@@ -58,7 +59,7 @@ public class ExecutionManagement {
         log.debug("Processing execution request of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);
         if (actionMonitor.requestAction(vnfr_id, Action.SCALE)) {
             log.debug("Creating new ExecutionTask of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);
-            ExecutionTask executionTask = new ExecutionTask(nsr_id, vnfr_id, actions, cooldown, properties, executionEngine, actionMonitor);
+            ExecutionTask executionTask = new ExecutionTask(nsr_id, vnfr_id, actions, cooldown, executionEngine, actionMonitor);
             taskScheduler.execute(executionTask);
         } else {
             if (actionMonitor.getAction(vnfr_id) == Action.SCALE) {
@@ -79,7 +80,7 @@ public class ExecutionManagement {
         log.debug("Starting CooldownTask for VNFR with id: " + vnfr_id);
         if (actionMonitor.requestAction(vnfr_id, Action.COOLDOWN)) {
             log.debug("Creating new CooldownTask for VNFR with id: " + vnfr_id);
-            CooldownTask cooldownTask = new CooldownTask(nsr_id, vnfr_id, cooldown, properties, executionEngine, actionMonitor);
+            CooldownTask cooldownTask = new CooldownTask(nsr_id, vnfr_id, cooldown, executionEngine, actionMonitor);
             taskScheduler.execute(cooldownTask);
         } else {
             if (actionMonitor.getAction(vnfr_id) == Action.COOLDOWN) {
