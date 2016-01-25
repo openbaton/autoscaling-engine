@@ -76,7 +76,7 @@ public class ExecutionTask implements Runnable {
             for (ScalingAction action : actions) {
                 switch (action.getType()) {
                     case SCALE_OUT:
-                        executionEngine.scaleOut(vnfr, Integer.parseInt(action.getValue()));
+                        vnfr = executionEngine.scaleOut(vnfr, Integer.parseInt(action.getValue()));
                         break;
                     case SCALE_OUT_TO:
                         executionEngine.scaleOutTo(vnfr, Integer.parseInt(action.getValue()));
@@ -85,7 +85,7 @@ public class ExecutionTask implements Runnable {
                         executionEngine.scaleOutToFlavour(vnfr, action.getValue());
                         break;
                     case SCALE_IN:
-                        executionEngine.scaleIn(vnfr, Integer.parseInt(action.getValue()));
+                        vnfr = executionEngine.scaleIn(vnfr, Integer.parseInt(action.getValue()));
                         break;
                     case SCALE_IN_TO:
                         executionEngine.scaleInTo(vnfr, Integer.parseInt(action.getValue()));
