@@ -3,6 +3,7 @@ package org.openbaton.autoscaling.core.execution;
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.autoscaling.utils.Utils;
+import org.openbaton.catalogue.mano.common.Ip;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
@@ -196,6 +197,12 @@ public class ExecutionEngine {
                 }
                 if (vnfcInstance_remove != null) {
                     vdu.getVnfc_instance().remove((vnfcInstance_remove));
+                    for (Ip ip : vnfcInstance_remove.getIps()) {
+                        vnfr.getVnf_address().remove(ip.getIp());
+                    }
+                    for (Ip ip : vnfcInstance_remove.getFloatingIps()) {
+                        vnfr.getVnf_address().remove(ip.getIp());
+                    }
                     log.debug("Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
                     mediaServerManagement.delete(vnfr.getId(), vnfcInstance_remove.getHostname());
                     break;

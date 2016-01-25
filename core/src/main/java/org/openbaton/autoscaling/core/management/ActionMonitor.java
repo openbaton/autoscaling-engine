@@ -54,6 +54,8 @@ public class ActionMonitor {
         if (states.containsKey(id)) {
             if (states.get(id) != Action.TERMINATING && states.get(id) != Action.TERMINATED) {
                 states.put(id, Action.INACTIVE);
+            } else if (states.get(id) == Action.TERMINATING) {
+                states.put(id, Action.TERMINATED);
             }
         }
     }
@@ -62,6 +64,8 @@ public class ActionMonitor {
         if (states.containsKey(id)) {
             if (nextAction == Action.TERMINATED || (states.get(id) != Action.TERMINATING && states.get(id) != Action.TERMINATED)) {
                 states.put(id, nextAction);
+            } else if (states.get(id) == Action.TERMINATING) {
+                states.put(id, Action.TERMINATED);
             }
         }
     }
