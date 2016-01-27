@@ -24,6 +24,7 @@ import org.openbaton.sdk.api.exception.SDKException;
 import org.openbaton.vnfm.configuration.AutoScalingProperties;
 import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.openbaton.vnfm.core.api.MediaServerManagement;
+import org.openbaton.vnfm.core.api.MediaServerResourceManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +51,8 @@ public class ExecutionEngine {
 
     private NFVORequestor nfvoRequestor;
 
-    private ResourceManagement resourceManagement;
+    @Autowired
+    private MediaServerResourceManagement mediaServerResourceManagement;
 
     @Autowired
     private ExecutionManagement executionManagement;
@@ -80,7 +82,7 @@ public class ExecutionEngine {
     @PostConstruct
     public void init() {
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
-        this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
+        //this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
     }
 
@@ -118,21 +120,15 @@ public class ExecutionEngine {
                             vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                         }
                         VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
-                        Map<String, String> floatgingIps = new HashMap<>();
-                        for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()) {
-                            if (connectionPoint.getFloatingIp() != null && !connectionPoint.getFloatingIp().equals(""))
-                                floatgingIps.put(connectionPoint.getVirtual_link_reference(), connectionPoint.getFloatingIp());
-                            try {
-                                vnfcInstance = resourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent, "", floatgingIps).get();
-                            } catch (InterruptedException e) {
-                                log.warn(e.getMessage(), e);
-                            } catch (ExecutionException e) {
-                                log.warn(e.getMessage(), e);
-                            } catch (VimDriverException e) {
-                                log.error(e.getMessage(), e);
-                            }
-                            //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
+                        try {
+                            vnfcInstance = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent).get();
+                        } catch (InterruptedException e) {
+                            log.warn(e.getMessage(), e);
+                        } catch (ExecutionException e) {
+                            log.warn(e.getMessage(), e);
                         }
+                            //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
+
                     } else {
                         log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");
                     }
@@ -196,7 +192,7 @@ public class ExecutionEngine {
                         vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                     }
                     vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
-                    resourceManagement.release(vnfcInstance_remove, vimInstance);
+                    mediaServerResourceManagement.release(vnfcInstance_remove, vimInstance);
                     actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
                     //nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
                 }

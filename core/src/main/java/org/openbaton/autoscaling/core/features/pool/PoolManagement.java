@@ -39,8 +39,6 @@ public class PoolManagement {
 
     private Map<String, ScheduledFuture> poolTasks;
 
-    private Set<String> terminatingTasks;
-
     private NFVORequestor nfvoRequestor;
 
     private Map<String, Map<String, Map<String, Set<VNFCInstance>>>> reservedInstances;
@@ -68,7 +66,6 @@ public class PoolManagement {
         this.actionMonitor = new ActionMonitor();
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         this.poolTasks = new HashMap<>();
-        this.terminatingTasks = new HashSet<>();
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);

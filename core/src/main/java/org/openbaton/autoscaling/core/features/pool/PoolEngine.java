@@ -15,6 +15,7 @@ import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.openbaton.vnfm.configuration.NfvoProperties;
+import org.openbaton.vnfm.core.api.MediaServerResourceManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,8 @@ public class PoolEngine {
 
     private NFVORequestor nfvoRequestor;
 
-    private ResourceManagement resourceManagement;
+    @Autowired
+    private MediaServerResourceManagement mediaServerResourceManagement;
 
     @Autowired
     private PoolManagement poolManagement;
@@ -58,7 +60,7 @@ public class PoolEngine {
 
     @PostConstruct
     public void init() {
-        this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
+        //this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");    }
 
     public VNFCInstance allocateNewInstance(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException, VimException {
@@ -113,15 +115,13 @@ public class PoolEngine {
                     floatgingIps.put(connectionPoint.getVirtual_link_reference(),connectionPoint.getFloatingIp());
             }
             try {
-                Future<VNFCInstance> vnfcInstanceFuture = resourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent, "", floatgingIps);
+                Future<VNFCInstance> vnfcInstanceFuture = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
                 vnfcInstance = vnfcInstanceFuture.get();
             } catch (VimException e) {
                 log.error(e.getMessage(), e);
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
             } catch (ExecutionException e) {
-                log.error(e.getMessage(), e);
-            } catch (VimDriverException e) {
                 log.error(e.getMessage(), e);
             }
         } else {
@@ -242,7 +242,7 @@ public class PoolEngine {
                         Set<VNFCInstance> vnfcInstances = poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).get(vdu.getId());
                         VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                         for (VNFCInstance vnfcInstance : vnfcInstances) {
-                            resourceManagement.release(vnfcInstance, vimInstance);
+                            mediaServerResourceManagement.release(vnfcInstance, vimInstance);
                         }
                         poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).remove(vdu.getId());
                     }
