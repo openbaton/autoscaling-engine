@@ -114,7 +114,7 @@ public class PoolManagement {
                 if (POOL_PREPARE == true) {
                     for (int i = 1; i <= POOL_SIZE; i++) {
                         try {
-                            vnfcInstances.add(poolEngine.allocateNewInstance(nsr, vnfr, vdu));
+                            vnfcInstances.add(poolEngine.allocateNewInstance(nsr_id, vnfr, vdu));
                         } catch (VimException e) {
                             log.warn(e.getMessage(), e);
                         }
@@ -131,16 +131,14 @@ public class PoolManagement {
     public void activate(String nsr_id, String vnfr_id) throws NotFoundException {
         log.debug("Activating pool mechanism for VNFR " + vnfr_id);
         log.info("AutoScaling: Pool Size for nsr with: " + nsr_id + " -> " + POOL_SIZE);
-        NetworkServiceRecord nsr = null;
+        VirtualNetworkFunctionRecord vnfr = null;
         try {
-            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         } catch (SDKException e) {
             log.error(e.getMessage(), e);
-        } catch (ClassNotFoundException e) {
-            log.error(e.getMessage(), e);
         }
-        if (nsr == null) {
-            throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
+        if (vnfr == null) {
+            throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
         }
         //Prepare data structure
         Map<String, Map<String, Set<VNFCInstance>>> vnfrMap;
@@ -149,36 +147,34 @@ public class PoolManagement {
         } else {
             vnfrMap = new HashMap<String, Map<String, Set<VNFCInstance>>>();
         }
-        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            Map<String, Set<VNFCInstance>> vduMap;
-            if (vnfrMap.containsKey(vnfr_id)) {
-                vduMap = vnfrMap.get(vnfr_id);
+        Map<String, Set<VNFCInstance>> vduMap;
+        if (vnfrMap.containsKey(vnfr_id)) {
+            vduMap = vnfrMap.get(vnfr_id);
+        } else {
+            vduMap = new HashMap<String, Set<VNFCInstance>>();
+        }
+        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+            Set<VNFCInstance> vnfcInstances;
+            if (vduMap.containsKey(vdu.getId())) {
+                vnfcInstances = vduMap.get(vdu.getId());
             } else {
-                vduMap = new HashMap<String, Set<VNFCInstance>>();
+                vnfcInstances = new HashSet<>();
             }
-            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                Set<VNFCInstance> vnfcInstances;
-                if (vduMap.containsKey(vdu.getId())) {
-                    vnfcInstances = vduMap.get(vdu.getId());
-                } else {
-                    vnfcInstances = new HashSet<>();
-                }
-                if (POOL_PREPARE == true) {
-                    for (int i = vnfcInstances.size() + 1; i <= POOL_SIZE; i++) {
-                        try {
-                            VNFCInstance vnfcInstance = poolEngine.allocateNewInstance(nsr, vnfr, vdu);
-                            if (vnfcInstance != null) {
-                                vnfcInstances.add(vnfcInstance);
-                            }
-                        } catch (VimException e) {
-                            log.warn(e.getMessage(), e);
+            if (POOL_PREPARE == true) {
+                for (int i = vnfcInstances.size() + 1; i <= POOL_SIZE; i++) {
+                    try {
+                        VNFCInstance vnfcInstance = poolEngine.allocateNewInstance(nsr_id, vnfr, vdu);
+                        if (vnfcInstance != null) {
+                            vnfcInstances.add(vnfcInstance);
                         }
+                    } catch (VimException e) {
+                        log.warn(e.getMessage(), e);
                     }
                 }
-                vduMap.put(vdu.getId(), vnfcInstances);
             }
-            vnfrMap.put(vnfr.getId(), vduMap);
+            vduMap.put(vdu.getId(), vnfcInstances);
         }
+        vnfrMap.put(vnfr.getId(), vduMap);
         reservedInstances.put(nsr_id, vnfrMap);
         startPoolCheck(nsr_id);
     }
@@ -198,7 +194,6 @@ public class PoolManagement {
             }
         }
         poolEngine.releaseReservedInstances(nsr_id, vnfr_id);
-
         log.info("Deactivated pool mechanism for NSR " + nsr_id);
     }
 
