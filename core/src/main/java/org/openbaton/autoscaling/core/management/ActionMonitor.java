@@ -62,7 +62,7 @@ public class ActionMonitor {
 
     public synchronized void finishedAction(String id, Action nextAction) {
         if (states.containsKey(id)) {
-            if (nextAction == Action.TERMINATED || (states.get(id) != Action.TERMINATING && states.get(id) != Action.TERMINATED)) {
+            if (nextAction == Action.TERMINATED || ((states.get(id) != Action.TERMINATING && states.get(id) != Action.TERMINATED))) {
                 states.put(id, nextAction);
             } else if (states.get(id) == Action.TERMINATING) {
                 states.put(id, Action.TERMINATED);
@@ -71,7 +71,7 @@ public class ActionMonitor {
     }
 
     public synchronized void terminate(String id) {
-        if (states.containsKey(id)) {
+        if (states.containsKey(id) && states.get(id) != Action.INACTIVE && states.get(id) != Action.TERMINATED) {
             states.put(id, Action.TERMINATING);
         }
     }
