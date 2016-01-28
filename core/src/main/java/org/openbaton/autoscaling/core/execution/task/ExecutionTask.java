@@ -67,6 +67,7 @@ public class ExecutionTask implements Runnable {
             if (log.isDebugEnabled()) {
                 log.error(e.getMessage(), e);
             }
+            actionMonitor.finishedAction(vnfr_id);
             return;
         }
         try {
@@ -110,6 +111,7 @@ public class ExecutionTask implements Runnable {
                 if (log.isDebugEnabled()) {
                     log.error(e.getMessage(), e);
                 }
+                actionMonitor.finishedAction(vnfr_id);
             }
             if (actionMonitor.getAction(vnfr_id) == Action.SCALED) {
                 executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
