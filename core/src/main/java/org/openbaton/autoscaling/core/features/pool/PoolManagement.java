@@ -113,11 +113,11 @@ public class PoolManagement {
                 }
                 if (POOL_PREPARE == true) {
                     for (int i = 1; i <= POOL_SIZE; i++) {
-                        try {
-                            vnfcInstances.add(poolEngine.allocateNewInstance(nsr_id, vnfr, vdu));
-                        } catch (VimException e) {
-                            log.warn(e.getMessage(), e);
+                        VNFCInstance vnfcInstance = poolEngine.allocateNewInstance(nsr_id, vnfr, vdu);
+                        if (vnfcInstance != null) {
+                            vnfcInstances.add(vnfcInstance);
                         }
+
                     }
                 }
                 vduMap.put(vdu.getId(), vnfcInstances);
@@ -162,13 +162,9 @@ public class PoolManagement {
             }
             if (POOL_PREPARE == true) {
                 for (int i = vnfcInstances.size() + 1; i <= POOL_SIZE; i++) {
-                    try {
-                        VNFCInstance vnfcInstance = poolEngine.allocateNewInstance(nsr_id, vnfr, vdu);
-                        if (vnfcInstance != null) {
-                            vnfcInstances.add(vnfcInstance);
-                        }
-                    } catch (VimException e) {
-                        log.warn(e.getMessage(), e);
+                    VNFCInstance vnfcInstance = poolEngine.allocateNewInstance(nsr_id, vnfr, vdu);
+                    if (vnfcInstance != null) {
+                        vnfcInstances.add(vnfcInstance);
                     }
                 }
             }
@@ -208,7 +204,7 @@ public class PoolManagement {
         return new HashMap<>();
     }
 
-    public VNFCInstance getReservedInstance(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException, VimException {
+    public VNFCInstance getReservedInstance(String nsr_id, String vnfr_id, String vdu_id) {
         VNFCInstance returnedInstance = null;
         if (!getReservedInstances(nsr_id).isEmpty()) {
             if (getReservedInstances(nsr_id).containsKey(vnfr_id)) {
@@ -255,13 +251,19 @@ public class PoolManagement {
         log.debug("Deactivating Pool size checking for NSR with id: " + nsr_id);
         if (poolTasks.containsKey(nsr_id)) {
             poolTasks.get(nsr_id).cancel(false);
-            while (!actionMonitor.isTerminated(nsr_id) && actionMonitor.getAction(nsr_id) != Action.INACTIVE) {
+            int i=60;
+            while (!actionMonitor.isTerminated(nsr_id) && actionMonitor.getAction(nsr_id) != Action.INACTIVE && i>=0) {
                 actionMonitor.terminate(nsr_id);
-                log.debug("Waiting for finishing PoolTask for NSR with id: " + nsr_id);
+                log.debug("Waiting for finishing gracefully PoolTask for NSR with id: " + nsr_id + " (" + i + "s)");
+                log.debug(actionMonitor.toString());
                 try {
-                    Thread.sleep(2_000);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     log.error(e.getMessage(), e);
+                }
+                i--;
+                if (i<=0) {
+                    poolTasks.get(nsr_id).cancel(true);
                 }
             }
             actionMonitor.removeId(nsr_id);

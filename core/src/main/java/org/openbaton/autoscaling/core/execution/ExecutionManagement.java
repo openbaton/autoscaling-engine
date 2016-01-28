@@ -85,6 +85,10 @@ public class ExecutionManagement {
         } else {
             if (actionMonitor.getAction(vnfr_id) == Action.COOLDOWN) {
                 log.debug("Waiting already for Cooldown for VNFR with id: " + vnfr_id + ". Cannot create another ExecutionTask for VNFR with id: " + vnfr_id);
+            } else if (actionMonitor.getAction(vnfr_id) == Action.SCALE) {
+                log.debug("VNFR with id: " + vnfr_id + " is still in Scaling.");
+            } else {
+                log.debug(actionMonitor.toString());
             }
         }
     }
@@ -109,14 +113,17 @@ public class ExecutionManagement {
 
     public void stop(String nsr_id, String vnfr_id) {
         log.debug("Stopping ExecutionTask/CooldownTask for VNFR with id: " + vnfr_id);
-        while (!actionMonitor.isTerminated(vnfr_id) && actionMonitor.getAction(vnfr_id) != Action.INACTIVE) {
+        int i = 60;
+        while (!actionMonitor.isTerminated(vnfr_id) && actionMonitor.getAction(vnfr_id) != Action.INACTIVE && i>=0) {
             actionMonitor.terminate(vnfr_id);
-            log.debug("Waiting for finishing ExecutionTask/Cooldown for VNFR with id: " + vnfr_id);
+            log.debug("Waiting for finishing ExecutionTask/Cooldown for VNFR with id: " + vnfr_id + " (" + i + "s)");
+            log.debug(actionMonitor.toString());
             try {
-                Thread.sleep(5_000);
+                Thread.sleep(1_000);
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
             }
+            i--;
         }
         actionMonitor.removeId(vnfr_id);
         log.debug("Stopped ExecutionTask for VNFR with id: " + vnfr_id);

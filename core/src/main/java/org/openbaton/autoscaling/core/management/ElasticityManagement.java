@@ -70,7 +70,7 @@ public class ElasticityManagement {
         subscriptionIds = new ArrayList<>();
         //startPlugins();
 
-        waitForNfvo();
+        //waitForNfvo();
         //subscribe(Action.INSTANTIATE_FINISH);
         //subscribe(Action.RELEASE_RESOURCES_FINISH);
         //subscribe(Action.ERROR);

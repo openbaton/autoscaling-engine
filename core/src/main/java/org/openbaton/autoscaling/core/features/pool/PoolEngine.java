@@ -63,7 +63,7 @@ public class PoolEngine {
         //this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");    }
 
-    public VNFCInstance allocateNewInstance(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException, VimException {
+    public VNFCInstance allocateNewInstance(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException {
         VirtualNetworkFunctionRecord vnfr = null;
         VirtualDeploymentUnit vdu = null;
         //Find NSR
@@ -89,31 +89,36 @@ public class PoolEngine {
         return allocateNewInstance(nsr_id, vnfr, vdu);
     }
 
-    public VNFCInstance allocateNewInstance(String nsr_id, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException, NotFoundException {
+    public VNFCInstance allocateNewInstance(String nsr_id, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws NotFoundException {
         VNFCInstance vnfcInstance = null;
+        Future<VNFCInstance> vnfcInstanceFuture = null;
         log.debug("Allocating new VNFCInstance on NSR::VNFR::VDU -> " + nsr_id + "::" + vnfr.getId() + "::" + vdu.getId());
         int reservedInstances = getNumberOfReservedInstances(nsr_id, vnfr.getId(), vdu.getId());
         if ((vdu.getVnfc_instance().size() + reservedInstances < vdu.getScale_in_out()) && vdu.getVnfc().iterator().hasNext()) {
             VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
             VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
             try {
-                Future<VNFCInstance> vnfcInstanceFuture = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
-                vnfcInstance = vnfcInstanceFuture.get();
-                log.debug("Allocated new VNFCInstance on NSR::VNFR::VDU -> " + nsr_id + "::" + vnfr.getId() + "::" + vdu.getId() + " -> " + vnfcInstance );
+                vnfcInstanceFuture = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
             } catch (VimException e) {
-                log.error(e.getMessage(), e);
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-            } catch (ExecutionException e) {
                 log.error(e.getMessage(), e);
             }
         } else {
             log.warn("Not able to allocate new VNFCInstance for the Pool. Maximum number of VNFCInstances for VDU with id: " + vdu.getId() + " is reached");
         }
+        if (vnfcInstanceFuture != null) {
+            try {
+                vnfcInstance = vnfcInstanceFuture.get();
+                log.debug("Allocated new VNFCInstance on NSR::VNFR::VDU -> " + nsr_id + "::" + vnfr.getId() + "::" + vdu.getId() + " -> " + vnfcInstance );
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            } catch (ExecutionException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
         return vnfcInstance;
     }
 
-    public Set<VNFCInstance> allocateNewInstance(String nsr_id, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu, int numberOfInstances) throws VimException, NotFoundException {
+    public Set<VNFCInstance> allocateNewInstance(String nsr_id, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu, int numberOfInstances) throws NotFoundException {
         Set<VNFCInstance> vnfcInstances = new HashSet<>();
         Set<Future<VNFCInstance>> vnfcFutureInstances = new HashSet<>();
         log.debug("Allocating new VNFCInstance on NSR::VNFR::VDU -> " + nsr_id + "::" + vnfr.getId() + "::" + vdu.getId());
@@ -122,8 +127,13 @@ public class PoolEngine {
             if ((vdu.getVnfc_instance().size() + reservedInstances + i <= vdu.getScale_in_out()) && vdu.getVnfc().iterator().hasNext()) {
                 VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                 VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
-                    Future<VNFCInstance> vnfcInstanceFuture = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
-                    vnfcFutureInstances.add(vnfcInstanceFuture);
+                Future<VNFCInstance> vnfcInstanceFuture = null;
+                try {
+                    vnfcInstanceFuture = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
+                } catch (VimException e) {
+                    log.error(e.getMessage(), e);
+                }
+                vnfcFutureInstances.add(vnfcInstanceFuture);
             } else {
                 log.warn("Not able to allocate new VNFCInstance for the Pool. Maximum number of VNFCInstances for VDU with id: " + vdu.getId() + " is reached");
             }
@@ -131,6 +141,7 @@ public class PoolEngine {
         for (Future<VNFCInstance> vnfcFutureInstance : vnfcFutureInstances) {
             try {
                 VNFCInstance vnfcInstance = vnfcFutureInstance.get();
+                vnfcInstances.add(vnfcInstance);
                 log.debug("Allocated new VNFCInstance on NSR::VNFR::VDU -> " + nsr_id + "::" + vnfr.getId() + "::" + vdu.getId() + " -> " + vnfcInstance);
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);

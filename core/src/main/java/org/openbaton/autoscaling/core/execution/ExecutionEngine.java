@@ -90,7 +90,7 @@ public class ExecutionEngine {
         this.actionMonitor = actionMonitor;
     }
 
-    public VirtualNetworkFunctionRecord scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException, VimException {
+    public VirtualNetworkFunctionRecord scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException {
         //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
         //vnfr.setStatus(Status.SCALE);
         //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
@@ -126,8 +126,10 @@ public class ExecutionEngine {
                             log.warn(e.getMessage(), e);
                         } catch (ExecutionException e) {
                             log.warn(e.getMessage(), e);
+                        } catch (VimException e) {
+                            log.warn(e.getMessage(), e);
                         }
-                            //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
+                        //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
 
                     } else {
                         log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");

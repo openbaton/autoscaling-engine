@@ -70,8 +70,6 @@ public class PoolTask implements Runnable {
                         }
                     } catch (NotFoundException e) {
                         log.error(e.getMessage(), e);
-                    } catch (VimException e) {
-                        log.error(e.getMessage(), e);
                     }
                 }
                 reservedInstances.get(vnfr_id).get(vdu_id).addAll(newReservedInstances);
