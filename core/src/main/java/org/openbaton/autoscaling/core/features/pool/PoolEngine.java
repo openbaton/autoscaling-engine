@@ -114,7 +114,10 @@ public class PoolEngine {
             } catch (ExecutionException e) {
                 log.error(e.getMessage(), e);
             }
+        } else {
+            log.debug("Not able to allocate new VNFCInstance on NSR::VNFR::VDU -> " + nsr_id + "::" + vnfr.getId() + "::" + vdu.getId() + " -> " + vnfcInstance );
         }
+
         return vnfcInstance;
     }
 
@@ -130,10 +133,10 @@ public class PoolEngine {
                 Future<VNFCInstance> vnfcInstanceFuture = null;
                 try {
                     vnfcInstanceFuture = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
+                    vnfcFutureInstances.add(vnfcInstanceFuture);
                 } catch (VimException e) {
                     log.error(e.getMessage(), e);
                 }
-                vnfcFutureInstances.add(vnfcInstanceFuture);
             } else {
                 log.warn("Not able to allocate new VNFCInstance for the Pool. Maximum number of VNFCInstances for VDU with id: " + vdu.getId() + " is reached");
             }
