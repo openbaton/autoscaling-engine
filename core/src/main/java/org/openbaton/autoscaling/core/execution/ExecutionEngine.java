@@ -11,18 +11,22 @@ import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
+import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.catalogue.nfvo.VimInstance;
 import org.openbaton.catalogue.nfvo.messages.OrVnfmGenericMessage;
 import org.openbaton.common.vnfm_sdk.VnfmHelper;
 import org.openbaton.common.vnfm_sdk.utils.VnfmUtils;
+import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimDriverException;
 import org.openbaton.exceptions.VimException;
+import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
 import org.openbaton.nfvo.vim_interfaces.resource_management.ResourceManagement;
+import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vnfm.configuration.AutoScalingProperties;
-import org.openbaton.vnfm.configuration.NfvoProperties;
+import org.openbaton.vim.drivers.VimDriverCaller;
+import org.openbaton.vnfm.configuration.*;
 import org.openbaton.vnfm.core.api.MediaServerManagement;
 import org.openbaton.vnfm.core.api.MediaServerResourceManagement;
 import org.slf4j.Logger;
@@ -73,6 +77,15 @@ public class ExecutionEngine {
     @Autowired
     private AutoScalingProperties autoScalingProperties;
 
+    @Autowired
+    private SpringProperties springProperties;
+
+    @Autowired
+    private VnfmProperties vnfmProperties;
+
+    private MonitoringPluginCaller client;
+
+
 //    public ExecutionEngine(Properties properties) {
 //        this.properties = properties;
 //        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
@@ -84,6 +97,10 @@ public class ExecutionEngine {
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         //this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
+    }
+
+    private MonitoringPluginCaller getClient() {
+        return (MonitoringPluginCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getMonitoringPluginCaller(vnfmProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(),"icinga-agent", "icinga", vnfmProperties.getRabbitmq().getManagement().getPort());
     }
 
     public void setActionMonitor(ActionMonitor actionMonitor) {
@@ -193,12 +210,37 @@ public class ExecutionEngine {
                     if (vimInstance == null) {
                         vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                     }
-                    vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
-                    mediaServerResourceManagement.release(vnfcInstance_remove, vimInstance);
-                    actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
+                    if (autoScalingProperties.getTerminationRule().isActivate()) {
+                        if (client==null) client = getClient();
+                        log.debug("Search for VNFCInstance that meets the termination rule");
+                        List<String> hostnames = new ArrayList<>();
+                        for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
+                            hostnames.add(vnfcInstance.getHostname());
+                        }
+                        List<String> metrics = new ArrayList<>();
+                        metrics.add(autoScalingProperties.getTerminationRule().getMetric());
+                        List<Item> items = null;
+                        try {
+                            items = client.queryPMJob(hostnames, metrics, "15");
+                        } catch (MonitoringException e) {
+                            log.error(e.getMessage(), e);
+                        }
+                        log.debug("Processing measurement results...");
+                        for (Item item : items) {
+                            if (item.getLastValue().equals(autoScalingProperties.getTerminationRule().getValue())) {
+                                log.debug("Found VNFCInstance that meets termination-rule.");
+                                vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
+                                break;
+                            }
+                        }
+                    } else {
+                        log.debug("Scale-in the first VNFCInstance found");
+                        vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
+                    }
                     //nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
                 }
                 if (vnfcInstance_remove != null) {
+                    mediaServerResourceManagement.release(vnfcInstance_remove, vimInstance);
                     vdu.getVnfc_instance().remove((vnfcInstance_remove));
                     for (Ip ip : vnfcInstance_remove.getIps()) {
                         vnfr.getVnf_address().remove(ip.getIp());
@@ -206,13 +248,16 @@ public class ExecutionEngine {
                     for (Ip ip : vnfcInstance_remove.getFloatingIps()) {
                         vnfr.getVnf_address().remove(ip.getIp());
                     }
+                    actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
                     log.debug("Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
                     mediaServerManagement.delete(vnfr.getId(), vnfcInstance_remove.getHostname());
                     break;
+                } else {
+                    log.debug("Not found VNFCInstance in VDU with id: " + vdu.getId() + "to scale in");
                 }
             }
             if (vnfcInstance_remove == null) {
-                log.warn("Not found any VDU to scale in a VNFComponent. Limits are reached.");
+                log.warn("Not found any VDU to scale in a VNFInstance.");
                 //throw new NotFoundException("Not found any VDU to scale in a VNFComponent. Limits are reached.");
             } else {
                 vnfr = updateVNFR(vnfr);
