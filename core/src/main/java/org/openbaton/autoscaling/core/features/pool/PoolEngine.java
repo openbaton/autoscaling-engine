@@ -260,6 +260,7 @@ public class PoolEngine {
 
     public void releaseReservedInstances(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException, NotFoundException {
         log.info("Releasing reserved Instances of NSR with id: " + nsr.getId() + " of VNFR with id: " + vnfr.getId() + " of VDU with id: " + vdu.getId());
+        Set<Future<Void>> releasingInstances = new HashSet<>();
         if (!poolManagement.getReservedInstances(nsr.getId()).isEmpty()) {
             if (poolManagement.getReservedInstances(nsr.getId()).containsKey(vnfr.getId())) {
                 if (poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).containsKey(vdu.getId())) {
@@ -267,7 +268,7 @@ public class PoolEngine {
                         Set<VNFCInstance> vnfcInstances = poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).get(vdu.getId());
                         VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                         for (VNFCInstance vnfcInstance : vnfcInstances) {
-                            mediaServerResourceManagement.release(vnfcInstance, vimInstance);
+                            releasingInstances.add(mediaServerResourceManagement.release(vnfcInstance, vimInstance));
                         }
                         poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).remove(vdu.getId());
                     }
@@ -279,6 +280,16 @@ public class PoolEngine {
             }
         } else {
             log.warn("Not found any reserved Instances for NSR with id: " + nsr.getId());
+        }
+        for (Future<Void> releasingInstance : releasingInstances) {
+            try {
+                releasingInstance.get();
+                log.debug("Removed reserved VNFInstance");
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            } catch (ExecutionException e) {
+                log.error(e.getMessage(), e);
+            }
         }
     }
 
