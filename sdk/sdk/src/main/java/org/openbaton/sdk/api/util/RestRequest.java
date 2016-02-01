@@ -304,6 +304,8 @@ public abstract class RestRequest {
             // check response status
             if (httpStatus != null) {
                 checkStatus(jsonResponse, httpStatus);
+            } else {
+                checkStatus(jsonResponse, HttpURLConnection.HTTP_ACCEPTED);
             }
             // return the response of the request
             log.trace("result is: " + jsonResponse.getBody().toString());
@@ -369,6 +371,8 @@ public abstract class RestRequest {
             // check response status
             if (httpStatus != null) {
                 checkStatus(jsonResponse, httpStatus);
+            } else {
+                checkStatus(jsonResponse, HttpURLConnection.HTTP_ACCEPTED);
             }
             // return the response of the request
             log.trace("result is: " + jsonResponse.getBody().toString());
