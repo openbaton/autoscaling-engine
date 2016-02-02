@@ -221,9 +221,9 @@ public class DetectionManagement {
                         log.debug("Waiting for finishing ExecutionTask/Cooldown for VNFR with id: " + vnfr_id + " (" + i + "s)");
                         log.debug(actionMonitor.toString());
                         if (i <= 0) {
-                            detectionTasks.get(nsr_id).get(vnfr_id).remove(autoScalePolicy.getId());
                             log.error("Forced deactivation of DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId());
                             detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(true);
+                            detectionTasks.get(nsr_id).get(vnfr_id).remove(autoScalePolicy.getId());
                             return new AsyncResult<>(false);
                         }
                         try {

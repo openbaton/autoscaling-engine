@@ -302,10 +302,12 @@ public class PoolManagement {
                 if (i <= 0) {
                     actionMonitor.removeId(nsr_id);
                     log.error("Forced deactivation of poolTask for NSR with id: " + nsr_id);
+                    poolTasks.remove(nsr_id);
                     poolTasks.get(nsr_id).cancel(true);
                     return new AsyncResult<>(false);
                 }
             }
+            poolTasks.remove(nsr_id);
             actionMonitor.removeId(nsr_id);
             log.debug("Deactivated Pool size checking for NSR with id: " + nsr_id);
         } else {
