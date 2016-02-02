@@ -112,19 +112,17 @@ public class ExecutionTask implements Runnable {
                         break;
                 }
             }
-        }catch(SDKException e){
+        } catch (SDKException e) {
             log.error(e.getMessage(), e);
-        }catch(NotFoundException e){
+        } catch (NotFoundException e) {
             log.error(e.getMessage(), e);
-        }catch(VimException e){
+        } catch (VimException e) {
             log.error(e.getMessage(), e);
-        } catch (VimDriverException e) {
-            e.printStackTrace();
         } finally {
             try {
                 executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
             } catch (SDKException e) {
-                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in in SCALE");
+                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in SCALE");
                 if (log.isDebugEnabled()) {
                     log.error(e.getMessage(), e);
                 }

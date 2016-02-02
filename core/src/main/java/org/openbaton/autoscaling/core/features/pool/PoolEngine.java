@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -80,7 +81,7 @@ public class PoolEngine {
         //this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");    }
 
-    public VNFCInstance allocateNewInstance(String nsr_id, String vnfr_id, String vdu_id) throws NotFoundException {
+    public Set<VNFCInstance> allocateNewInstance(String nsr_id, String vnfr_id, String vdu_id, int numberOfInstances) throws NotFoundException {
         VirtualNetworkFunctionRecord vnfr = null;
         VirtualDeploymentUnit vdu = null;
         //Find NSR
@@ -103,7 +104,7 @@ public class PoolEngine {
         if (vdu == null) {
             throw new NotFoundException("Not found VDU with id: " + vdu_id);
         }
-        return allocateNewInstance(nsr_id, vnfr, vdu);
+        return allocateNewInstance(nsr_id, vnfr, vdu, numberOfInstances);
     }
 
     public VNFCInstance allocateNewInstance(String nsr_id, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws NotFoundException {
@@ -275,7 +276,7 @@ public class PoolEngine {
 
     }
 
-    public void releaseReservedInstances(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws VimException, NotFoundException {
+    public void releaseReservedInstances(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws NotFoundException {
         log.info("Releasing reserved Instances of NSR with id: " + nsr.getId() + " of VNFR with id: " + vnfr.getId() + " of VDU with id: " + vdu.getId());
         Set<Future<Void>> releasingInstances = new HashSet<>();
         if (!poolManagement.getReservedInstances(nsr.getId()).isEmpty()) {
@@ -285,7 +286,12 @@ public class PoolEngine {
                         Set<VNFCInstance> vnfcInstances = poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).get(vdu.getId());
                         VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                         for (VNFCInstance vnfcInstance : vnfcInstances) {
-                            releasingInstances.add(mediaServerResourceManagement.release(vnfcInstance, vimInstance));
+                            try {
+                                Future<Void> release = mediaServerResourceManagement.release(vnfcInstance, vimInstance);
+                                releasingInstances.add(release);
+                            } catch (VimException e) {
+                                log.warn("Not able to remove VNFCInstance with name " + vnfcInstance.getHostname() + " Please do it manually...");
+                            }
                         }
                         poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).remove(vdu.getId());
                     }

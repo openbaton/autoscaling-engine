@@ -32,11 +32,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ErrorHandler;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -69,6 +73,14 @@ public class ExecutionManagement {
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
         this.taskScheduler.setRemoveOnCancelPolicy(true);
+        this.taskScheduler.setErrorHandler(new ErrorHandler() {
+            protected Logger log = LoggerFactory.getLogger(this.getClass());
+
+            @Override
+            public void handleError(Throwable t) {
+                log.error(t.getMessage(), t);
+            }
+        });
         this.taskScheduler.initialize();
     }
 
@@ -128,7 +140,8 @@ public class ExecutionManagement {
         log.debug("Stopped all ExecutionTasks for NSR with id: " + nsr_id);
     }
 
-    public void stop(String nsr_id, String vnfr_id) {
+    @Async
+    public Future<Boolean> stop(String nsr_id, String vnfr_id) {
         log.debug("Stopping ExecutionTask/CooldownTask for VNFR with id: " + vnfr_id);
         int i = 60;
         while (!actionMonitor.isTerminated(vnfr_id) && actionMonitor.getAction(vnfr_id) != Action.INACTIVE && i>=0) {
@@ -141,8 +154,14 @@ public class ExecutionManagement {
                 log.error(e.getMessage(), e);
             }
             i--;
+            if (i <= 0) {
+                actionMonitor.removeId(vnfr_id);
+                log.error("Were not able to wait until ExecutionTask finished for VNFR with id: " + vnfr_id);
+                return new AsyncResult<>(false);
+            }
         }
         actionMonitor.removeId(vnfr_id);
         log.debug("Stopped ExecutionTask for VNFR with id: " + vnfr_id);
+        return new AsyncResult<>(true);
     }
 }

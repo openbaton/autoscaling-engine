@@ -117,7 +117,7 @@ public class ExecutionEngine {
     }
 
     private MonitoringPluginCaller getClient() {
-        return (MonitoringPluginCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getMonitoringPluginCaller(vnfmProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(),"icinga-agent", "icinga", vnfmProperties.getRabbitmq().getManagement().getPort());
+        return (MonitoringPluginCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getMonitoringPluginCaller(vnfmProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(), "icinga-agent", "icinga", vnfmProperties.getRabbitmq().getManagement().getPort());
     }
 
     public void setActionMonitor(ActionMonitor actionMonitor) {
@@ -125,31 +125,27 @@ public class ExecutionEngine {
     }
 
     public VirtualNetworkFunctionRecord scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws SDKException, NotFoundException {
-        //VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-        //vnfr.setStatus(Status.SCALE);
-        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
-        //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-        for (int i = 1; i <= numberOfInstances ; i++) {
+        for (int i = 1; i <= numberOfInstances; i++) {
             if (actionMonitor.isTerminating(vnfr.getId())) {
                 actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
                 return vnfr;
             }
             VNFCInstance vnfcInstance = null;
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                if (autoScalingProperties.getPool().isActivate()) {
-                    log.debug("Getting VNFCInstance from pool");
-                    vnfcInstance = poolManagement.getReservedInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId());
-                    if (vnfcInstance != null) {
-                      log.debug("Got VNFCInstance from pool -> " + vnfcInstance);
+                VimInstance vimInstance = null;
+                if (vdu.getVnfc_instance().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
+                    if (autoScalingProperties.getPool().isActivate()) {
+                        log.debug("Getting VNFCInstance from pool");
+                        vnfcInstance = poolManagement.getReservedInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId());
+                        if (vnfcInstance != null) {
+                            log.debug("Got VNFCInstance from pool -> " + vnfcInstance);
+                        } else {
+                            log.debug("No VNFCInstance available in pool");
+                        }
                     } else {
-                      log.debug("No VNFCInstance available in pool");
+                        log.debug("Pool is deactivated");
                     }
-                } else {
-                    log.debug("Pool is deactivated");
-                }
-                if (vnfcInstance == null) {
-                    VimInstance vimInstance = null;
-                    if (vdu.getVnfc_instance().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
+                    if (vnfcInstance == null) {
                         if (vimInstance == null) {
                             vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                         }
@@ -164,7 +160,6 @@ public class ExecutionEngine {
                             log.warn(e.getMessage(), e);
                         }
                         //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
-
                     } else {
                         log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");
                     }
@@ -196,7 +191,7 @@ public class ExecutionEngine {
         return vnfr;
     }
 
-    public void scaleOutTo(VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException, VimDriverException {
+    public void scaleOutTo(VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException {
         int vnfci_counter = 0;
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             vnfci_counter += vdu.getVnfc_instance().size();
@@ -228,7 +223,7 @@ public class ExecutionEngine {
                         vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                     }
                     if (autoScalingProperties.getTerminationRule().isActivate()) {
-                        if (client==null) client = getClient();
+                        if (client == null) client = getClient();
                         log.debug("Search for VNFCInstance that meets the termination rule");
                         List<String> hostnames = new ArrayList<>();
                         for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {

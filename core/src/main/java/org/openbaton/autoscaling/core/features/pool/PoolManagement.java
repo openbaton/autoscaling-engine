@@ -35,11 +35,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ErrorHandler;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -87,6 +92,14 @@ public class PoolManagement {
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
         this.taskScheduler.setRemoveOnCancelPolicy(true);
+        this.taskScheduler.setErrorHandler(new ErrorHandler() {
+            protected Logger log = LoggerFactory.getLogger(this.getClass());
+
+            @Override
+            public void handleError(Throwable t) {
+                log.error(t.getMessage(), t);
+            }
+        });
         this.taskScheduler.initialize();
 
         reservedInstances = new HashMap<>();
@@ -203,7 +216,13 @@ public class PoolManagement {
         log.debug("Deactivating pool mechanism for NSR " + nsr_id);
         if (reservedInstances.containsKey(nsr_id)) {
             if (reservedInstances.get(nsr_id).size() == 1) {
-                stopPoolCheck(nsr_id);
+                try {
+                    stopPoolCheck(nsr_id).get();
+                } catch (InterruptedException e) {
+                    log.error(e.getMessage(), e);
+                } catch (ExecutionException e) {
+                    log.error(e.getMessage(), e);
+                }
             }
         }
         poolEngine.releaseReservedInstances(nsr_id, vnfr_id);
@@ -264,12 +283,13 @@ public class PoolManagement {
         }
     }
 
-    public void stopPoolCheck(String nsr_id) {
+    @Async
+    public Future<Boolean> stopPoolCheck(String nsr_id) {
         log.debug("Deactivating Pool size checking for NSR with id: " + nsr_id);
         if (poolTasks.containsKey(nsr_id)) {
             poolTasks.get(nsr_id).cancel(false);
-            int i=60;
-            while (!actionMonitor.isTerminated(nsr_id) && actionMonitor.getAction(nsr_id) != Action.INACTIVE && i>=0) {
+            int i = 60;
+            while (!actionMonitor.isTerminated(nsr_id) && actionMonitor.getAction(nsr_id) != Action.INACTIVE && i >= 0) {
                 actionMonitor.terminate(nsr_id);
                 log.debug("Waiting for finishing gracefully PoolTask for NSR with id: " + nsr_id + " (" + i + "s)");
                 log.debug(actionMonitor.toString());
@@ -279,8 +299,11 @@ public class PoolManagement {
                     log.error(e.getMessage(), e);
                 }
                 i--;
-                if (i<=0) {
+                if (i <= 0) {
+                    actionMonitor.removeId(nsr_id);
+                    log.error("Forced deactivation of poolTask for NSR with id: " + nsr_id);
                     poolTasks.get(nsr_id).cancel(true);
+                    return new AsyncResult<>(false);
                 }
             }
             actionMonitor.removeId(nsr_id);
@@ -288,6 +311,6 @@ public class PoolManagement {
         } else {
             log.debug("Not Found PoolTask for NSR with id: " + nsr_id);
         }
+        return new AsyncResult<>(true);
     }
-
 }

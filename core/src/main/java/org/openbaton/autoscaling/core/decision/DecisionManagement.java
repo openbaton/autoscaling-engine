@@ -31,8 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ErrorHandler;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
@@ -67,6 +69,14 @@ public class DecisionManagement {
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
         this.taskScheduler.setRemoveOnCancelPolicy(true);
+        this.taskScheduler.setErrorHandler(new ErrorHandler() {
+            protected Logger log = LoggerFactory.getLogger(this.getClass());
+
+            @Override
+            public void handleError(Throwable t) {
+                log.error(t.getMessage(), t);
+            }
+        });
         this.taskScheduler.initialize();
     }
 
@@ -95,6 +105,7 @@ public class DecisionManagement {
         }
     }
 
+    @Async
     public void stop(String nsr_id, String vnfr_id) {
         log.debug("Invoking termination of all DecisionTasks for VNFR with id: " + vnfr_id);
         actionMonitor.removeId(vnfr_id);

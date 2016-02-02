@@ -36,11 +36,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.*;
+import java.util.concurrent.Future;
 
 /**
  * Created by mpa on 27.10.15.
@@ -113,6 +116,7 @@ public class ElasticityManagement {
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 
+    @Async
     public void activate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.start(nsr_id, vnfr_id);
@@ -155,7 +159,8 @@ public class ElasticityManagement {
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
     }
 
-    public void deactivate(String nsr_id, String vnfr_id) {
+    @Async
+    public Future<Boolean> deactivate(String nsr_id, String vnfr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
         if (autoScalingProperties.getPool().isActivate()) {
             try {
@@ -179,8 +184,8 @@ public class ElasticityManagement {
         }
         decisionManagement.stop(nsr_id, vnfr_id);
         executionManagement.stop(nsr_id, vnfr_id);
-
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
+        return new AsyncResult<>(true);
     }
 
     private void subscribe(Action action) throws SDKException {

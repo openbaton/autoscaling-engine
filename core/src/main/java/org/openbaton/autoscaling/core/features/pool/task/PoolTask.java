@@ -58,6 +58,8 @@ public class PoolTask implements Runnable {
         this.pool_size = pool_size;
     }
 
+
+
     @Override
     public void run() {
         actionMonitor.finishedAction(nsr_id, Action.DECIDE);
@@ -76,18 +78,11 @@ public class PoolTask implements Runnable {
                 }
                 int currentPoolSize = reservedInstances.get(vnfr_id).get(vdu_id).size();
                 log.debug("Current pool size of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + currentPoolSize);
-                Set<VNFCInstance> newReservedInstances = new HashSet<>();
-                for (int i = currentPoolSize; i < pool_size; i++) {
-                    log.debug("Allocating new reserved Instance to the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id);
-                    try {
-                        VNFCInstance newReservedInstance = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id);
-                        if (newReservedInstance != null) {
-                            newReservedInstances.add(newReservedInstance);
-                            log.debug("Allocated new reserved Instance to the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + newReservedInstance);
-                        }
-                    } catch (NotFoundException e) {
-                        log.error(e.getMessage(), e);
-                    }
+                Set<VNFCInstance> newReservedInstances = null;
+                try {
+                    newReservedInstances = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id, pool_size - currentPoolSize);
+                } catch (NotFoundException e) {
+                    log.error(e.getMessage(), e);
                 }
                 reservedInstances.get(vnfr_id).get(vdu_id).addAll(newReservedInstances);
             }
