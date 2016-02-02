@@ -212,6 +212,7 @@ public class PoolManagement {
         log.info("Deactivated pool mechanism for NSR " + nsr_id);
     }
 
+    @Async
     public void deactivate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
         log.debug("Deactivating pool mechanism for NSR " + nsr_id);
         if (reservedInstances.containsKey(nsr_id)) {

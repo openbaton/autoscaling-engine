@@ -224,6 +224,7 @@ public class DetectionManagement {
                             log.error("Forced deactivation of DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId());
                             detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(true);
                             detectionTasks.get(nsr_id).get(vnfr_id).remove(autoScalePolicy.getId());
+                            actionMonitor.removeId(vnfr_id);
                             return new AsyncResult<>(false);
                         }
                         try {
@@ -233,6 +234,7 @@ public class DetectionManagement {
                         }
                         i--;
                     }
+                    actionMonitor.removeId(vnfr_id);
                     detectionTasks.get(nsr_id).get(vnfr_id).remove(autoScalePolicy.getId());
                     log.debug("Deactivated Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
                 } else {

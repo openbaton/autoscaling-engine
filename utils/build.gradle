@@ -23,8 +23,11 @@ repositories {
 }
 
 dependencies {
-    compile project(':catalogue')
-    compile project(':exception')
+    compile 'org.openbaton:catalogue:0.16-SNAPSHOT'
+    compile 'org.openbaton:exception:0.16-SNAPSHOT'
+
+//    compile project(':catalogue')
+//    compile project(':exception')
     //compile project(':sdk')
     compile ('org.openbaton:sdk:0.16-SNAPSHOT') {
         exclude module: 'catalogue'

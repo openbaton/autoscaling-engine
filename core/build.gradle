@@ -23,22 +23,29 @@ repositories {
 }
 
 dependencies {
-    //compile 'org.openbaton:catalogue:0.12'
-    compile project(':catalogue')
+    compile 'org.openbaton:plugin:0.16-SNAPSHOT'
+    compile 'org.openbaton:catalogue:0.16-SNAPSHOT'
+    compile 'org.openbaton:monitoring:0.16-SNAPSHOT'
+    compile 'org.openbaton:vnfm-sdk-amqp:0.16-SNAPSHOT'
+    compile 'org.openbaton:vim-int:0.16-SNAPSHOT'
+    compile 'org.openbaton:vim-impl:0.16-SNAPSHOT'
+
+//    compile project(':catalogue')
     compile project(':as-catalogue')
     compile project(':vnfm-catalogue')
     compile project(':as-utils')
     compile project(':repository')
-    compile project(':monitoring')
-    compile project(':vim-int')
-    compile project(':core-impl')
+//    compile project(':monitoring')
+//    compile project(':vim-int')
+//    compile project(':core-impl')
+    compile project(':core')
 
     compile project(':configuration')
 
     //compile project(':vnfm-sdk')
-    compile project(':vnfm-sdk-amqp')
+//    compile project(':vnfm-sdk-amqp')
     //compile project(':sdk')
-    runtime project(':vim-impl')
+//    runtime project(':vim-impl')
 
     compile ('org.openbaton:sdk:0.16-SNAPSHOT') {
         exclude module: 'catalogue'
