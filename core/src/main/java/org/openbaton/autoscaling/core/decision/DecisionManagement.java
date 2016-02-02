@@ -32,12 +32,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ErrorHandler;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -106,8 +108,9 @@ public class DecisionManagement {
     }
 
     @Async
-    public void stop(String nsr_id, String vnfr_id) {
+    public Future<Boolean> stop(String nsr_id, String vnfr_id) {
         log.debug("Invoking termination of all DecisionTasks for VNFR with id: " + vnfr_id);
         actionMonitor.removeId(vnfr_id);
+        return new AsyncResult<Boolean>(true);
     }
 }

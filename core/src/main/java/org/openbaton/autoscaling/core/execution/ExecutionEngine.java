@@ -40,8 +40,8 @@ import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.openbaton.vnfm.configuration.*;
-import org.openbaton.vnfm.core.api.MediaServerManagement;
-import org.openbaton.vnfm.core.api.MediaServerResourceManagement;
+import org.openbaton.vnfm.core.MediaServerManagement;
+import org.openbaton.vnfm.core.MediaServerResourceManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,20 +68,20 @@ public class ExecutionEngine {
 
     private NFVORequestor nfvoRequestor;
 
-    @Autowired
+    //@Autowired
     private MediaServerResourceManagement mediaServerResourceManagement;
 
-    @Autowired
+    //@Autowired
     private ExecutionManagement executionManagement;
 
-    @Autowired
+    //@Autowired
     private PoolManagement poolManagement;
 
     private ActionMonitor actionMonitor;
 
     private VnfmHelper vnfmHelper;
 
-    @Autowired
+    //@Autowired
     private MediaServerManagement mediaServerManagement;
 
     @Autowired
@@ -107,6 +107,10 @@ public class ExecutionEngine {
 
     @PostConstruct
     public void init() {
+        this.mediaServerResourceManagement = context.getBean(MediaServerResourceManagement.class);
+        this.mediaServerManagement = context.getBean(MediaServerManagement.class);
+        this.executionManagement = context.getBean(ExecutionManagement.class);
+        this.poolManagement = context.getBean(PoolManagement.class);
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         //this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
@@ -156,9 +160,9 @@ public class ExecutionEngine {
                             log.warn(e.getMessage(), e);
                         }
                         //nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent_new);
-                    } else {
-                        log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");
                     }
+                } else {
+                        log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");
                 }
                 if (vnfcInstance != null) {
                     vdu.getVnfc_instance().add(vnfcInstance);

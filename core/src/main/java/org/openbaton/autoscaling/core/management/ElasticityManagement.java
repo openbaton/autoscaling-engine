@@ -17,6 +17,7 @@
 
 package org.openbaton.autoscaling.core.management;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
@@ -34,22 +35,27 @@ import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created by mpa on 27.10.15.
  */
 @Service
 @Scope("singleton")
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class})
 public class ElasticityManagement {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
@@ -162,9 +168,10 @@ public class ElasticityManagement {
     @Async
     public Future<Boolean> deactivate(String nsr_id, String vnfr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
+        Set<Future<Boolean>> pendingTasks = new HashSet<>();
         if (autoScalingProperties.getPool().isActivate()) {
             try {
-                poolManagement.deactivate(nsr_id, vnfr_id);
+                pendingTasks.add(poolManagement.deactivate(nsr_id, vnfr_id));
             } catch (NotFoundException e) {
                 log.warn(e.getMessage());
                 if (log.isDebugEnabled()) {
@@ -178,12 +185,29 @@ public class ElasticityManagement {
             }
         }
         try {
-            detectionManagment.stop(nsr_id, vnfr_id);
+            pendingTasks.add(detectionManagment.stop(nsr_id, vnfr_id));
         } catch (NotFoundException e) {
             log.error(e.getMessage(), e);
         }
-        decisionManagement.stop(nsr_id, vnfr_id);
-        executionManagement.stop(nsr_id, vnfr_id);
+        pendingTasks.add(decisionManagement.stop(nsr_id, vnfr_id));
+        pendingTasks.add(executionManagement.stop(nsr_id, vnfr_id));
+        for (Future<Boolean> pendingTask : pendingTasks) {
+            try {
+                pendingTask.get(60, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            } catch (ExecutionException e) {
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            } catch (TimeoutException e) {
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+        }
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
         return new AsyncResult<>(true);
     }

@@ -29,6 +29,7 @@ import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -42,10 +43,13 @@ import java.util.*;
 @Scope("singleton")
 public class DecisionEngine {
 
-    @Autowired
-    private ExecutionManagement executionManagement;
-
     protected Logger log = LoggerFactory.getLogger(this.getClass());
+
+    @Autowired
+    private ConfigurableApplicationContext context;
+
+    //@Autowired
+    private ExecutionManagement executionManagement;
 
     private NFVORequestor nfvoRequestor;
 
@@ -54,6 +58,7 @@ public class DecisionEngine {
 
     @PostConstruct
     public void init() {
+        this.executionManagement = context.getBean(ExecutionManagement.class);
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
     }
 

@@ -34,6 +34,7 @@ import org.openbaton.vnfm.configuration.AutoScalingProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -56,9 +57,12 @@ public class DetectionEngine {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
+    @Autowired
+    private ConfigurableApplicationContext context;
+
     private VirtualisedResourcesPerformanceManagement monitor;
 
-    @Autowired
+    //@Autowired
     private DetectionManagement detectionManagement;
 
     @Autowired
@@ -66,6 +70,7 @@ public class DetectionEngine {
 
     @PostConstruct
     public void init() {
+        this.detectionManagement = context.getBean(DetectionManagement.class);
         this.monitor = new EmmMonitor(autoScalingProperties.getMonitor().getUrl());
         if (monitor == null) {
             log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");

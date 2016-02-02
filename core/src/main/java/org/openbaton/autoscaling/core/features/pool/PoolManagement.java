@@ -19,6 +19,7 @@ package org.openbaton.autoscaling.core.features.pool;
 
 import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.core.features.pool.task.PoolTask;
+import org.openbaton.autoscaling.core.management.ASBeanConfiguration;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
@@ -37,8 +38,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
 import org.springframework.util.ErrorHandler;
 
 import javax.annotation.PostConstruct;
@@ -53,6 +57,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 @Scope("singleton")
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class})
 public class PoolManagement {
 
     protected Logger log = LoggerFactory.getLogger(this.getClass());
@@ -213,7 +218,7 @@ public class PoolManagement {
     }
 
     @Async
-    public void deactivate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
+    public Future<Boolean> deactivate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
         log.debug("Deactivating pool mechanism for NSR " + nsr_id);
         if (reservedInstances.containsKey(nsr_id)) {
             if (reservedInstances.get(nsr_id).size() == 1) {
@@ -221,13 +226,16 @@ public class PoolManagement {
                     stopPoolCheck(nsr_id).get();
                 } catch (InterruptedException e) {
                     log.error(e.getMessage(), e);
+                    return new AsyncResult<Boolean>(false);
                 } catch (ExecutionException e) {
                     log.error(e.getMessage(), e);
+                    return new AsyncResult<Boolean>(false);
                 }
             }
         }
         poolEngine.releaseReservedInstances(nsr_id, vnfr_id);
         log.info("Deactivated pool mechanism for NSR " + nsr_id);
+        return new AsyncResult<Boolean>(true);
     }
 
     public Map<String, Map<String, Set<VNFCInstance>>> getReservedInstances(String nsr_id) {
