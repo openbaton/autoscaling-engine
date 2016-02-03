@@ -136,7 +136,6 @@ public class PoolEngine {
         } else {
             log.debug("Not able to allocate new VNFCInstance on NSR::VNFR::VDU -> " + nsr_id + "::" + vnfr.getId() + "::" + vdu.getId() + " -> " + vnfcInstance );
         }
-
         return vnfcInstance;
     }
 
@@ -279,7 +278,7 @@ public class PoolEngine {
 
     public void releaseReservedInstances(NetworkServiceRecord nsr, VirtualNetworkFunctionRecord vnfr, VirtualDeploymentUnit vdu) throws NotFoundException {
         log.info("Releasing reserved Instances of NSR with id: " + nsr.getId() + " of VNFR with id: " + vnfr.getId() + " of VDU with id: " + vdu.getId());
-        Set<Future<Void>> releasingInstances = new HashSet<>();
+        Set<Future<Boolean>> releasingInstances = new HashSet<>();
         if (!poolManagement.getReservedInstances(nsr.getId()).isEmpty()) {
             if (poolManagement.getReservedInstances(nsr.getId()).containsKey(vnfr.getId())) {
                 if (poolManagement.getReservedInstances(nsr.getId()).get(vnfr.getId()).containsKey(vdu.getId())) {
@@ -288,7 +287,7 @@ public class PoolEngine {
                         VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                         for (VNFCInstance vnfcInstance : vnfcInstances) {
                             try {
-                                Future<Void> release = mediaServerResourceManagement.release(vnfcInstance, vimInstance);
+                                Future<Boolean> release = mediaServerResourceManagement.release(vnfcInstance, vimInstance);
                                 releasingInstances.add(release);
                             } catch (VimException e) {
                                 log.warn("Not able to remove VNFCInstance with name " + vnfcInstance.getHostname() + " Please do it manually...");
@@ -305,7 +304,7 @@ public class PoolEngine {
         } else {
             log.warn("Not found any reserved Instances for NSR with id: " + nsr.getId());
         }
-        for (Future<Void> releasingInstance : releasingInstances) {
+        for (Future<Boolean> releasingInstance : releasingInstances) {
             try {
                 releasingInstance.get();
                 log.debug("Removed reserved VNFInstance");

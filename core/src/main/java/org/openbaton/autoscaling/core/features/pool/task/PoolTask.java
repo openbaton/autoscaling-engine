@@ -58,33 +58,54 @@ public class PoolTask implements Runnable {
         this.pool_size = pool_size;
     }
 
-
-
     @Override
     public void run() {
-        actionMonitor.finishedAction(nsr_id, Action.DECIDE);
+        if ( !actionMonitor.requestAction(nsr_id, Action.DECIDE) ) {
+            log.warn("Cannot reschedule PoolTask. Wrong state " + actionMonitor.getAction(nsr_id));
+            return;
+        }
         log.debug("Checking the pool of reserved VNFCInstances for NSR with id: " + nsr_id);
         Map<String, Map<String, Set<VNFCInstance>>> reservedInstances = poolEngine.getReservedInstances(nsr_id);
         log.debug("Currently reserved VNFCInstances: " + reservedInstances);
         for (String vnfr_id : reservedInstances.keySet()) {
             if (actionMonitor.isTerminating(nsr_id)) {
+                log.debug("Terminated PoolTask gracefully");
                 actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
                 return;
             }
             for (String vdu_id : reservedInstances.get(vnfr_id).keySet()) {
                 if (actionMonitor.isTerminating(nsr_id)) {
+                    log.debug("Terminated PoolTask gracefully");
                     actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
                     return;
                 }
+                int launchPerRound = 3;
                 int currentPoolSize = reservedInstances.get(vnfr_id).get(vdu_id).size();
                 log.debug("Current pool size of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + currentPoolSize);
-                Set<VNFCInstance> newReservedInstances = null;
-                try {
-                    newReservedInstances = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id, pool_size - currentPoolSize);
-                } catch (NotFoundException e) {
-                    log.error(e.getMessage(), e);
+                int launch = pool_size - currentPoolSize;
+                while (launch > 0) {
+                    Set<VNFCInstance> newReservedInstances = null;
+                    int launchThisRound = 0;
+                    if (launch >= launchPerRound) {
+                        launchThisRound = launchPerRound;
+                    } else {
+                        launchThisRound = launch;
+                    }
+                    try {
+                        log.debug("Launching " + launchThisRound + " VNFCInstances for the pool of NSR::VNFR::VDU: " + nsr_id + "::" + vnfr_id + "::" + vdu_id + " -> " + currentPoolSize);
+                        newReservedInstances = poolEngine.allocateNewInstance(nsr_id, vnfr_id, vdu_id, launchThisRound);
+                        launch = launch - launchThisRound;
+                    } catch (NotFoundException e) {
+                        log.error(e.getMessage(), e);
+                        break;
+                    }
+                    reservedInstances.get(vnfr_id).get(vdu_id).addAll(newReservedInstances);
+                    if (actionMonitor.isTerminating(nsr_id)) {
+                        log.debug("Terminated PoolTask gracefully");
+                        actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
+                        return;
+                    }
                 }
-                reservedInstances.get(vnfr_id).get(vdu_id).addAll(newReservedInstances);
             }
         }
         actionMonitor.finishedAction(nsr_id);

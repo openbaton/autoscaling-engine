@@ -213,7 +213,7 @@ public class DetectionManagement {
             if (detectionTasks.get(nsr_id).containsKey(vnfr_id)) {
                 if (detectionTasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
                     detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
-                    int i = 60;
+                    int i = 30;
                     while (!actionMonitor.isTerminated(autoScalePolicy.getId()) && actionMonitor.getAction(autoScalePolicy.getId()) != Action.INACTIVE && i >= 0) {
                         actionMonitor.terminate(autoScalePolicy.getId());
                         log.debug("Waiting for finishing DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
