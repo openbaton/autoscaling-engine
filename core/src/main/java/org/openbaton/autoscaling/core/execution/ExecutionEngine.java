@@ -130,12 +130,13 @@ public class ExecutionEngine {
                 actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
                 return vnfr;
             }
+            log.info("[AUTOSCALING] Adding new VNFCInstance " + new Date().getTime());
             VNFCInstance vnfcInstance = null;
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 VimInstance vimInstance = null;
                 if (vdu.getVnfc_instance().size() < vdu.getScale_in_out() && (vdu.getVnfc().iterator().hasNext())) {
                     if (autoScalingProperties.getPool().isActivate()) {
-                        log.debug("Getting VNFCInstance from pool");
+                        log.trace("Getting VNFCInstance from pool");
                         vnfcInstance = poolManagement.getReservedInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId());
                         if (vnfcInstance != null) {
                             log.debug("Got VNFCInstance from pool -> " + vnfcInstance);
@@ -171,6 +172,7 @@ public class ExecutionEngine {
                     break;
                 }
             }
+            log.info("[AUTOSCALING] Added new VNFCInstance " + new Date().getTime());
             if (vnfcInstance == null) {
                 log.warn("Not found any VDU to scale out a VNFComponent. Limits are reached.");
                 return vnfr;
@@ -265,7 +267,7 @@ public class ExecutionEngine {
                     mediaServerManagement.delete(vnfr.getId(), vnfcInstance_remove.getHostname());
                     break;
                 } else {
-                    log.debug("Not found VNFCInstance in VDU with id: " + vdu.getId() + "to scale in");
+                    log.trace("Not found VNFCInstance in VDU with id: " + vdu.getId() + "to scale in");
                 }
             }
             if (vnfcInstance_remove == null) {
@@ -318,9 +320,10 @@ public class ExecutionEngine {
 
     public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
         OrVnfmGenericMessage response = null;
-        log.debug("Updating VNFR on NFVO: " + vnfr);
+        log.trace("Updating VNFR on NFVO: " + vnfr);
         try {
             response = (OrVnfmGenericMessage) vnfmHelper.sendAndReceive(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
+            log.debug("Updated VNFR on NFVO: " + vnfr.getId());
             //response = (OrVnfmGenericMessage) vnfmHelper.sendToNfvo(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -331,7 +334,7 @@ public class ExecutionEngine {
         } else {
             vnfr = response.getVnfr();
         }
-        log.debug("Updated VNFR on NFVO: " + vnfr);
+        log.trace("Updated VNFR on NFVO: " + vnfr);
         return vnfr;
     }
 

@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.Properties;
 
 /**
@@ -62,6 +63,7 @@ public class DecisionTask implements Runnable {
 
     @Override
     public void run() {
+        log.info("[AUTOSCALING] Requested decison-making" + new Date().getTime());
         log.debug("Requested Decision-making for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         if (decisionEngine.getStatus(nsr_id, vnfr_id) == Status.ACTIVE) {
             log.debug("Status is ACTIVE. So send actions to ExecutionEngine");

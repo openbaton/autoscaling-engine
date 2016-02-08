@@ -118,6 +118,7 @@ public class DetectionTask implements Runnable {
             return;
         }
         if (vnfr != null) {
+            log.info("[AUTOSCALING] Checking Alarms " + new Date().getTime());
             for (ScalingAlarm alarm : autoScalePolicy.getAlarms()) {
                 //terminate gracefully at this point in time if suggested from the outside
                 if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
@@ -127,23 +128,26 @@ public class DetectionTask implements Runnable {
                 alarmsWeightCount =+ alarm.getWeight();
                 List<Item> measurementResults = null;
                 try {
+                    log.info("[AUTOSCALING] Collecting Measurements results for Alarm " + new Date().getTime());
                     measurementResults = detectionEngine.getRawMeasurementResults(vnfr, alarm.getMetric(), Integer.toString(autoScalePolicy.getPeriod()));
+                    log.info("[AUTOSCALING] Collected Measurements results for Alarm" + new Date().getTime());
+
                 } catch (MonitoringException e) {
                     log.error(e.getMessage(), e);
                 }
                 double finalAlarmResult = detectionEngine.calculateMeasurementResult(alarm, measurementResults);
-                log.debug("DetectionTask: Measurement result on vnfr " + vnfr.getId() + " on metric " + alarm.getMetric() + " with statistic " + alarm.getStatistic() + " is " + finalAlarmResult + " " + measurementResults);
+                log.trace("DetectionTask: Measurement result on vnfr " + vnfr.getId() + " on metric " + alarm.getMetric() + " with statistic " + alarm.getStatistic() + " is " + finalAlarmResult + " " + measurementResults);
                 if (detectionEngine.checkThreshold(alarm.getComparisonOperator(), alarm.getThreshold(), finalAlarmResult)) {
                     alarmsWeightFired =+ alarm.getWeight();
-                    log.info("DetectionTask: Alarm with id: " + alarm.getId() + " of AutoScalePolicy with id " + autoScalePolicy.getId() + " is fired");
+                    log.debug("DetectionTask: Alarm with id: " + alarm.getId() + " of AutoScalePolicy with id " + autoScalePolicy.getId() + " is fired");
                 } else {
-                    log.debug("DetectionTask: Alarm with id: " + alarm.getId() + " of AutoScalePolicy with id " + autoScalePolicy.getId() + " is not fired");
+                    log.trace("DetectionTask: Alarm with id: " + alarm.getId() + " of AutoScalePolicy with id " + autoScalePolicy.getId() + " is not fired");
                 }
             }
-            log.debug("Finished check of all Alarms of AutoScalePolicy with id " + autoScalePolicy.getId());
+            log.trace("Finished check of all Alarms of AutoScalePolicy with id " + autoScalePolicy.getId());
             //Check if Alarm must be fired for this AutoScalingPolicy
             double finalResult = (100 * alarmsWeightFired) / alarmsWeightCount;
-            log.debug("Checking if AutoScalingPolicy with id " + autoScalePolicy.getId() + " must be executed");
+            log.trace("Checking if AutoScalingPolicy with id " + autoScalePolicy.getId() + " must be executed");
             //terminate gracefully at this point in time if suggested from the outside
             if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
                 actionMonitor.finishedAction(autoScalePolicy.getId(), Action.TERMINATED);
@@ -159,7 +163,7 @@ public class DetectionTask implements Runnable {
                 //}
             } else {
                 if (fired == false) {
-                    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed -> " + finalResult + autoScalePolicy.getComparisonOperator() + autoScalePolicy.getThreshold());
+                    log.trace("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed -> " + finalResult + autoScalePolicy.getComparisonOperator() + autoScalePolicy.getThreshold());
                 } else {
                     log.info("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is not crossed anymore. This means that the Alarm is cleared -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                     fired = false;
@@ -169,7 +173,7 @@ public class DetectionTask implements Runnable {
         } else {
             log.error("DetectionTask: Not found VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         }
-        log.debug("DetectionTask: Starting sleeping period (" + autoScalePolicy.getPeriod() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
+        log.trace("DetectionTask: Starting sleeping period (" + autoScalePolicy.getPeriod() + "s) for AutoScalePolicy with id: " + autoScalePolicy.getId());
         actionMonitor.finishedAction(autoScalePolicy.getId());
     }
 }

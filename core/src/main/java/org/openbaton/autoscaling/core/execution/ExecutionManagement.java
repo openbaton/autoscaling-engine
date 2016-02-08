@@ -85,6 +85,7 @@ public class ExecutionManagement {
     }
 
     public void executeActions(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {
+        log.info("[AUTOSCALING] Executing actions " + new Date().getTime());
         log.debug("Processing execution request of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);
         if (actionMonitor.requestAction(vnfr_id, Action.SCALE)) {
             log.debug("Creating new ExecutionTask of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);

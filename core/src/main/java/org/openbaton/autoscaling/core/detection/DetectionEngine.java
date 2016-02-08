@@ -115,13 +115,14 @@ public class DetectionEngine {
                 hostnames.add(vnfcInstance.getHostname());
             }
         }
-        log.debug("Getting all measurement results for hostnames " + hostnames + " on metric " + metric + ".");
+        log.trace("Getting all measurement results for hostnames " + hostnames + " on metric " + metric + ".");
         measurementResults.addAll(monitor.queryPMJob(hostnames, metrics, period));
         log.debug("Got all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + " -> " + measurementResults + ".");
         return measurementResults;
     }
 
     public double calculateMeasurementResult(ScalingAlarm alarm, List<Item> measurementResults) {
+        log.info("[AUTOSCALING] Calculating final measurement result " + new Date().getTime());
         double result;
         List<Double> consideredResults = new ArrayList<>();
         for (Item measurementResult : measurementResults) {
@@ -149,6 +150,7 @@ public class DetectionEngine {
     }
 
     public boolean checkThreshold(String comparisonOperator, double threshold, double result) {
+        log.info("[AUTOSCALING] Checking Threshold " + new Date().getTime());
         switch (comparisonOperator) {
             case ">":
                 if (result > threshold) {
@@ -187,6 +189,7 @@ public class DetectionEngine {
     }
 
     public void sendAlarm(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        log.info("[AUTOSCALING] Alarm fired " + new Date().getTime());
         detectionManagement.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
     }
 }

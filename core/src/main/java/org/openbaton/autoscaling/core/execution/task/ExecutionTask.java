@@ -129,10 +129,12 @@ public class ExecutionTask implements Runnable {
                 actionMonitor.finishedAction(vnfr_id);
             }
             if (actionMonitor.getAction(vnfr_id) == Action.SCALED) {
+                log.info("[AUTOSCALING] Starting Cooldown " + new Date().getTime());
                 executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
             } else {
                 actionMonitor.finishedAction(vnfr_id);
             }
         }
+        log.info("[AUTOSCALING] Executor executed Actions " + new Date().getTime());
     }
 }

@@ -125,6 +125,7 @@ public class ElasticityManagement {
     @Async
     public void activate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
+        log.info("[AUTOSCALING] Activating Elasticity " + System.currentTimeMillis());
         detectionManagment.start(nsr_id, vnfr_id);
         if (autoScalingProperties.getPool().isActivate()) {
             log.debug("Activating pool mechanism");
@@ -132,6 +133,7 @@ public class ElasticityManagement {
         } else {
             log.debug("pool mechanism is disabled");
         }
+        log.info("[AUTOSCALING] Activated Elasticity " + System.currentTimeMillis());
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.Properties;
 import java.util.Set;
 
@@ -85,5 +86,6 @@ public class CooldownTask implements Runnable {
             log.warn("Cooldown for VNFR with id: " + vnfr_id + "was interrupted");
         }
         actionMonitor.removeId(vnfr_id);
+        log.info("[AUTOSCALING] Cooldown finished " + new Date().getTime());
     }
 }
