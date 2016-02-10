@@ -130,7 +130,7 @@ public class ExecutionEngine {
                 actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
                 return vnfr;
             }
-            log.info("[AUTOSCALING] Adding new VNFCInstance " + new Date().getTime());
+            log.info("[AUTOSCALING] Adding new VNFCInstance -> number " + i + " " + new Date().getTime());
             VNFCInstance vnfcInstance = null;
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 VimInstance vimInstance = null;
@@ -169,10 +169,11 @@ public class ExecutionEngine {
                     vdu.getVnfc_instance().add(vnfcInstance);
                     log.debug("SCALE: Added new Component to VDU " + vdu.getId());
                     actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
+                    log.info("[AUTOSCALING] Added new VNFCInstance -> number " + i + " " + new Date().getTime());
                     break;
                 }
             }
-            log.info("[AUTOSCALING] Added new VNFCInstance " + new Date().getTime());
+
             if (vnfcInstance == null) {
                 log.warn("Not found any VDU to scale out a VNFComponent. Limits are reached.");
                 return vnfr;
