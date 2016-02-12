@@ -19,6 +19,7 @@ package org.openbaton.autoscaling.core.execution;
 
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
+import org.openbaton.autoscaling.core.management.ResourceManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.Ip;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
@@ -30,8 +31,6 @@ import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.catalogue.nfvo.VimInstance;
 import org.openbaton.catalogue.nfvo.messages.OrVnfmGenericMessage;
-import org.openbaton.common.vnfm_sdk.VnfmHelper;
-import org.openbaton.common.vnfm_sdk.utils.VnfmUtils;
 import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
@@ -39,9 +38,9 @@ import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
 import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vnfm.configuration.*;
-import org.openbaton.vnfm.core.MediaServerManagement;
-import org.openbaton.vnfm.core.MediaServerResourceManagement;
+import org.openbaton.vnfm.configuration.AutoScalingProperties;
+import org.openbaton.vnfm.configuration.NfvoProperties;
+import org.openbaton.vnfm.configuration.SpringProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,8 +67,8 @@ public class ExecutionEngine {
 
     private NFVORequestor nfvoRequestor;
 
-    //@Autowired
-    private MediaServerResourceManagement mediaServerResourceManagement;
+    @Autowired
+    private ResourceManagement resourceManagement;
 
     //@Autowired
     private ExecutionManagement executionManagement;
@@ -79,11 +78,6 @@ public class ExecutionEngine {
 
     private ActionMonitor actionMonitor;
 
-    private VnfmHelper vnfmHelper;
-
-    //@Autowired
-    private MediaServerManagement mediaServerManagement;
-
     @Autowired
     private NfvoProperties nfvoProperties;
 
@@ -92,9 +86,6 @@ public class ExecutionEngine {
 
     @Autowired
     private SpringProperties springProperties;
-
-    @Autowired
-    private VnfmProperties vnfmProperties;
 
     private MonitoringPluginCaller client;
 
@@ -107,17 +98,17 @@ public class ExecutionEngine {
 
     @PostConstruct
     public void init() {
-        this.mediaServerResourceManagement = context.getBean(MediaServerResourceManagement.class);
-        this.mediaServerManagement = context.getBean(MediaServerManagement.class);
+        this.resourceManagement = context.getBean(ResourceManagement.class);
+        //this.mediaServerManagement = context.getBean(MediaServerManagement.class);
         this.executionManagement = context.getBean(ExecutionManagement.class);
         this.poolManagement = context.getBean(PoolManagement.class);
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         //this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
-        this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
+        //this.vnfmHelper = (VnfmHelper) context.getBean("vnfmSpringHelperRabbit");
     }
 
     private MonitoringPluginCaller getClient() {
-        return (MonitoringPluginCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getMonitoringPluginCaller(vnfmProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(), "icinga-agent", "icinga", vnfmProperties.getRabbitmq().getManagement().getPort());
+        return (MonitoringPluginCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getMonitoringPluginCaller(autoScalingProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(), "icinga-agent", "icinga", autoScalingProperties.getRabbitmq().getManagement().getPort());
     }
 
     public void setActionMonitor(ActionMonitor actionMonitor) {
@@ -152,7 +143,7 @@ public class ExecutionEngine {
                         }
                         VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
                         try {
-                            vnfcInstance = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent).get();
+                            vnfcInstance = resourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent).get();
                         } catch (InterruptedException e) {
                             log.warn(e.getMessage(), e);
                         } catch (ExecutionException e) {
@@ -183,13 +174,6 @@ public class ExecutionEngine {
             //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
             vnfr = updateVNFR(vnfr);
             //vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-            for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                for (VNFCInstance vnfcInstance_new : vdu.getVnfc_instance()) {
-                    if (vnfcInstance_new.getHostname().equals(vnfcInstance.getHostname())) {
-                        mediaServerManagement.add(vnfr.getId(), vnfcInstance_new);
-                    }
-                }
-            }
         }
         return vnfr;
     }
@@ -254,20 +238,7 @@ public class ExecutionEngine {
                     }
                     //nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
                 }
-                if (vnfcInstance_remove != null) {
-                    mediaServerResourceManagement.release(vnfcInstance_remove, vimInstance);
-                    vdu.getVnfc_instance().remove((vnfcInstance_remove));
-                    for (Ip ip : vnfcInstance_remove.getIps()) {
-                        vnfr.getVnf_address().remove(ip.getIp());
-                    }
-                    for (Ip ip : vnfcInstance_remove.getFloatingIps()) {
-                        vnfr.getVnf_address().remove(ip.getIp());
-                    }
-                    actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
-                    log.debug("Removed VNFCInstance " + vnfcInstance_remove.getId() + " from VDU " + vdu.getId());
-                    mediaServerManagement.delete(vnfr.getId(), vnfcInstance_remove.getHostname());
-                    break;
-                } else {
+                if (vnfcInstance_remove == null) {
                     log.trace("Not found VNFCInstance in VDU with id: " + vdu.getId() + "to scale in");
                 }
             }

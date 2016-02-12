@@ -23,6 +23,9 @@ import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.utils.Utils;
+import org.openbaton.catalogue.mano.common.AutoScalePolicy;
+import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
+import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.EndpointType;
 import org.openbaton.catalogue.nfvo.EventEndpoint;
@@ -74,40 +77,22 @@ public class ElasticityManagement {
 
     private NFVORequestor nfvoRequestor;
 
-    private List<String> subscriptionIds;
-
     @Autowired
     private NfvoProperties nfvoProperties;
 
     @Autowired
     private AutoScalingProperties autoScalingProperties;
 
+    @Autowired
+    private ResourceManagement resourceManagement;
+
     @PostConstruct
     public void init() throws SDKException {
-        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
-//        detectionManagment.init(properties);
-//        decisionManagement.init(properties);
-//        executionManagement.init(properties);
-//        if (properties.getProperty("pool_activated").equals(true)) {
-//            poolManagement = new PoolManagement();
-//            poolManagement.init(properties);
-//        }
-
-        subscriptionIds = new ArrayList<>();
-        //startPlugins();
-
-        //waitForNfvo();
-        //subscribe(Action.INSTANTIATE_FINISH);
-        //subscribe(Action.RELEASE_RESOURCES_FINISH);
-        //subscribe(Action.ERROR);
-
-        //fetchNSRsFromNFVO();
+        //resourceManagement.initializeClient();
     }
 
     @PreDestroy
     private void exit() throws SDKException {
-        //unsubscribe();
-        //destroyPlugins();
     }
 
     public void activate(String nsr_id) throws NotFoundException, VimException {
@@ -120,6 +105,21 @@ public class ElasticityManagement {
             log.debug("pool mechanism is disabled");
         }
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
+    }
+
+    public void activate(NetworkServiceRecord nsr) throws NotFoundException, VimException {
+        log.debug("Activating Elasticity for NSR with id: " + nsr.getId());
+        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+            for (AutoScalePolicy autoScalePolicy : vnfr.getAuto_scale_policy())
+                detectionManagment.start(nsr.getId(), vnfr.getId(), autoScalePolicy);
+        }
+        if (autoScalingProperties.getPool().isActivate()) {
+            log.debug("Activating pool mechanism");
+            poolManagement.activate(nsr.getId());
+        } else {
+            log.debug("pool mechanism is disabled");
+        }
+        log.info("Activated Elasticity for NSR with id: " + nsr.getId());
     }
 
     @Async
@@ -213,28 +213,4 @@ public class ElasticityManagement {
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
         return new AsyncResult<>(true);
     }
-
-    private void subscribe(Action action) throws SDKException {
-        log.debug("Subscribing to all NSR Events with Action " + action);
-        EventEndpoint eventEndpoint = new EventEndpoint();
-        eventEndpoint.setName("Subscription:" + action);
-        eventEndpoint.setEndpoint("http://localhost:9999/event/" + action);
-        eventEndpoint.setEvent(action);
-        eventEndpoint.setType(EndpointType.REST);
-        this.subscriptionIds.add(nfvoRequestor.getEventAgent().create(eventEndpoint).getId());
-    }
-
-    private void unsubscribe() throws SDKException {
-        for (String subscriptionId : subscriptionIds) {
-            nfvoRequestor.getEventAgent().delete(subscriptionId);
-        }
-    }
-
-    private void waitForNfvo() {
-        if (!Utils.isNfvoStarted(nfvoProperties.getIp(), nfvoProperties.getPort())) {
-            log.error("After 150 sec the Nfvo is not started yet. Is there an error?");
-            System.exit(1); // 1 stands for the error in running nfvo TODO define error codes (doing)
-        }
-    }
-
 }

@@ -31,8 +31,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/event")
-public class RestEventInterface {
+@RequestMapping("/elasticity-management")
+public class RestElasticityManagementInterface {
 
 	private Logger log = LoggerFactory.getLogger(this.getClass());
 

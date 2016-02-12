@@ -1,6 +1,6 @@
 package org.openbaton.autoscaling;
 
-import org.openbaton.autoscaling.core.detection.DetectionEngine;
+import org.openbaton.autoscaling.core.management.ASBeanConfiguration;
 import org.openbaton.autoscaling.core.management.ElasticityManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
@@ -9,14 +9,21 @@ import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.EndpointType;
 import org.openbaton.catalogue.nfvo.EventEndpoint;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimException;
 import org.openbaton.plugin.utils.PluginStartup;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vnfm.configuration.AutoScalingProperties;
+import org.openbaton.vnfm.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.orm.jpa.EntityScan;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -25,51 +32,45 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Created by mpa on 27.10.15.
  */
-//@SpringBootApplication
-//@ComponentScan("org.openbaton.autoscaling")
-//@PropertySource({
-//        "classpath:autoscaling.properties",
-//        "classpath:openbaton.properties"
-//})
+@SpringBootApplication
+@EntityScan("org.openbaton.autoscaling.catalogue")
+@ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling"})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class})
 public class Application {
 
     protected static Logger log = LoggerFactory.getLogger(Application.class);
+
+    @Autowired
+    private ConfigurableApplicationContext context;
 
     private NFVORequestor nfvoRequestor;
 
     private List<String> subscriptionIds;
 
-//    @Autowired
-//    private ConfigurableEnvironment properties;
+    @Autowired
+    private AutoScalingProperties autoScalingProperties;
 
     @Autowired
-    private DetectionEngine detectionEngine;
+    private NfvoProperties nfvoProperties;
 
-    @Autowired
     private ElasticityManagement elasticityManagement;
-
-    private Properties properties;
 
     @PostConstruct
     private void init() throws SDKException {
-        properties = Utils.loadProperties();
-        //Utils.loadExternalProperties(properties);
-
-        //detectionEngine.init(properties);
-
-        subscriptionIds = new ArrayList<>();
+        //start all the plugins needed
         startPlugins();
-
+        //waiting until the NFVO is available
         waitForNfvo();
-        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
-        subscribe(Action.INSTANTIATE_FINISH);
-        subscribe(Action.RELEASE_RESOURCES_FINISH);
-        subscribe(Action.ERROR);
+        this.elasticityManagement = context.getBean(ElasticityManagement.class);
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
+        subscriptionIds = new ArrayList<>();
+        subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
+        subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
+        subscriptionIds.add(subscribe(Action.ERROR));
 
         fetchNSRsFromNFVO();
     }
@@ -80,14 +81,14 @@ public class Application {
         destroyPlugins();
     }
 
-    private void subscribe(Action action) throws SDKException {
+    private String subscribe(Action action) throws SDKException {
         log.debug("Subscribing to all NSR Events with Action " + action);
         EventEndpoint eventEndpoint = new EventEndpoint();
         eventEndpoint.setName("Subscription:" + action);
-        eventEndpoint.setEndpoint("http://localhost:9999/event/" + action);
+        eventEndpoint.setEndpoint("http://" + autoScalingProperties.getServer().getIp() + ":" + autoScalingProperties.getServer().getPort() +"/elasticity-management/" + action);
         eventEndpoint.setEvent(action);
         eventEndpoint.setType(EndpointType.REST);
-        this.subscriptionIds.add(nfvoRequestor.getEventAgent().create(eventEndpoint).getId());
+        return nfvoRequestor.getEventAgent().create(eventEndpoint).getId();
     }
 
     private void unsubscribe() throws SDKException {
@@ -113,7 +114,7 @@ public class Application {
     }
 
     private void waitForNfvo() {
-        if (!Utils.isNfvoStarted(properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"))) {
+        if (!Utils.isNfvoStarted(nfvoProperties.getIp(), nfvoProperties.getPort())) {
             log.error("After 150 sec the Nfvo is not started yet. Is there an error?");
             System.exit(1); // 1 stands for the error in running nfvo TODO define error codes (doing)
         }
@@ -135,7 +136,11 @@ public class Application {
             try {
                 if (nsr.getStatus() == Status.ACTIVE || nsr.getStatus() == Status.SCALING) {
                     log.debug("Adding previously deployed NSR with id: " + nsr.getId() + " to autoscaling");
-                    elasticityManagement.activate(nsr);
+                    try {
+                        elasticityManagement.activate(nsr);
+                    } catch (VimException e) {
+                        log.error(e.getMessage(), e);
+                    }
                 } else {
                     log.warn("Cannot add NSR with id: " + nsr.getId() + " to autoscaling because it is in state: " + nsr.getStatus() + " and not in state " + Status.ACTIVE + " or " + Status.ERROR + ". ");
                 }

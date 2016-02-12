@@ -15,22 +15,23 @@
  *
  */
 
-repositories {
-    mavenCentral()
-    maven {
-        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+package org.openbaton.vnfm.configuration;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.stereotype.Service;
+
+/**
+ * Created by mpa on 25.01.16.
+ */
+@Configuration
+public class PropertiesConfiguration {
+
+    @Bean
+    public NfvoProperties nfvoProperties() {
+        return new NfvoProperties();
     }
-}
 
-dependencies {
-    compile project(':core')
-    compile project(':as-utils')
-    compile project(':api')
-
-    //compile 'org.openbaton:catalogue:0.14'
-
-    compile 'org.springframework.boot:spring-boot:' + springBootVersion
-    compile 'org.springframework.boot:spring-boot-autoconfigure:' + springBootVersion
-
-    testCompile group: 'junit', name: 'junit', version: '4.11'
 }
