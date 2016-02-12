@@ -4,7 +4,7 @@ include 'main'
 include 'core'
 include 'as-catalogue'
 include 'api'
-include 'utils'
+include 'as-utils'
 
 project(':main').projectDir = file('main')
-project(':utils').projectDir = file('utils')
+project(':as-utils').projectDir = file('utils')

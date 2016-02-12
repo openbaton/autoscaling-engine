@@ -11,11 +11,15 @@ import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
+import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
-import org.openbaton.monitoring.interfaces.ResourcePerformanceManagement;
+import org.openbaton.monitoring.interfaces.MonitoringPlugin;
 import org.openbaton.plugin.utils.PluginBroker;
+import org.openbaton.plugin.utils.PluginStartup;
+import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
+import org.openbaton.vim.drivers.VimDriverCaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -47,6 +51,8 @@ class ElasticityTask implements Runnable {
     @Autowired
     private ListableBeanFactory beanFactory;
 
+    private ConfigurableApplicationContext context;
+
     private NFVORequestor nfvoRequestor;
 
     private VnfrMonitor vnfrMonitor;
@@ -62,7 +68,7 @@ class ElasticityTask implements Runnable {
 
     private AutoScalePolicy autoScalePolicy;
 
-    private ResourcePerformanceManagement monitor;
+    private MonitoringPlugin monitor;
 
     private String name;
 
@@ -199,19 +205,13 @@ class ElasticityTask implements Runnable {
         return null;
     }
 
-    public ResourcePerformanceManagement getMonitor() {
-        PluginBroker<ResourcePerformanceManagement> pluginBroker = new PluginBroker<>();
-        ResourcePerformanceManagement monitor = null;
+    public MonitoringPlugin getMonitor() {
+        PluginBroker pluginBroker = new PluginBroker<>();
+        MonitoringPlugin monitor = null;
         //monitor = new MyMonitor();
 //        if (true)
 //            return monitor;
-        try {
-            monitor = pluginBroker.getPlugin("localhost", "monitor", "zabbix-agent", "zabbix", 19999);
-        } catch (RemoteException e) {
-            log.error(e.getLocalizedMessage(), e);
-        } catch (NotBoundException e) {
-            log.warn("Monitoring " + e.getLocalizedMessage() + ". ElasticityManagement will not start.", e);
-        }
+        monitor = (MonitoringPlugin) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getMonitoringPluginCaller("localhost", "admin", "openbaton", 5672,"zabbix", "zabbix", "15672");
         return monitor;
     }
 
@@ -349,7 +349,11 @@ class ElasticityTask implements Runnable {
 //        metrics.removeAll(metrics);
 //        metrics.add("vm.memory.size[buffers]");
         log.debug("Getting all measurement results for hostnames " + hostnames + " on metric " + metric + ".");
-        measurementResults.addAll(monitor.getMeasurementResults(hostnames, metrics, period));
+        try {
+            measurementResults.addAll(monitor.queryPMJob(hostnames, metrics, period));
+        } catch (MonitoringException e) {
+            log.error(e.getMessage(), e);
+        }
         log.debug("Got all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + " -> " + measurementResults + ".");
         return measurementResults;
     }
@@ -424,32 +428,4 @@ class ElasticityTask implements Runnable {
         }
         return true;
     }
-
-    class MyMonitor implements ResourcePerformanceManagement {
-
-        @Override
-        public List<Item> getMeasurementResults(List<String> hostnames, List<String> metrics, String period) throws RemoteException {
-            List<Item> items = new ArrayList<>();
-            for (String hostname : hostnames) {
-                for (String metric : metrics) {
-                    Item item = new Item();
-                    item.setHostId(hostname);
-                    item.setHostname(hostname);
-                    item.setLastValue(Double.toString(Math.random() * 100));
-                    item.setValue(Double.toString(Math.random() * 100));
-                    item.setMetric(metric);
-                    items.add(item);
-                }
-            }
-            return items;
-        }
-
-        @Override
-        public void notifyResults() throws RemoteException {
-
-        }
-    }
-
-
-
 }

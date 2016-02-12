@@ -103,11 +103,7 @@ public class Application {
 
     private void startPlugins() {
         try {
-            int registryport = 19999;
-            Registry registry = LocateRegistry.createRegistry(registryport);
-            log.debug("Registry created: ");
-            log.debug(registry.toString() + " has: " + registry.list().length + " entries");
-            PluginStartup.startPluginRecursive("./plugins", true, "localhost", "" + registryport);
+            PluginStartup.startPluginRecursive("./plugins", true, "localhost", "5672", 15, "admin", "openbaton", "15672");
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
