@@ -17,35 +17,26 @@
 
 package org.openbaton.autoscaling.core.detection;
 
-import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAlarm;
-import org.openbaton.catalogue.mano.common.monitoring.ObjectSelection;
-import org.openbaton.catalogue.mano.common.monitoring.ThresholdDetails;
-import org.openbaton.catalogue.mano.common.monitoring.ThresholdType;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.exceptions.MonitoringException;
-import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
-import org.openbaton.vnfm.configuration.ApplicationProperties;
-import org.openbaton.vnfm.configuration.AutoScalingProperties;
+import org.openbaton.monitoring.interfaces.MonitoringPlugin;
+import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
+import org.openbaton.plugin.utils.RabbitPluginBroker;
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 
 /**
@@ -60,7 +51,7 @@ public class DetectionEngine {
     @Autowired
     private ConfigurableApplicationContext context;
 
-    private VirtualisedResourcesPerformanceManagement monitor;
+    private MonitoringPlugin monitor;
 
     //@Autowired
     private DetectionManagement detectionManagement;
@@ -68,15 +59,20 @@ public class DetectionEngine {
     @Autowired
     private AutoScalingProperties autoScalingProperties;
 
+    @Autowired
+    private SpringProperties springProperties;
+
     @PostConstruct
     public void init() {
         this.detectionManagement = context.getBean(DetectionManagement.class);
-        this.monitor = new EmmMonitor(autoScalingProperties.getMonitor().getUrl());
+    }
+
+    public void initializeMonitor() {
+        this.monitor = (MonitoringPluginCaller) ((RabbitPluginBroker) context.getBean(RabbitPluginBroker.class)).getMonitoringPluginCaller(autoScalingProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(),"zabbix-plugin", "zabbix", autoScalingProperties.getRabbitmq().getManagement().getPort());
         if (monitor == null) {
             log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
         }
     }
-
 //    public void waitForState(String nsrId, String vnfrId, Set<Status> states) {
 //        try {
 //            Thread.sleep(15000);
@@ -105,6 +101,9 @@ public class DetectionEngine {
 //    }
 
     public List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, String metric, String period) throws MonitoringException {
+        if (monitor == null) {
+            initializeMonitor();
+        }
         ArrayList<Item> measurementResults = new ArrayList<Item>();
         ArrayList<String> hostnames = new ArrayList<String>();
         ArrayList<String> metrics = new ArrayList<String>();
@@ -192,89 +191,4 @@ public class DetectionEngine {
         log.info("[AUTOSCALING] Alarm fired " + new Date().getTime());
         detectionManagement.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
     }
-}
-
-class EmmMonitor implements VirtualisedResourcesPerformanceManagement{
-
-    protected Logger log = LoggerFactory.getLogger(this.getClass());
-
-    private String monitorUrl;
-
-    public EmmMonitor(String url) {
-        this.monitorUrl = url;
-    }
-
-    @Override
-    public String createPMJob(ObjectSelection resourceSelector, List<String> performanceMetric, List<String> performanceMetricGroup, Integer collectionPeriod, Integer reportingPeriod) throws MonitoringException {
-        return null;
-    }
-
-    @Override
-    public List<String> deletePMJob(List<String> itemIdsToDelete) throws MonitoringException {
-        return null;
-    }
-
-    @Override
-    public List<Item> queryPMJob(List<String> hostnames, List<String> metrics, String period) throws MonitoringException {
-        log.debug("Requesting measurement results for hosts: " + hostnames + " on metrics: " + metrics + " (period: " + period + ")");
-        List<Item> items = new ArrayList<>();
-        for (String metric : metrics) {
-            for (String hostName : hostnames) {
-                try {
-                    URL url = new URL("http://" + monitorUrl + "/monitor/" + hostName + "/" + metric);
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");
-                    conn.setRequestProperty("Accept", "application/json");
-                    if (conn.getResponseCode() != 200) {
-                        throw new RuntimeException("Failed : HTTP error code : "
-                                + conn.getResponseCode());
-                    }
-                    BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
-                    String output;
-                    while ((output = br.readLine()) != null) {
-                        log.debug("Measurement result for host " + hostName + " on metric " + metric + " is " + output);
-                        Item item = new Item();
-                        item.setHostname(hostName);
-                        item.setHostId(hostName);
-                        item.setLastValue(output);
-                        item.setValue(output);
-                        item.setMetric(metric);
-                        items.add(item);
-                    }
-                    conn.disconnect();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return items;
-    }
-
-    @Override
-    public void subscribe() {
-
-    }
-
-    @Override
-    public void notifyInfo() {
-
-    }
-
-    @Override
-    public String createThreshold(ObjectSelection objectSelector, String performanceMetric, ThresholdType thresholdType, ThresholdDetails thresholdDetails) throws MonitoringException {
-        return null;
-    }
-
-    @Override
-    public List<String> deleteThreshold(List<String> thresholdIds) throws MonitoringException {
-        return null;
-    }
-
-    @Override
-    public void queryThreshold(String queryFilter) {
-
-    }
-
 }

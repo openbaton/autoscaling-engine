@@ -18,14 +18,12 @@
 package org.openbaton.autoscaling.core.decision;
 
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
-import org.openbaton.autoscaling.utils.Utils;
-import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vnfm.configuration.NfvoProperties;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

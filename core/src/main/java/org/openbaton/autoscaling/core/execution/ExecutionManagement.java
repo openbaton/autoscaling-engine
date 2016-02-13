@@ -21,13 +21,12 @@ import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.core.execution.task.CooldownTask;
 import org.openbaton.autoscaling.core.execution.task.ExecutionTask;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
-import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vnfm.configuration.NfvoProperties;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +40,6 @@ import org.springframework.util.ErrorHandler;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
 
 /**
  * Created by mpa on 27.10.15.

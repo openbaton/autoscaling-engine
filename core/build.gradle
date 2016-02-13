@@ -38,7 +38,6 @@ dependencies {
 //    compile project(':monitoring')
 //    compile project(':vim-int')
 //    compile project(':core-impl')
-    compile project(':core')
 
     compile project(':configuration')
 
@@ -47,7 +46,7 @@ dependencies {
     //compile project(':sdk')
 //    runtime project(':vim-impl')
 
-    compile ('org.openbaton:sdk:0.16-SNAPSHOT') /*{
+    compile ('org.openbaton:sdk:1.0.1-SNAPSHOT') /*{
         exclude module: 'catalogue'
     }*/
     //compile 'org.openbaton:monitoring:0.15-SNAPSHOT'

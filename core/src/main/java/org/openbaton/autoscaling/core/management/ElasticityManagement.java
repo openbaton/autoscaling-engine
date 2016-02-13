@@ -17,24 +17,19 @@
 
 package org.openbaton.autoscaling.core.management;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
-import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.openbaton.catalogue.nfvo.Action;
-import org.openbaton.catalogue.nfvo.EndpointType;
-import org.openbaton.catalogue.nfvo.EventEndpoint;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vnfm.configuration.AutoScalingProperties;
-import org.openbaton.vnfm.configuration.NfvoProperties;
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

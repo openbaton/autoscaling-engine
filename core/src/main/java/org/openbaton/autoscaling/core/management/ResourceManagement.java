@@ -30,8 +30,8 @@ import org.openbaton.exceptions.VimDriverException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.vim.drivers.VimDriverCaller;
-import org.openbaton.vnfm.configuration.AutoScalingProperties;
-import org.openbaton.vnfm.configuration.SpringProperties;
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,12 +70,12 @@ public class ResourceManagement {
 
     @PostConstruct
     public void init() {
-        userdataRaw = Utils.getUserdata();
-        client = (VimDriverCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getVimDriverCaller(autoScalingProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(),"openstack", "openstack", autoScalingProperties.getRabbitmq().getManagement().getPort());
+        //userdataRaw = Utils.getUserdata();
+        //client = (VimDriverCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getVimDriverCaller(autoScalingProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(),"openstack", "openstack", autoScalingProperties.getRabbitmq().getManagement().getPort());
     }
 
     public void initializeClient() {
-        client = (VimDriverCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getVimDriverCaller(autoScalingProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(),"openstack", "openstack", autoScalingProperties.getRabbitmq().getManagement().getPort());
+        //client = (VimDriverCaller) ((RabbitPluginBroker) context.getBean("rabbitPluginBroker")).getVimDriverCaller(autoScalingProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(),"openstack", "openstack", autoScalingProperties.getRabbitmq().getManagement().getPort());
     }
 
     @Async

@@ -28,10 +28,9 @@ import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vnfm.configuration.NfvoProperties;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -75,7 +74,7 @@ public class DetectionTask implements Runnable {
         this.actionMonitor = actionMonitor;
 
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");        this.name = "DetectionTask#" + nsr_id + ":" + vnfr_id;
-        this.first_time = true;
+        this.first_time = false;
         this.fired = false;
     }
 
@@ -133,7 +132,9 @@ public class DetectionTask implements Runnable {
                     log.info("[AUTOSCALING] Collected Measurements results for Alarm" + new Date().getTime());
 
                 } catch (MonitoringException e) {
-                    log.error(e.getMessage(), e);
+                    //log.error(e.getMessage(), e);
+                    log.warn("Not found all the measurement results for VNFR " + vnfr.getId() + ". Trying next time again");
+                    break;
                 }
                 double finalAlarmResult = detectionEngine.calculateMeasurementResult(alarm, measurementResults);
                 log.trace("DetectionTask: Measurement result on vnfr " + vnfr.getId() + " on metric " + alarm.getMetric() + " with statistic " + alarm.getStatistic() + " is " + finalAlarmResult + " " + measurementResults);

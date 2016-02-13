@@ -18,6 +18,7 @@
 package org.openbaton.autoscaling.core.features.pool;
 
 import org.openbaton.autoscaling.core.management.ASBeanConfiguration;
+import org.openbaton.autoscaling.core.management.ResourceManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
@@ -29,8 +30,7 @@ import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vnfm.configuration.NfvoProperties;
-import org.openbaton.vnfm.core.MediaServerResourceManagement;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +61,7 @@ public class PoolEngine {
     private NFVORequestor nfvoRequestor;
 
     //@Autowired
-    private MediaServerResourceManagement mediaServerResourceManagement;
+    private ResourceManagement resourceManagement;
 
     //@Autowired
     private PoolManagement poolManagement;
@@ -69,16 +69,10 @@ public class PoolEngine {
     @Autowired
     private NfvoProperties nfvoProperties;
 
-//    public PoolEngine(Properties properties) {
-//        this.properties = properties;
-//        this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
-//        this.nfvoRequestor = new NFVORequestor(properties.getProperty("openbaton-username"), properties.getProperty("openbaton-password"), properties.getProperty("openbaton-url"), properties.getProperty("openbaton-port"), "1");
-//    }
-
     @PostConstruct
     public void init() {
         poolManagement = context.getBean(PoolManagement.class);
-        mediaServerResourceManagement = context.getBean(MediaServerResourceManagement.class);
+        //resourceManagement = context.getBean(ResourceManagement.class);
         //this.resourceManagement = (ResourceManagement) context.getBean("openstackVIM", "15672");
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");    }
 
@@ -117,7 +111,7 @@ public class PoolEngine {
             VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
             VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
             try {
-                vnfcInstanceFuture = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
+                vnfcInstanceFuture = resourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
             } catch (VimException e) {
                 log.error(e.getMessage(), e);
             }
@@ -150,7 +144,7 @@ public class PoolEngine {
                 VNFComponent vnfComponent = vdu.getVnfc().iterator().next();
                 Future<VNFCInstance> vnfcInstanceFuture = null;
                 try {
-                    vnfcInstanceFuture = mediaServerResourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
+                    vnfcInstanceFuture = resourceManagement.allocate(vimInstance, vdu, vnfr, vnfComponent);
                     vnfcFutureInstances.add(vnfcInstanceFuture);
                 } catch (VimException e) {
                     log.error(e.getMessage(), e);
@@ -287,7 +281,7 @@ public class PoolEngine {
                         VimInstance vimInstance = Utils.getVimInstance(vdu.getVimInstanceName(), nfvoRequestor);
                         for (VNFCInstance vnfcInstance : vnfcInstances) {
                             try {
-                                Future<Boolean> release = mediaServerResourceManagement.release(vnfcInstance, vimInstance);
+                                Future<Boolean> release = resourceManagement.release(vnfcInstance, vimInstance);
                                 releasingInstances.add(release);
                             } catch (VimException e) {
                                 log.warn("Not able to remove VNFCInstance with name " + vnfcInstance.getHostname() + " Please do it manually...");

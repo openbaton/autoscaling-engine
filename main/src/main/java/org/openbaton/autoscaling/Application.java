@@ -1,5 +1,6 @@
 package org.openbaton.autoscaling;
 
+import org.openbaton.autoscaling.configuration.PropertiesConfiguration;
 import org.openbaton.autoscaling.core.management.ASBeanConfiguration;
 import org.openbaton.autoscaling.core.management.ElasticityManagement;
 import org.openbaton.autoscaling.utils.Utils;
@@ -13,13 +14,13 @@ import org.openbaton.exceptions.VimException;
 import org.openbaton.plugin.utils.PluginStartup;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.vnfm.configuration.AutoScalingProperties;
-import org.openbaton.vnfm.configuration.NfvoProperties;
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
+import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.orm.jpa.EntityScan;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ContextConfiguration;
@@ -28,8 +29,6 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,9 +36,9 @@ import java.util.List;
  * Created by mpa on 27.10.15.
  */
 @SpringBootApplication
-@EntityScan("org.openbaton.autoscaling.catalogue")
-@ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling"})
-@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class})
+//@EntityScan("org.openbaton.autoscaling.catalogue")
+@ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling", "org.openbaton"})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class , PropertiesConfiguration.class})
 public class Application {
 
     protected static Logger log = LoggerFactory.getLogger(Application.class);
@@ -53,6 +52,9 @@ public class Application {
 
     @Autowired
     private AutoScalingProperties autoScalingProperties;
+
+    @Autowired
+    private SpringProperties springProperties;
 
     @Autowired
     private NfvoProperties nfvoProperties;
@@ -85,7 +87,7 @@ public class Application {
         log.debug("Subscribing to all NSR Events with Action " + action);
         EventEndpoint eventEndpoint = new EventEndpoint();
         eventEndpoint.setName("Subscription:" + action);
-        eventEndpoint.setEndpoint("http://" + autoScalingProperties.getServer().getIp() + ":" + autoScalingProperties.getServer().getPort() +"/elasticity-management/" + action);
+        eventEndpoint.setEndpoint("http://" + autoScalingProperties.getServer().getIp() + ":" + autoScalingProperties.getServer().getPort() + "/elasticity-management/" + action);
         eventEndpoint.setEvent(action);
         eventEndpoint.setType(EndpointType.REST);
         return nfvoRequestor.getEventAgent().create(eventEndpoint).getId();
@@ -99,11 +101,7 @@ public class Application {
 
     private void startPlugins() {
         try {
-            int registryport = 19999;
-            Registry registry = LocateRegistry.createRegistry(registryport);
-            log.debug("Registry created: ");
-            log.debug(registry.toString() + " has: " + registry.list().length + " entries");
-            //PluginStartup.startPluginRecursive("./plugins", true, "localhost", "" + registryport);
+            PluginStartup.startPluginRecursive("./plugins", true, autoScalingProperties.getRabbitmq().getBrokerIp(), String.valueOf(springProperties.getRabbitmq().getPort()), 15, springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), autoScalingProperties.getRabbitmq().getManagement().getPort());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
