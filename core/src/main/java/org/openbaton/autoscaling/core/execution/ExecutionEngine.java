@@ -225,6 +225,7 @@ public class ExecutionEngine {
 //                        vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
                         vnfcInstance_remove = null;
                         nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId());
+                        break;
                     }
                 }
                 if (vnfcInstance_remove != null) {
