@@ -71,18 +71,22 @@ public class ExecutionTask implements Runnable {
     @Override
     public void run() {
         VirtualNetworkFunctionRecord vnfr = null;
-        try {
-            vnfr = executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.SCALING);
-        } catch (SDKException e) {
-            log.error("Problems with SDK. Cannot update the VNFR. Scaling will not be executed");
-            if (log.isDebugEnabled()) {
-                log.error(e.getMessage(), e);
-            }
-            actionMonitor.finishedAction(vnfr_id);
-            return;
-        }
+//        try {
+//            vnfr = executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.SCALING);
+//        } catch (SDKException e) {
+//            log.error("Problems with SDK. Cannot update the VNFR. Scaling will not be executed");
+//            if (log.isDebugEnabled()) {
+//                log.error(e.getMessage(), e);
+//            }
+//            actionMonitor.finishedAction(vnfr_id);
+//            return;
+//        }
         try {
             for (ScalingAction action : actions) {
+                vnfr = executionEngine.getNfvoRequestor().getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+                if (vnfr == null) {
+                    log.warn("Cannot execute ScalingAction. VNFR was not found or problems with the SDK");
+                }
                 switch (action.getType()) {
                     case SCALE_OUT:
                         vnfr = executionEngine.scaleOut(vnfr, Integer.parseInt(action.getValue()));
@@ -113,15 +117,15 @@ public class ExecutionTask implements Runnable {
         } catch (VimException e) {
             log.error(e.getMessage(), e);
         } finally {
-            try {
-                executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
-            } catch (SDKException e) {
-                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in SCALE");
-                if (log.isDebugEnabled()) {
-                    log.error(e.getMessage(), e);
-                }
-                actionMonitor.finishedAction(vnfr_id);
-            }
+//            try {
+//                executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
+//            } catch (SDKException e) {
+//                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in SCALE");
+//                if (log.isDebugEnabled()) {
+//                    log.error(e.getMessage(), e);
+//                }
+//                actionMonitor.finishedAction(vnfr_id);
+//            }
             if (actionMonitor.getAction(vnfr_id) == Action.SCALED) {
                 log.info("[AUTOSCALING] Starting Cooldown " + new Date().getTime());
                 executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);

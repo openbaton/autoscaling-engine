@@ -262,24 +262,14 @@ public class ExecutionEngine {
         vnfrIds.add(vnfr_id);
 
         executionManagement.executeCooldown(nsr_id, vnfr_id, cooldown);
-//        List<String> vnfrIds = new ArrayList<>();
-//        vnfrIds.add(vnfr_id);
-//        try {
-//            vnfrMonitor.startCooldown(vnfrIds);
-//            log.debug("Starting cooldown period (" + cooldown + "s) for VNFR: " + vnfr_id);
-//            Thread.sleep(cooldown * 1000);
-//            log.debug("Finished cooldown period (" + cooldown + "s) for VNFR: " + vnfr_id);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
     }
 
-    public VirtualNetworkFunctionRecord updateVNFRStatus(String nsr_id, String vnfr_id, Status status) throws SDKException {
-        VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-        vnfr.setStatus(status);
-        return updateVNFR(vnfr);
-        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
-    }
+//    public VirtualNetworkFunctionRecord updateVNFRStatus(String nsr_id, String vnfr_id, Status status) throws SDKException {
+//        VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+//        vnfr.setStatus(status);
+//        return updateVNFR(vnfr);
+//        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
+//    }
 
     public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
         log.trace("Updating VNFR on NFVO: " + vnfr);
@@ -313,5 +303,9 @@ public class ExecutionEngine {
         log.trace("Updated VNFR on NFVO: " + vnfr);
         return vnfr;
     }*/
+
+    public NFVORequestor getNfvoRequestor() {
+        return nfvoRequestor;
+    }
 
 }
