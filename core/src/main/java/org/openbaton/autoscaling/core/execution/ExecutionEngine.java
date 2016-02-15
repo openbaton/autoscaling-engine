@@ -17,9 +17,11 @@
 
 package org.openbaton.autoscaling.core.execution;
 
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
+import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
-import org.openbaton.autoscaling.core.management.ResourceManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
@@ -35,9 +37,6 @@ import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
 import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.autoscaling.configuration.AutoScalingProperties;
-import org.openbaton.autoscaling.configuration.NfvoProperties;
-import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +46,9 @@ import org.springframework.stereotype.Service;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by mpa on 27.10.15.
@@ -221,7 +222,9 @@ public class ExecutionEngine {
                         }
                     } else {
                         log.debug("Scale-in the first VNFCInstance found");
-                        vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
+//                        vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
+                        vnfcInstance_remove = null;
+                        nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId());
                     }
                 }
                 if (vnfcInstance_remove != null) {

@@ -17,13 +17,13 @@
 
 package org.openbaton.autoscaling.core.decision;
 
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.catalogue.mano.common.ScalingAction;
+import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
-import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.Date;
+import java.util.Set;
 
 /**
  * Created by mpa on 27.10.15.
@@ -68,16 +69,19 @@ public class DecisionEngine {
 
     public Status getStatus(String nsr_id, String vnfr_id) {
         log.debug("Check Status of VNFR with id: " + vnfr_id);
-        VirtualNetworkFunctionRecord vnfr = null;
+        NetworkServiceRecord networkServiceRecord = null;
         try {
-            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+            networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
         } catch (SDKException e) {
             log.warn(e.getMessage(), e);
             return Status.NULL;
-        }
-        if (vnfr == null || vnfr.getStatus() == null) {
+        } catch (ClassNotFoundException e) {
+            log.warn(e.getMessage(), e);
             return Status.NULL;
         }
-        return vnfr.getStatus();
+        if (networkServiceRecord == null || networkServiceRecord.getStatus() == null) {
+            return Status.NULL;
+        }
+        return networkServiceRecord.getStatus();
     }
 }
