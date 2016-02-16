@@ -104,7 +104,7 @@ public class DetectionTask implements Runnable {
             }
         }
 
-        log.debug("DetectionTask: Checking AutoScalingPolicy " + autoScalePolicy.getName() + " with id: " + autoScalePolicy.getId() + " VNFR with id: " + vnfr_id);
+        log.debug("DetectionTask: Checking Alarms of AutoScalingPolicy " + autoScalePolicy.getName() + " with id: " + autoScalePolicy.getId() + " VNFR with id: " + vnfr_id);
         VirtualNetworkFunctionRecord vnfr = null;
         try {
             vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
