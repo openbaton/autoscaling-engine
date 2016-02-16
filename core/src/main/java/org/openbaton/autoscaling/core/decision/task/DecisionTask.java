@@ -101,6 +101,11 @@ public class DecisionTask implements Runnable {
                             log.debug("VDU with id " + vdu.getId() + " reached already the minimum number of VNFCInstances. So no scale-in possible on this VDU.");
                         }
                     }
+                    if (filteredActions.contains(action)) {
+                        log.info("Decision-Maker accepted the execution of ScalingAction " + action + " because conditions are met.");
+                    } else {
+                        log.info("Decision-Maker rejected the execution of ScalingAction " + action + " because conditions are not met.");
+                    }
                 }
                 if (filteredActions.size() > 0) {
                     log.info("Send actions to ExecutionEngine -> " + filteredActions);
