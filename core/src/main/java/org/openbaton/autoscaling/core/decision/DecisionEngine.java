@@ -20,8 +20,10 @@ package org.openbaton.autoscaling.core.decision;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.catalogue.mano.common.ScalingAction;
+import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
+import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
@@ -84,4 +86,15 @@ public class DecisionEngine {
         }
         return networkServiceRecord.getStatus();
     }
+
+    public VirtualNetworkFunctionRecord getVNFR(String nsr_id, String vnfr_id) throws SDKException {
+        try {
+            VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+            return vnfr;
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+            throw e;
+        }
+    }
+
 }

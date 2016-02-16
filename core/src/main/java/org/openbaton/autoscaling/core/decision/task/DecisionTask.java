@@ -20,14 +20,21 @@ package org.openbaton.autoscaling.core.decision.task;
 import org.openbaton.autoscaling.core.decision.DecisionEngine;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
+import org.openbaton.catalogue.mano.common.ScalingAction;
+import org.openbaton.catalogue.mano.common.ScalingActionType;
+import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.Status;
+import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Created by mpa on 27.10.15.
@@ -66,12 +73,44 @@ public class DecisionTask implements Runnable {
         log.info("[AUTOSCALING] Requested decison-making" + new Date().getTime());
         log.debug("Requested Decision-making for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         if (decisionEngine.getStatus(nsr_id, vnfr_id) == Status.ACTIVE) {
-            log.debug("Status is ACTIVE. So send actions to ExecutionEngine");
+            log.debug("Status is ACTIVE. So continue with Decision-maikng. Next step is to check if scale-out or scale-in is possible based on numbers of already deployed VNFCInstances and limits");
             if (actionMonitor.isTerminating(vnfr_id)) {
                 return;
             }
-            decisionEngine.sendDecision(nsr_id, vnfr_id, autoScalePolicy.getActions(), autoScalePolicy.getCooldown());
-            actionMonitor.finishedAction(vnfr_id);
+            try {
+                VirtualNetworkFunctionRecord vnfr = decisionEngine.getVNFR(nsr_id, vnfr_id);
+                Set<ScalingAction> filteredActions = new HashSet<>();
+                for (ScalingAction action : autoScalePolicy.getActions()) {
+                    log.debug("Decision-Maker checks if it possible to execute Action of type " + action.getType());
+                    if (action.getType() == ScalingActionType.SCALE_OUT) {
+                        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                            if (vdu.getVnfc_instance().size() < vdu.getScale_in_out()) {
+                                log.debug("VDU with id " + vdu.getId() + " allows a scale-out. At least one more VNFCInstance is possible");
+                                filteredActions.add(action);
+                                break;
+                            }
+                            log.debug("VDU with id " + vdu.getId() + " reached already the maximum number of VNFCInstances. So no scale-out possible on this VDU.");
+                        }
+                    } else if (action.getType() == ScalingActionType.SCALE_IN) {
+                        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+                            if (vdu.getVnfc_instance().size() > 1) {
+                                log.debug("VDU with id " + vdu.getId() + " allows a scale-in. At least one less VNFCInstance is possible");
+                                filteredActions.add(action);
+                                break;
+                            }
+                            log.debug("VDU with id " + vdu.getId() + " reached already the minimum number of VNFCInstances. So no scale-in possible on this VDU.");
+                        }
+                    }
+                }
+                if (filteredActions.size() > 0) {
+                    log.info("Send actions to ExecutionEngine -> " + filteredActions);
+                    decisionEngine.sendDecision(nsr_id, vnfr_id, filteredActions, autoScalePolicy.getCooldown());
+                }
+            } catch (SDKException e) {
+                log.warn("Not able to fetch the VNFR from the NFVO. Stop here and wait for the next request of decision-making....", e);
+            } finally {
+                actionMonitor.finishedAction(vnfr_id);
+            }
         } else {
             log.debug("Status is not ACTIVE. So do not send actions to ExecutionEngine. Do nothing!");
         };
