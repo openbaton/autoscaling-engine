@@ -25,6 +25,7 @@ import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
+import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
@@ -122,9 +123,24 @@ public class ExecutionEngine {
                         actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
                         log.info("[AUTOSCALING] Added new VNFCInstance -> number " + i + " " + new Date().getTime());
                         scaled = true;
+                        while(nfvoRequestor.getNetworkServiceRecordAgent().findById(vnfr.getParent_ns_id()).getStatus()==Status.SCALING) {
+                            log.debug("Waiting for NFVO to finish the ScalingAction");
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                log.error(e.getMessage(), e);
+                            }
+                            if (actionMonitor.isTerminating(vnfr.getId())) {
+                                actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
+                                return vnfr;
+                            }
+                        }
                         break;
                     } catch (SDKException e) {
                         log.warn(e.getMessage(), e);
+                    } catch (ClassNotFoundException e) {
+                        log.warn(e.getMessage(), e);
+                        break;
                     }
                 } else {
                         log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");
@@ -191,9 +207,24 @@ public class ExecutionEngine {
                             actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
                             log.info("[AUTOSCALING] Removed VNFCInstance -> number " + i + " " + new Date().getTime());
                             scaled = true;
+                            while(nfvoRequestor.getNetworkServiceRecordAgent().findById(vnfr.getParent_ns_id()).getStatus()==Status.SCALING) {
+                                log.debug("Waiting for NFVO to finish the ScalingAction");
+                                try {
+                                    Thread.sleep(1000);
+                                } catch (InterruptedException e) {
+                                    log.error(e.getMessage(), e);
+                                }
+                                if (actionMonitor.isTerminating(vnfr.getId())) {
+                                    actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
+                                    return vnfr;
+                                }
+                            }
                             break;
                         } catch (SDKException e) {
                             log.warn(e.getMessage(), e);
+                        } catch (ClassNotFoundException e) {
+                            log.warn(e.getMessage(), e);
+                            break;
                         }
                     }
                 } else {
