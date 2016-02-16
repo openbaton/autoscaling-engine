@@ -83,7 +83,6 @@ public class Application implements ApplicationListener<ContextClosedEvent> {
     private void exit() throws SDKException {
         unsubscribe();
         destroyPlugins();
-        fetchNSRsFromNFVO();
 
         List<NetworkServiceRecord> nsrs = new ArrayList<>();
         try {
