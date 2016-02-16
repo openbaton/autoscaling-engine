@@ -21,8 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
@@ -39,7 +41,7 @@ import java.util.List;
 //@EntityScan("org.openbaton.autoscaling.catalogue")
 @ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling", "org.openbaton"})
 @ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class , PropertiesConfiguration.class})
-public class Application {
+public class Application implements ApplicationListener<ContextClosedEvent> {
 
     protected static Logger log = LoggerFactory.getLogger(Application.class);
 
@@ -81,6 +83,19 @@ public class Application {
     private void exit() throws SDKException {
         unsubscribe();
         destroyPlugins();
+        fetchNSRsFromNFVO();
+
+        List<NetworkServiceRecord> nsrs = new ArrayList<>();
+        try {
+            nsrs = nfvoRequestor.getNetworkServiceRecordAgent().findAll();
+        } catch (SDKException e) {
+            log.warn("Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start", e);
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage(), e);
+        }
+        for (NetworkServiceRecord nsr : nsrs) {
+            elasticityManagement.deactivate(nsr.getId());
+        }
     }
 
     private String subscribe(Action action) throws SDKException {
@@ -120,15 +135,13 @@ public class Application {
 
     private void fetchNSRsFromNFVO() {
         log.debug("Fetching previously deployed NSRs from NFVO to start the autoscaling for them.");
-        List<NetworkServiceRecord> nsrs = null;
+        List<NetworkServiceRecord> nsrs = new ArrayList<>();
         try {
             nsrs = nfvoRequestor.getNetworkServiceRecordAgent().findAll();
         } catch (SDKException e) {
             log.warn("Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start", e);
-            return;
         } catch (ClassNotFoundException e) {
             log.error(e.getMessage(), e);
-            return;
         }
         for (NetworkServiceRecord nsr : nsrs) {
             try {
@@ -148,4 +161,12 @@ public class Application {
         }
     }
 
+    @Override
+    public void onApplicationEvent(ContextClosedEvent event) {
+        try {
+            exit();
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
 }
