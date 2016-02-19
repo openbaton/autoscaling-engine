@@ -129,7 +129,7 @@ public class DetectionManagement {
         for (AutoScalePolicy autoScalePolicy : vnfr.getAuto_scale_policy()) {
                     start(nsr_id, vnfr.getId(), autoScalePolicy);
         }
-        log.debug("Activated Alarm Detection for VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
+        log.info("Activated Alarm Detection for VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
     }
 
     public void start(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) throws NotFoundException {
@@ -199,7 +199,7 @@ public class DetectionManagement {
                 e.printStackTrace();
             }
         }
-        log.debug("Deactivated Alarm Detection for VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
+        log.info("Deactivated Alarm Detection for VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         if (tasks.contains(false)) {
             return new AsyncResult<>(false);
         }
@@ -217,11 +217,9 @@ public class DetectionManagement {
                     while (!actionMonitor.isTerminated(autoScalePolicy.getId()) && actionMonitor.getAction(autoScalePolicy.getId()) != Action.INACTIVE && i >= 0) {
                         actionMonitor.terminate(autoScalePolicy.getId());
                         log.debug("Waiting for finishing DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-
-                        log.debug("Waiting for finishing ExecutionTask/Cooldown for VNFR with id: " + vnfr_id + " (" + i + "s)");
                         log.debug(actionMonitor.toString());
                         if (i <= 0) {
-                            log.error("Forced deactivation of DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId());
+                            log.warn("Forced deactivation of DetectionTask for AutoScalePolicy with id: " + autoScalePolicy.getId());
                             detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(true);
                             detectionTasks.get(nsr_id).get(vnfr_id).remove(autoScalePolicy.getId());
                             actionMonitor.removeId(vnfr_id);
@@ -250,6 +248,7 @@ public class DetectionManagement {
     }
 
     public void sendAlarm(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        log.info("Sending alarm to Executor for VNFR with id: " + vnfr_id);
         if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
             actionMonitor.finishedAction(autoScalePolicy.getId(), Action.TERMINATED);
             return;

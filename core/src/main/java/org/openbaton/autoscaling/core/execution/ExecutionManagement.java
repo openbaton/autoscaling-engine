@@ -83,9 +83,9 @@ public class ExecutionManagement {
     }
 
     public void executeActions(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {
-        log.info("[AUTOSCALING] Executing actions " + new Date().getTime());
-        log.debug("Processing execution request of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);
+        log.info("[EXECUTOR] RECEIVED_ACTION " + new Date().getTime());
         if (actionMonitor.requestAction(vnfr_id, Action.SCALE)) {
+            log.info("Executing scaling actions for VNFR " + vnfr_id + " -> " + actions);
             log.debug("Creating new ExecutionTask of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);
             ExecutionTask executionTask = new ExecutionTask(nsr_id, vnfr_id, actions, cooldown, executionEngine, actionMonitor);
             taskScheduler.execute(executionTask);
@@ -105,16 +105,16 @@ public class ExecutionManagement {
             actionMonitor.finishedAction(vnfr_id, Action.TERMINATED);
             return;
         }
-        log.debug("Starting CooldownTask for VNFR with id: " + vnfr_id);
+        log.info("Starting COOLDOWN (" + cooldown + "s) for VNFR with id: " + vnfr_id);
         if (actionMonitor.requestAction(vnfr_id, Action.COOLDOWN)) {
             log.debug("Creating new CooldownTask for VNFR with id: " + vnfr_id);
             CooldownTask cooldownTask = new CooldownTask(nsr_id, vnfr_id, cooldown, executionEngine, actionMonitor);
             taskScheduler.execute(cooldownTask);
         } else {
             if (actionMonitor.getAction(vnfr_id) == Action.COOLDOWN) {
-                log.debug("Waiting already for Cooldown for VNFR with id: " + vnfr_id + ". Cannot create another ExecutionTask for VNFR with id: " + vnfr_id);
+                log.info("Waiting already for Cooldown for VNFR with id: " + vnfr_id + ". Cannot create another ExecutionTask for VNFR with id: " + vnfr_id);
             } else if (actionMonitor.getAction(vnfr_id) == Action.SCALE) {
-                log.debug("VNFR with id: " + vnfr_id + " is still in Scaling.");
+                log.info("VNFR with id: " + vnfr_id + " is still in Scaling.");
             } else {
                 log.debug(actionMonitor.toString());
             }

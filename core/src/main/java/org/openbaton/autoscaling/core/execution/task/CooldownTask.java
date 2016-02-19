@@ -86,6 +86,6 @@ public class CooldownTask implements Runnable {
             log.warn("Cooldown for VNFR with id: " + vnfr_id + "was interrupted");
         }
         actionMonitor.removeId(vnfr_id);
-        log.info("[AUTOSCALING] Cooldown finished " + new Date().getTime());
+        log.info("Cooldown finished for VNFR with id " + vnfr_id);
     }
 }

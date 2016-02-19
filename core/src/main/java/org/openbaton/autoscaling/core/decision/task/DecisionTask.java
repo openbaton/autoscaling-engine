@@ -70,7 +70,7 @@ public class DecisionTask implements Runnable {
 
     @Override
     public void run() {
-        log.info("[AUTOSCALING] Requested decison-making" + new Date().getTime());
+        log.info("Requested decison-making for VNFR with id " + vnfr_id);
         log.debug("Requested Decision-making for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
         if (decisionEngine.getStatus(nsr_id, vnfr_id) == Status.ACTIVE) {
             log.debug("Status is ACTIVE. So continue with Decision-maikng. Next step is to check if scale-out or scale-in is possible based on numbers of already deployed VNFCInstances and limits");

@@ -80,6 +80,7 @@ public class DetectionTask implements Runnable {
 
     @Override
     public void run() {
+        log.info("[DETECTOR] CHECK_ALARM " + new Date().getTime());
         if (!actionMonitor.requestAction(autoScalePolicy.getId(), Action.DETECT)) {
             return;
         }
@@ -117,7 +118,6 @@ public class DetectionTask implements Runnable {
             return;
         }
         if (vnfr != null) {
-            log.info("[AUTOSCALING] Checking Alarms " + new Date().getTime());
             for (ScalingAlarm alarm : autoScalePolicy.getAlarms()) {
                 //terminate gracefully at this point in time if suggested from the outside
                 if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
@@ -127,9 +127,9 @@ public class DetectionTask implements Runnable {
                 alarmsWeightCount =+ alarm.getWeight();
                 List<Item> measurementResults = null;
                 try {
-                    log.info("[AUTOSCALING] Collecting Measurements results for Alarm " + new Date().getTime());
+                    log.info("[DETECTOR] REQUEST_MEASUREMENTS " + new Date().getTime());
                     measurementResults = detectionEngine.getRawMeasurementResults(vnfr, alarm.getMetric(), Integer.toString(autoScalePolicy.getPeriod()));
-                    log.info("[AUTOSCALING] Collected Measurements results for Alarm" + new Date().getTime());
+                    log.info("[DETECTOR] GOT_MEASUREMENT_RESULTS " + new Date().getTime());
 
                 } catch (MonitoringException e) {
                     //log.error(e.getMessage(), e);
@@ -156,9 +156,10 @@ public class DetectionTask implements Runnable {
             }
             if (detectionEngine.checkThreshold(autoScalePolicy.getComparisonOperator(), autoScalePolicy.getThreshold(), finalResult)) {
                 //if (fired == false) {
-                    log.info("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
-                    fired = true;
-                    detectionEngine.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
+                log.info("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+                fired = true;
+                log.info("[DETECTOR] DETECTED_ALARM " + new Date().getTime());
+                detectionEngine.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
                 //} else {
                 //    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                 //}

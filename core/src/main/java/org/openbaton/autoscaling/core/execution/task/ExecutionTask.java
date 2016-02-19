@@ -70,6 +70,7 @@ public class ExecutionTask implements Runnable {
 
     @Override
     public void run() {
+        log.info("Executing scaling actions for VNFR " + vnfr_id);
         VirtualNetworkFunctionRecord vnfr = null;
 //        try {
 //            vnfr = executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.SCALING);
@@ -86,10 +87,14 @@ public class ExecutionTask implements Runnable {
                 vnfr = executionEngine.getNfvoRequestor().getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
                 if (vnfr == null) {
                     log.warn("Cannot execute ScalingAction. VNFR was not found or problems with the SDK");
+                    actionMonitor.finishedAction(vnfr_id);
+                    return;
                 }
                 switch (action.getType()) {
                     case SCALE_OUT:
+                        log.info("[EXECUTOR] START_SCALE_OUT " + new Date().getTime());
                         vnfr = executionEngine.scaleOut(vnfr, Integer.parseInt(action.getValue()));
+                        log.info("[EXECUTOR] FINISH_SCALE_OUT " + new Date().getTime());
                         break;
                     case SCALE_OUT_TO:
                         executionEngine.scaleOutTo(vnfr, Integer.parseInt(action.getValue()));
@@ -126,13 +131,13 @@ public class ExecutionTask implements Runnable {
 //                }
 //                actionMonitor.finishedAction(vnfr_id);
 //            }
+            log.info("Executed scaling actions for VNFR " + vnfr.getId());
             if (actionMonitor.getAction(vnfr_id) == Action.SCALED) {
-                log.info("[AUTOSCALING] Starting Cooldown " + new Date().getTime());
+                log.info("[EXECUTOR] START_COOLDOWN " + new Date().getTime());
                 executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
             } else {
                 actionMonitor.finishedAction(vnfr_id);
             }
         }
-        log.info("[AUTOSCALING] Executor executed Actions " + new Date().getTime());
     }
 }
