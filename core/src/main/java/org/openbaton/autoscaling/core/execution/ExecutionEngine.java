@@ -104,12 +104,13 @@ public class ExecutionEngine {
     }
 
     public VirtualNetworkFunctionRecord scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws NotFoundException {
+        log.debug("Executing scale-out for VNFR with id: " + vnfr.getId());
         for (int i = 1; i <= numberOfInstances; i++) {
             if (actionMonitor.isTerminating(vnfr.getId())) {
                 actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
                 return vnfr;
             }
-            log.info("[AUTOSCALING] Adding new VNFCInstance -> number " + i + " " + new Date().getTime());
+            log.debug("Adding new VNFCInstance -> number " + i);
             boolean scaled = false;
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 if (scaled == true) break;
@@ -119,9 +120,8 @@ public class ExecutionEngine {
                         log.trace("Request NFVO to execute ScalingAction -> scale-out");
                         nfvoRequestor.getNetworkServiceRecordAgent().createVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent);
                         log.trace("NFVO executed ScalingAction -> scale-out");
-                        log.debug("SCALE: Added new Component to VDU " + vdu.getId());
+                        log.info("Added new VNFCInstance to VDU " + vdu.getId());
                         actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
-                        log.info("[AUTOSCALING] Added new VNFCInstance -> number " + i + " " + new Date().getTime());
                         scaled = true;
                         while(nfvoRequestor.getNetworkServiceRecordAgent().findById(vnfr.getParent_ns_id()).getStatus()==Status.SCALING) {
                             log.debug("Waiting for NFVO to finish the ScalingAction");
@@ -135,6 +135,13 @@ public class ExecutionEngine {
                                 return vnfr;
                             }
                         }
+                        try {
+                            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(vnfr.getParent_ns_id(), vnfr.getId());
+                        } catch (SDKException e) {
+                            log.error(e.getMessage(), e);
+                            log.warn("Cannot execute ScalingAction. VNFR was not found or problems with the SDK");
+                            actionMonitor.finishedAction(vnfr.getId());
+                        }
                         break;
                     } catch (SDKException e) {
                         log.warn(e.getMessage(), e);
@@ -147,6 +154,7 @@ public class ExecutionEngine {
                 }
             }
         }
+        log.debug("Executed scale-out for VNFR with id: " + vnfr.getId());
         return vnfr;
     }
 
@@ -165,12 +173,14 @@ public class ExecutionEngine {
     }
 
     public VirtualNetworkFunctionRecord scaleIn(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws NotFoundException {
+        log.debug("Executing scale-in for VNFR with id: " + vnfr.getId());
         for (int i = 1; i <= numberOfInstances; i++) {
             VNFCInstance vnfcInstance_remove = null;
             if (actionMonitor.isTerminating(vnfr.getId())) {
                 actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
                 return vnfr;
             }
+            log.debug("Removing VNFCInstance -> number " + i);
             boolean scaled = false;
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 if (scaled == true) break;
@@ -203,9 +213,8 @@ public class ExecutionEngine {
                             log.trace("Request NFVO to execute ScalingAction -> scale-in");
                             nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId());
                             log.trace("NFVO executed ScalingAction -> scale-in");
-                            log.debug("Removed VNFCInstance from VNFR " + vnfr.getId());
+                            log.info("Removed VNFCInstance from VNFR " + vnfr.getId());
                             actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
-                            log.info("[AUTOSCALING] Removed VNFCInstance -> number " + i + " " + new Date().getTime());
                             scaled = true;
                             while(nfvoRequestor.getNetworkServiceRecordAgent().findById(vnfr.getParent_ns_id()).getStatus()==Status.SCALING) {
                                 log.debug("Waiting for NFVO to finish the ScalingAction");
@@ -232,6 +241,7 @@ public class ExecutionEngine {
                 }
             }
         }
+        log.debug("Executed scale-in for VNFR with id: " + vnfr.getId());
         return vnfr;
     }
 
@@ -264,14 +274,14 @@ public class ExecutionEngine {
 //    }
 
     public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
-        log.trace("Updating VNFR on NFVO: " + vnfr);
+//        log.trace("Updating VNFR on NFVO: " + vnfr);
 //        try {
 //            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(vnfr.getParent_ns_id(), vnfr.getId(), vnfr);
 //        } catch (SDKException e) {
 //            log.error(e.getMessage(), e);
 //            return vnfr;
 //        }
-        log.trace("Updated VNFR on NFVO: " + vnfr);
+//        log.trace("Updated VNFR on NFVO: " + vnfr);
         return vnfr;
     }
 
