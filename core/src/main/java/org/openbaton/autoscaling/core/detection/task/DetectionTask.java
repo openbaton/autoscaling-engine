@@ -74,7 +74,7 @@ public class DetectionTask implements Runnable {
         this.actionMonitor = actionMonitor;
 
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");        this.name = "DetectionTask#" + nsr_id + ":" + vnfr_id;
-        this.first_time = false;
+        this.first_time = true;
         this.fired = false;
     }
 

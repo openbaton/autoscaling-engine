@@ -118,6 +118,6 @@ public class DecisionTask implements Runnable {
             }
         } else {
             log.debug("Status is not ACTIVE. So do not send actions to ExecutionEngine. Do nothing!");
-        };
+        }
     }
 }
