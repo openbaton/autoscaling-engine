@@ -175,7 +175,7 @@ public class Utils {
         throw new NotFoundException("VimInstance with name: " + name + " was not found in the provided list of VimInstances.");
     }
 
-    public static VimInstance getVimInstance(String name, NFVORequestor nfvoRequestor) throws NotFoundException {
+    public static VimInstance getVimInstance(List<String> vimInstanceNames, NFVORequestor nfvoRequestor) throws NotFoundException {
         List<VimInstance> vimInstances = new ArrayList<>();
         try {
             vimInstances = nfvoRequestor.getVimInstanceAgent().findAll();
@@ -184,12 +184,14 @@ public class Utils {
         } catch (ClassNotFoundException e) {
             log.error(e.getMessage(), e);
         }
-        for (VimInstance vimInstance : vimInstances) {
-            if (vimInstance.getName().equals(name)) {
-                return vimInstance;
+        for (String vimInstanceName : vimInstanceNames) {
+            for (VimInstance vimInstance : vimInstances) {
+                if (vimInstance.getName().equals(vimInstanceName)) {
+                    return vimInstance;
+                }
             }
         }
-        throw new NotFoundException("VimInstance with name: " + name + " was not found in the provided list of VimInstances.");
+        throw new NotFoundException("VimInstances with names: " + vimInstanceNames + " were not found in the provided list of VimInstances.");
     }
 
     public Set<Event> listEvents(VirtualNetworkFunctionRecord vnfr) {

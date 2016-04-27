@@ -20,6 +20,7 @@ import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -41,7 +42,7 @@ import java.util.List;
 //@EntityScan("org.openbaton.autoscaling.catalogue")
 @ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling", "org.openbaton"})
 @ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class , PropertiesConfiguration.class})
-public class Application implements ApplicationListener<ContextClosedEvent> {
+public class Application implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
 
     protected static Logger log = LoggerFactory.getLogger(Application.class);
 
@@ -63,7 +64,6 @@ public class Application implements ApplicationListener<ContextClosedEvent> {
 
     private ElasticityManagement elasticityManagement;
 
-    @PostConstruct
     private void init() throws SDKException {
         //start all the plugins needed
         startPlugins();
@@ -167,5 +167,10 @@ public class Application implements ApplicationListener<ContextClosedEvent> {
         } catch (SDKException e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        init();
     }
 }

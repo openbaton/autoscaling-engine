@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionEngine;
+import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.exceptions.NotFoundException;
@@ -34,7 +35,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/event")
+@RequestMapping("/decision-maker")
 public class RestDecisionInterface {
 
 	private Logger log = LoggerFactory.getLogger(this.getClass());
@@ -42,46 +43,52 @@ public class RestDecisionInterface {
     @Autowired
     private DecisionManagement decisionManagement;
 
-//    /**
-//     * Activates autoscaling for the passed NSR
-//     *
-//     * @param msg : NSR in payload to add for autoscaling
-//     */
-//    @RequestMapping(value = "INSTANTIATE_FINISH", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-//    @ResponseStatus(HttpStatus.CREATED)
-//    public void activate(@RequestBody String msg) throws NotFoundException {
-//        log.debug("========================");
-//        log.debug("msg=" + msg);
-//        JsonParser jsonParser = new JsonParser();
-//        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
-//        Gson mapper = new GsonBuilder().create();
+    /**
+     * Activates autoscaling for the passed NSR
+     *
+     * @param msg : NSR in payload to add for autoscaling
+     */
+    @RequestMapping(value = "", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public void decide(@RequestBody String msg) throws NotFoundException {
+        log.debug("========================");
+        log.debug("msg=" + msg);
+        JsonParser jsonParser = new JsonParser();
+        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
+        Gson mapper = new GsonBuilder().create();
 //        Action action = mapper.fromJson(json.get("action"), Action.class);
 //        log.debug("ACTION=" + action);
+        String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
+        String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
+        AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
 //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
 //        log.debug("NSR=" + nsr);
-//        decisionManagement.activate(nsr.getId());
-//    }
-//
-//    /**
-//     * Deactivates autoscaling for the passed NSR
-//     *
-//     * @param msg : NSR in payload to add for autoscaling
-//     */
-//    @RequestMapping(value = "RELEASE_RESOURCES_FINISH", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-//    @ResponseStatus(HttpStatus.CREATED)
-//    public void deactivate(@RequestBody String msg) throws NotFoundException {
-//        log.debug("========================");
-//        log.debug("msg=" + msg);
-//        JsonParser jsonParser = new JsonParser();
-//        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
-//        Gson mapper = new GsonBuilder().create();
+        decisionManagement.decide(nsrId, vnfrId, autoScalePolicy);
+    }
+
+    /**
+     * Deactivates autoscaling for the passed NSR
+     *
+     * @param msg : NSR in payload to add for autoscaling
+     */
+    @RequestMapping(value = "", method = RequestMethod.DELETE, /*consumes = MediaType.APPLICATION_JSON_VALUE,*/ produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public void stop(@RequestBody String msg) throws NotFoundException {
+        log.debug("========================");
+        log.debug("msg=" + msg);
+        JsonParser jsonParser = new JsonParser();
+        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
+        Gson mapper = new GsonBuilder().create();
 //        Action action = mapper.fromJson(json.get("action"), Action.class);
 //        log.debug("ACTION=" + action);
+        String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
+        String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
+        AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
 //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
 //        log.debug("NSR=" + nsr);
-//        decisionManagement.deactivate(nsr);
-//    }
-//
+        decisionManagement.stop(nsrId, vnfrId);
+    }
+
 //    /**
 //     * Stops autoscaling for the passed NSR
 //     *
@@ -97,15 +104,15 @@ public class RestDecisionInterface {
 //        Gson mapper = new GsonBuilder().create();
 //        Action action = mapper.fromJson(json.get("action"), Action.class);
 //        log.debug("ACTION=" + action);
-////        try {
-////            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
-////            log.debug("NSR=" + nsr);
-////            elasticityManagement.deactivate(nsr);
-////        } catch (NullPointerException e) {
-////            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
-////            log.debug("vnfr=" + vnfr);
-////            elasticityManagement.deactivate(vnfr);
-////        }
+//        try {
+//            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+//            log.debug("NSR=" + nsr);
+//            elasticityManagement.deactivate(nsr);
+//        } catch (NullPointerException e) {
+//            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
+//            log.debug("vnfr=" + vnfr);
+//            elasticityManagement.deactivate(vnfr);
+//        }
 //    }
 
 }

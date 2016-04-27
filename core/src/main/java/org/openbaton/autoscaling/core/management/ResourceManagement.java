@@ -179,13 +179,13 @@ public class ResourceManagement {
         try {
             client.deleteServerByIdAndWait(vimInstance, vnfcInstance.getVc_id());
             log.info("Removed VM with ExtId: " + vnfcInstance.getVc_id() + " from VimInstance " + vimInstance.getName());
-        } catch (RemoteException e) {
-            if (log.isDebugEnabled()) {
-                log.error("Not removed VM with ExtId " + vnfcInstance.getVc_id() + " successfully from VimInstance " + vimInstance.getName() + ". Caused by: " + e.getMessage(), e);
-            } else {
-                log.error("Not removed VM with ExtId " + vnfcInstance.getVc_id() + " successfully from VimInstance " + vimInstance.getName() + ". Caused by: " + e.getMessage());
-            }
-            throw new VimException("Not removed VM with ExtId " + vnfcInstance.getVc_id() + " successfully from VimInstance " + vimInstance.getName() + ". Caused by: " + e.getMessage(), e);
+//        } catch (RemoteException e) {
+//            if (log.isDebugEnabled()) {
+//                log.error("Not removed VM with ExtId " + vnfcInstance.getVc_id() + " successfully from VimInstance " + vimInstance.getName() + ". Caused by: " + e.getMessage(), e);
+//            } else {
+//                log.error("Not removed VM with ExtId " + vnfcInstance.getVc_id() + " successfully from VimInstance " + vimInstance.getName() + ". Caused by: " + e.getMessage());
+//            }
+//            throw new VimException("Not removed VM with ExtId " + vnfcInstance.getVc_id() + " successfully from VimInstance " + vimInstance.getName() + ". Caused by: " + e.getMessage(), e);
         } catch (VimDriverException e) {
             try {
                 Thread.sleep(1000);
@@ -290,43 +290,44 @@ public class ResourceManagement {
     }
 
     private String getUserdata(String hostname, VirtualNetworkFunctionRecord vnfr) {
-        log.debug("Preparing userdata");
-        Map<String, String> variables = new HashMap<>();
-//        variables.put("$HOSTNAME", hostname);
-//        variables.put("$MONITORING_URL", mediaServerProperties.getMonitor().getUrl());
-//        variables.put("$TURN_SERVER_ACTIVATE", Boolean.toString(mediaServerProperties.getTurnServer().isActivate()));
-//        variables.put("$TURN_SERVER_URL", mediaServerProperties.getTurnServer().getUrl());
-//        variables.put("$TURN_SERVER_USERNAME", mediaServerProperties.getTurnServer().getUsername());
-//        variables.put("$TURN_SERVER_PASSWORD", mediaServerProperties.getTurnServer().getPassword());
-//        variables.put("$STUN_SERVER_ACTIVATE", Boolean.toString(mediaServerProperties.getStunServer().isActivate()));
-//        variables.put("$STUN_SERVER_ADDRESS", mediaServerProperties.getStunServer().getAddress());
-//        variables.put("$STUN_SERVER_PORT", mediaServerProperties.getStunServer().getPort());
-        for (ConfigurationParameter configurationParameter : vnfr.getConfigurations().getConfigurationParameters()) {
-            log.debug(configurationParameter.toString());
-            if (configurationParameter.getConfKey().equals("mediaserver.turn-server.activate")) {
-                variables.put("$TURN_SERVER_ACTIVATE", configurationParameter.getValue());
-            }
-            if (configurationParameter.getConfKey().equals("mediaserver.turn-server.url")) {
-                variables.put("$TURN_SERVER_URL", configurationParameter.getValue());
-            }
-            if (configurationParameter.getConfKey().equals("mediaserver.turn-server.username")) {
-                variables.put("$TURN_SERVER_USERNAME", configurationParameter.getValue());
-            }
-            if (configurationParameter.getConfKey().equals("mediaserver.turn-server.password")) {
-                variables.put("$TURN_SERVER_PASSWORD", configurationParameter.getValue());
-            }
-            if (configurationParameter.getConfKey().equals("mediaserver.stun-server.activate")) {
-                variables.put("$STUN_SERVER_ACTIVATE", configurationParameter.getValue());
-            }
-            if (configurationParameter.getConfKey().equals("mediaserver.stun-server.address")) {
-                variables.put("$STUN_SERVER_ADDRESS", configurationParameter.getValue());
-            }
-            if (configurationParameter.getConfKey().equals("mediaserver.stun-server.port")) {
-                variables.put("$STUN_SERVER_PORT", configurationParameter.getValue());
-            }
-        }
-        String userdata = Utils.replaceVariables(userdataRaw, variables);
-        log.debug("userdata: " + userdata);
-        return userdata;
+//        log.debug("Preparing userdata");
+//        Map<String, String> variables = new HashMap<>();
+////        variables.put("$HOSTNAME", hostname);
+////        variables.put("$MONITORING_URL", mediaServerProperties.getMonitor().getUrl());
+////        variables.put("$TURN_SERVER_ACTIVATE", Boolean.toString(mediaServerProperties.getTurnServer().isActivate()));
+////        variables.put("$TURN_SERVER_URL", mediaServerProperties.getTurnServer().getUrl());
+////        variables.put("$TURN_SERVER_USERNAME", mediaServerProperties.getTurnServer().getUsername());
+////        variables.put("$TURN_SERVER_PASSWORD", mediaServerProperties.getTurnServer().getPassword());
+////        variables.put("$STUN_SERVER_ACTIVATE", Boolean.toString(mediaServerProperties.getStunServer().isActivate()));
+////        variables.put("$STUN_SERVER_ADDRESS", mediaServerProperties.getStunServer().getAddress());
+////        variables.put("$STUN_SERVER_PORT", mediaServerProperties.getStunServer().getPort());
+//        for (ConfigurationParameter configurationParameter : vnfr.getConfigurations().getConfigurationParameters()) {
+//            log.debug(configurationParameter.toString());
+//            if (configurationParameter.getConfKey().equals("mediaserver.turn-server.activate")) {
+//                variables.put("$TURN_SERVER_ACTIVATE", configurationParameter.getValue());
+//            }
+//            if (configurationParameter.getConfKey().equals("mediaserver.turn-server.url")) {
+//                variables.put("$TURN_SERVER_URL", configurationParameter.getValue());
+//            }
+//            if (configurationParameter.getConfKey().equals("mediaserver.turn-server.username")) {
+//                variables.put("$TURN_SERVER_USERNAME", configurationParameter.getValue());
+//            }
+//            if (configurationParameter.getConfKey().equals("mediaserver.turn-server.password")) {
+//                variables.put("$TURN_SERVER_PASSWORD", configurationParameter.getValue());
+//            }
+//            if (configurationParameter.getConfKey().equals("mediaserver.stun-server.activate")) {
+//                variables.put("$STUN_SERVER_ACTIVATE", configurationParameter.getValue());
+//            }
+//            if (configurationParameter.getConfKey().equals("mediaserver.stun-server.address")) {
+//                variables.put("$STUN_SERVER_ADDRESS", configurationParameter.getValue());
+//            }
+//            if (configurationParameter.getConfKey().equals("mediaserver.stun-server.port")) {
+//                variables.put("$STUN_SERVER_PORT", configurationParameter.getValue());
+//            }
+//        }
+//        String userdata = Utils.replaceVariables(userdataRaw, variables);
+//        log.debug("userdata: " + userdata);
+//        return userdata;
+        return  "";
     }
 }

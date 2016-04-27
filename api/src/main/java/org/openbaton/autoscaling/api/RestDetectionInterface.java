@@ -24,6 +24,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import org.openbaton.autoscaling.core.detection.DetectionEngine;
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
+import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.monitoring.ObjectSelection;
 import org.openbaton.catalogue.mano.common.monitoring.ThresholdDetails;
 import org.openbaton.catalogue.mano.common.monitoring.ThresholdType;
@@ -32,6 +33,7 @@ import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.exceptions.VimException;
 import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,13 +46,88 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 @RestController
-@RequestMapping("/vrpm")
+@RequestMapping("/detector")
 public class RestDetectionInterface {
 
 	private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private DetectionManagement detectionManagement;
+
+    /**
+     * Activates autoscaling for the passed NSR
+     *
+     * @param msg : NSR in payload to add for autoscaling
+     */
+    @RequestMapping(value = "", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public void activate(@RequestBody String msg) throws NotFoundException, VimException {
+        log.debug("========================");
+        log.debug("msg=" + msg);
+        JsonParser jsonParser = new JsonParser();
+        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
+        Gson mapper = new GsonBuilder().create();
+//        Action action = mapper.fromJson(json.get("action"), Action.class);
+//        log.debug("ACTION=" + action);
+        String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
+        String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
+        AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
+//        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+//        log.debug("NSR=" + nsr);
+        if (autoScalePolicy != null) {
+            detectionManagement.start(nsrId, vnfrId, autoScalePolicy);
+        } else {
+            detectionManagement.start(nsrId, vnfrId);
+        }
+    }
+
+    /**
+     * Deactivates autoscaling for the passed NSR
+     *
+     * @param msg : NSR in payload to add for autoscaling
+     */
+    @RequestMapping(value = "", method = RequestMethod.DELETE, /*consumes = MediaType.APPLICATION_JSON_VALUE,*/ produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public void deactivate(@RequestBody String msg) throws NotFoundException {
+        log.debug("========================");
+        log.debug("msg=" + msg);
+        JsonParser jsonParser = new JsonParser();
+        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
+        Gson mapper = new GsonBuilder().create();
+//        Action action = mapper.fromJson(json.get("action"), Action.class);
+//        log.debug("ACTION=" + action);
+//        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+//        log.debug("NSR=" + nsr);
+        String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
+        String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
+        detectionManagement.stop(nsrId, vnfrId);
+    }
+
+    /**
+     * Stops autoscaling for the passed NSR
+     *
+     * @param msg : NSR in payload to add for autoscaling
+     */
+    @RequestMapping(value = "ERROR", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public void stop(@RequestBody String msg) throws NotFoundException {
+        log.debug("========================");
+        log.debug("msg=" + msg);
+        JsonParser jsonParser = new JsonParser();
+        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
+        Gson mapper = new GsonBuilder().create();
+        Action action = mapper.fromJson(json.get("action"), Action.class);
+        log.debug("ACTION=" + action);
+//        try {
+//            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+//            log.debug("NSR=" + nsr);
+//            elasticityManagement.deactivate(nsr);
+//        } catch (NullPointerException e) {
+//            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
+//            log.debug("vnfr=" + vnfr);
+//            elasticityManagement.deactivate(vnfr);
+//        }
+    }
 
 //    /**
 //     * Deactivates autoscaling for the passed NSR

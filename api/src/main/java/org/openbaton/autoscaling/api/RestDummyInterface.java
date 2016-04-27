@@ -21,11 +21,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.openbaton.autoscaling.core.detection.DetectionEngine;
-import org.openbaton.autoscaling.core.execution.ExecutionManagement;
-import org.openbaton.catalogue.mano.common.ScalingAction;
-import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
-import org.openbaton.catalogue.nfvo.Action;
+import org.openbaton.autoscaling.core.decision.DecisionManagement;
+import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.exceptions.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,17 +31,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @RestController
-@RequestMapping("/executor")
-public class RestExecutionInterface {
+@RequestMapping("/")
+public class RestDummyInterface {
 
 	private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private ExecutionManagement executionManagement;
+    private DecisionManagement decisionManagement;
 
     /**
      * Activates autoscaling for the passed NSR
@@ -53,32 +47,7 @@ public class RestExecutionInterface {
      */
     @RequestMapping(value = "", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public void execute(@RequestBody String msg) throws NotFoundException {
-        log.debug("========================");
-        log.debug("msg=" + msg);
-        JsonParser jsonParser = new JsonParser();
-        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
-        Gson mapper = new GsonBuilder().create();
-//        String actionsString = json.get("actions");
-//        Set<Action> actions = mapper.fromJson(actionsString, Action.class);
-//        log.debug("ACTION=" + action);
-//        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
-//        log.debug("NSR=" + nsr);
-//        detectionEngine.activate(nsr);
-        String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
-        String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
-        Long cooldown = mapper.fromJson(json.get("cooldown"), Long.class);
-        executionManagement.executeActions(nsrId, vnfrId, new HashSet<ScalingAction>(), cooldown);
-    }
-
-    /**
-     * Deactivates autoscaling for the passed NSR
-     *
-     * @param msg : NSR in payload to add for autoscaling
-     */
-    @RequestMapping(value = "", method = RequestMethod.DELETE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseStatus(HttpStatus.CREATED)
-    public void stop(@RequestBody String msg) throws NotFoundException {
+    public void decide(@RequestBody String msg) throws NotFoundException {
         log.debug("========================");
         log.debug("msg=" + msg);
         JsonParser jsonParser = new JsonParser();
@@ -86,12 +55,35 @@ public class RestExecutionInterface {
         Gson mapper = new GsonBuilder().create();
 //        Action action = mapper.fromJson(json.get("action"), Action.class);
 //        log.debug("ACTION=" + action);
-//        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
-//        log.debug("NSR=" + nsr);
         String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
         String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
-        executionManagement.stop(nsrId, vnfrId);
-//        detectionEngine.deactivate(nsr);
+        AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
+//        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+//        log.debug("NSR=" + nsr);
+        decisionManagement.decide(nsrId, vnfrId, autoScalePolicy);
+    }
+
+    /**
+     * Deactivates autoscaling for the passed NSR
+     *
+     * @param msg : NSR in payload to add for autoscaling
+     */
+    @RequestMapping(value = "", method = RequestMethod.GET, /*consumes = MediaType.APPLICATION_JSON_VALUE,*/ produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public void stop(@RequestBody String msg) throws NotFoundException {
+        log.debug("========================");
+//        log.debug("msg=" + msg);
+//        JsonParser jsonParser = new JsonParser();
+//        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
+//        Gson mapper = new GsonBuilder().create();
+////        Action action = mapper.fromJson(json.get("action"), Action.class);
+////        log.debug("ACTION=" + action);
+//        String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
+//        String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
+//        AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
+////        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+////        log.debug("NSR=" + nsr);
+//        decisionManagement.stop(nsrId, vnfrId);
     }
 
 //    /**
@@ -109,15 +101,15 @@ public class RestExecutionInterface {
 //        Gson mapper = new GsonBuilder().create();
 //        Action action = mapper.fromJson(json.get("action"), Action.class);
 //        log.debug("ACTION=" + action);
-////        try {
-////            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
-////            log.debug("NSR=" + nsr);
-////            elasticityManagement.deactivate(nsr);
-////        } catch (NullPointerException e) {
-////            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
-////            log.debug("vnfr=" + vnfr);
-////            elasticityManagement.deactivate(vnfr);
-////        }
+//        try {
+//            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+//            log.debug("NSR=" + nsr);
+//            elasticityManagement.deactivate(nsr);
+//        } catch (NullPointerException e) {
+//            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
+//            log.debug("vnfr=" + vnfr);
+//            elasticityManagement.deactivate(vnfr);
+//        }
 //    }
 
 }
