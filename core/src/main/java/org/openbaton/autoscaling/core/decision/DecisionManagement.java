@@ -81,7 +81,7 @@ public class DecisionManagement {
     }
 
     public void decide(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
-        log.info("[DECISION_MAKER] DECISION_REQUESTED " + new Date().getTime());
+        //log.info("[DECISION_MAKER] DECISION_REQUESTED " + new Date().getTime());
         log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         log.trace("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
         actionMonitor.requestAction(vnfr_id, Action.DECIDE);

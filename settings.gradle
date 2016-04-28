@@ -1,4 +1,4 @@
-rootProject.name = 'autoscaling'
+rootProject.name = 'autoscaling-engine'
 
 /*
  *
@@ -24,26 +24,7 @@ include 'api'
 include 'as-catalogue'
 include 'as-utils'
 
-//include 'main'
-//include 'core'
-//include 'catalogue'
-//include 'api'
-//include 'utils'
-
-//include 'sdk'
-//include 'openbaton-libs'
-
-//project(':main').projectDir = file('main')
-//project(':core').projectDir = file('core')
-//project(':catalogue').projectDir = file('catalogue')
-//project(':api').projectDir = file('api')
 project(':as-catalogue').projectDir = file('catalogue')
 project(':as-utils').projectDir = file('utils')
-
-//project(':openbaton-libs').projectDir = file('../openbaton-libs')
-//project(':catalogue').projectDir = file('../openbaton-libs/catalogue')
-//project(':core-impl').projectDir = file('../core/core-impl')
-//project(':sdk').projectDir = file('sdk')
-//project(':sdk').projectDir = file('sdk')
 
 

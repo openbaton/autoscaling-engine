@@ -20,18 +20,12 @@ package org.openbaton.autoscaling.core.execution;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.configuration.SpringProperties;
-import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
-import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
-import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.openbaton.catalogue.nfvo.Item;
-import org.openbaton.catalogue.nfvo.VimInstance;
-import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
@@ -48,7 +42,6 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -65,14 +58,7 @@ public class ExecutionEngine {
 
     private NFVORequestor nfvoRequestor;
 
-//    @Autowired
-//    private ResourceManagement resourceManagement;
-
-    //@Autowired
     private ExecutionManagement executionManagement;
-
-    //@Autowired
-    private PoolManagement poolManagement;
 
     private ActionMonitor actionMonitor;
 
@@ -91,7 +77,6 @@ public class ExecutionEngine {
     public void init() {
         //this.resourceManagement = context.getBean(ResourceManagement.class);
         this.executionManagement = context.getBean(ExecutionManagement.class);
-        this.poolManagement = context.getBean(PoolManagement.class);
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
     }
 
@@ -123,7 +108,7 @@ public class ExecutionEngine {
                         log.info("Added new VNFCInstance to VDU " + vdu.getId());
                         actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
                         scaled = true;
-                        while(nfvoRequestor.getNetworkServiceRecordAgent().findById(vnfr.getParent_ns_id()).getStatus()==Status.SCALING) {
+                        while (nfvoRequestor.getNetworkServiceRecordAgent().findById(vnfr.getParent_ns_id()).getStatus() == Status.SCALING) {
                             log.debug("Waiting for NFVO to finish the ScalingAction");
                             try {
                                 Thread.sleep(1000);
@@ -150,7 +135,7 @@ public class ExecutionEngine {
                         break;
                     }
                 } else {
-                        log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");
+                    log.warn("Maximum size of VDU with id: " + vdu.getId() + " reached...");
                 }
             }
         }
@@ -185,57 +170,33 @@ public class ExecutionEngine {
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 if (scaled == true) break;
                 if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
-                    if (autoScalingProperties.getTerminationRule().isActivate()) {
-                        if (client == null) client = getClient();
-                        log.debug("Search for VNFCInstance that meets the termination rule");
-                        List<String> hostnames = new ArrayList<>();
-                        for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                            hostnames.add(vnfcInstance.getHostname());
-                        }
-                        List<String> metrics = new ArrayList<>();
-                        metrics.add(autoScalingProperties.getTerminationRule().getMetric());
-                        List<Item> items = null;
-                        try {
-                            items = client.queryPMJob(hostnames, metrics, "15");
-                        } catch (MonitoringException e) {
-                            log.error(e.getMessage(), e);
-                        }
-                        log.debug("Processing measurement results...");
-                        for (Item item : items) {
-                            if (item.getLastValue().equals(autoScalingProperties.getTerminationRule().getValue())) {
-                                log.debug("Found VNFCInstance that meets termination-rule.");
-                                vnfcInstance_remove = vdu.getVnfc_instance().iterator().next();
-                                break;
+                    try {
+                        log.trace("Request NFVO to execute ScalingAction -> scale-in");
+                        nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId());
+                        log.trace("NFVO executed ScalingAction -> scale-in");
+                        log.info("Removed VNFCInstance from VNFR " + vnfr.getId());
+                        actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
+                        scaled = true;
+                        while (nfvoRequestor.getNetworkServiceRecordAgent().findById(vnfr.getParent_ns_id()).getStatus() == Status.SCALING) {
+                            log.debug("Waiting for NFVO to finish the ScalingAction");
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                log.error(e.getMessage(), e);
+                            }
+                            if (actionMonitor.isTerminating(vnfr.getId())) {
+                                actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
+                                return vnfr;
                             }
                         }
-                    } else {
-                        try {
-                            log.trace("Request NFVO to execute ScalingAction -> scale-in");
-                            nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId());
-                            log.trace("NFVO executed ScalingAction -> scale-in");
-                            log.info("Removed VNFCInstance from VNFR " + vnfr.getId());
-                            actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
-                            scaled = true;
-                            while(nfvoRequestor.getNetworkServiceRecordAgent().findById(vnfr.getParent_ns_id()).getStatus()==Status.SCALING) {
-                                log.debug("Waiting for NFVO to finish the ScalingAction");
-                                try {
-                                    Thread.sleep(1000);
-                                } catch (InterruptedException e) {
-                                    log.error(e.getMessage(), e);
-                                }
-                                if (actionMonitor.isTerminating(vnfr.getId())) {
-                                    actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
-                                    return vnfr;
-                                }
-                            }
-                            break;
-                        } catch (SDKException e) {
-                            log.warn(e.getMessage(), e);
-                        } catch (ClassNotFoundException e) {
-                            log.warn(e.getMessage(), e);
-                            break;
-                        }
+                        break;
+                    } catch (SDKException e) {
+                        log.warn(e.getMessage(), e);
+                    } catch (ClassNotFoundException e) {
+                        log.warn(e.getMessage(), e);
+                        break;
                     }
+
                 } else {
                     log.warn("Minimum size of VDU with id: " + vdu.getId() + " reached...");
                 }

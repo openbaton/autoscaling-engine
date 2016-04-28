@@ -39,7 +39,6 @@ import java.util.List;
  * Created by mpa on 27.10.15.
  */
 @SpringBootApplication
-//@EntityScan("org.openbaton.autoscaling.catalogue")
 @ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling", "org.openbaton"})
 @ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class , PropertiesConfiguration.class})
 public class Application implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {

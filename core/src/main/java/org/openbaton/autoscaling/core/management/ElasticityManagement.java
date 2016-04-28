@@ -17,10 +17,11 @@
 
 package org.openbaton.autoscaling.core.management;
 
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
-import org.openbaton.autoscaling.core.features.pool.PoolManagement;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
@@ -28,8 +29,6 @@ import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.autoscaling.configuration.AutoScalingProperties;
-import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +41,8 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -67,9 +67,6 @@ public class ElasticityManagement {
     @Autowired
     private ExecutionManagement executionManagement;
 
-    @Autowired
-    private PoolManagement poolManagement;
-
     private NFVORequestor nfvoRequestor;
 
     @Autowired
@@ -77,9 +74,6 @@ public class ElasticityManagement {
 
     @Autowired
     private AutoScalingProperties autoScalingProperties;
-
-    @Autowired
-    private ResourceManagement resourceManagement;
 
     @PostConstruct
     public void init() throws SDKException {
@@ -93,12 +87,6 @@ public class ElasticityManagement {
     public void activate(String nsr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         detectionManagment.start(nsr_id);
-        if (autoScalingProperties.getPool().isActivate()) {
-            log.debug("Activating pool mechanism");
-            poolManagement.activate(nsr_id);
-        } else {
-            log.debug("pool mechanism is disabled");
-        }
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 
@@ -108,12 +96,6 @@ public class ElasticityManagement {
             for (AutoScalePolicy autoScalePolicy : vnfr.getAuto_scale_policy())
                 detectionManagment.start(nsr.getId(), vnfr.getId(), autoScalePolicy);
         }
-        if (autoScalingProperties.getPool().isActivate()) {
-            log.debug("Activating pool mechanism");
-            poolManagement.activate(nsr.getId());
-        } else {
-            log.debug("pool mechanism is disabled");
-        }
         log.info("Activated Elasticity for NSR with id: " + nsr.getId());
     }
 
@@ -122,33 +104,12 @@ public class ElasticityManagement {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         log.info("[AUTOSCALING] Activating Elasticity " + System.currentTimeMillis());
         detectionManagment.start(nsr_id, vnfr_id);
-        if (autoScalingProperties.getPool().isActivate()) {
-            log.debug("Activating pool mechanism");
-            poolManagement.activate(nsr_id, vnfr_id);
-        } else {
-            log.debug("pool mechanism is disabled");
-        }
-        log.info("[AUTOSCALING] Activated Elasticity " + System.currentTimeMillis());
+        //log.info("[AUTOSCALING] Activated Elasticity " + System.currentTimeMillis());
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 
     public void deactivate(String nsr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
-        if (autoScalingProperties.getPool().isActivate()) {
-            try {
-                poolManagement.deactivate(nsr_id);
-            } catch (NotFoundException e) {
-                log.warn(e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.error(e.getMessage(), e);
-                }
-            } catch (VimException e) {
-                log.warn(e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.error(e.getMessage(), e);
-                }
-            }
-        }
         try {
             detectionManagment.stop(nsr_id);
         } catch (NotFoundException e) {
@@ -166,21 +127,6 @@ public class ElasticityManagement {
     public Future<Boolean> deactivate(String nsr_id, String vnfr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
         Set<Future<Boolean>> pendingTasks = new HashSet<>();
-        if (autoScalingProperties.getPool().isActivate()) {
-            try {
-                pendingTasks.add(poolManagement.deactivate(nsr_id, vnfr_id));
-            } catch (NotFoundException e) {
-                log.warn(e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.error(e.getMessage(), e);
-                }
-            } catch (VimException e) {
-                log.warn(e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.error(e.getMessage(), e);
-                }
-            }
-        }
         try {
             pendingTasks.add(detectionManagment.stop(nsr_id, vnfr_id));
         } catch (NotFoundException e) {

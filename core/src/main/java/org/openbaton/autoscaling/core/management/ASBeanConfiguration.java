@@ -40,11 +40,6 @@ public class ASBeanConfiguration {
     }
 
     @Bean
-    public ResourceManagement mediaServerResourceManagement() {
-        return new ResourceManagement();
-    }
-
-    @Bean
     public DetectionManagement detectionManagement() {
         return new DetectionManagement();
     }

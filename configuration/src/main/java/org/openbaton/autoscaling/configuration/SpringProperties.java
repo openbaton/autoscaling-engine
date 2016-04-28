@@ -31,10 +31,6 @@ public class SpringProperties {
 
     private Rabbitmq rabbitmq;
 
-    private Datasource datasource;
-
-    private JPA jpa;
-
     public Rabbitmq getRabbitmq() {
         return rabbitmq;
     }
@@ -43,28 +39,10 @@ public class SpringProperties {
         this.rabbitmq = rabbitmq;
     }
 
-    public Datasource getDatasource() {
-        return datasource;
-    }
-
-    public void setDatasource(Datasource datasource) {
-        this.datasource = datasource;
-    }
-
-    public JPA getJpa() {
-        return jpa;
-    }
-
-    public void setJpa(JPA jpa) {
-        this.jpa = jpa;
-    }
-
     @Override
     public String toString() {
         return "SpringProperties{" +
                 "rabbitmq=" + rabbitmq +
-                ", dataSource=" + datasource +
-                ", jpa=" + jpa +
                 '}';
     }
 
@@ -151,113 +129,6 @@ public class SpringProperties {
                 return "Listener{" +
                         "concurrency='" + concurrency + '\'' +
                         ", maxConcurrency='" + maxConcurrency + '\'' +
-                        '}';
-            }
-        }
-    }
-
-    public static class Datasource {
-        private String username;
-        private String password;
-        private String url;
-        private String driverClassName;
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public String getDriverClassName() {
-            return driverClassName;
-        }
-
-        public void setDriverClassName(String driverClassName) {
-            this.driverClassName = driverClassName;
-        }
-
-        @Override
-        public String toString() {
-            return "Datasource{" +
-                    "username='" + username + '\'' +
-                    ", password='" + password + '\'' +
-                    ", url='" + url + '\'' +
-                    ", driverClassName='" + driverClassName + '\'' +
-                    '}';
-        }
-    }
-
-    public static class JPA {
-        private String databasePlatform;
-        private String showSql;
-        private Hibernate hibernate;
-
-        public String getDatabasePlatform() {
-            return databasePlatform;
-        }
-
-        public void setDatabasePlatform(String databasePlatform) {
-            this.databasePlatform = databasePlatform;
-        }
-
-        public String getShowSql() {
-            return showSql;
-        }
-
-        public void setShowSql(String showSql) {
-            this.showSql = showSql;
-        }
-
-        public Hibernate getHibernate() {
-            return hibernate;
-        }
-
-        public void setHibernate(Hibernate hibernate) {
-            this.hibernate = hibernate;
-        }
-
-        @Override
-        public String toString() {
-            return "JPA{" +
-                    "databasePlatform='" + databasePlatform + '\'' +
-                    ", showSql='" + showSql + '\'' +
-                    ", hibernate=" + hibernate +
-                    '}';
-        }
-
-        public static class Hibernate {
-            private String ddlAuto;
-
-            public String getDdlAuto() {
-                return ddlAuto;
-            }
-
-            public void setDdlAuto(String ddlAuto) {
-                this.ddlAuto = ddlAuto;
-            }
-
-            @Override
-            public String toString() {
-                return "Hibernate{" +
-                        "ddlAuto='" + ddlAuto + '\'' +
                         '}';
             }
         }
