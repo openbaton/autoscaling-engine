@@ -25,15 +25,15 @@ repositories {
 }
 
 dependencies {
-    compile 'org.openbaton:plugin:1.1.0-SNAPSHOT'
-    compile 'org.openbaton:monitoring:1.1.0-SNAPSHOT'
+    compile 'org.openbaton:plugin:2.0.0'
+    compile 'org.openbaton:monitoring:2.0.0'
 
     compile project(':as-catalogue')
     compile project(':as-utils')
 
     compile project(':configuration')
 
-    compile('org.openbaton:sdk:1.0.2-SNAPSHOT') /*{
+    compile('org.openbaton:sdk:2.0.0') /*{
         exclude module: 'catalogue'
     }*/
 
