@@ -225,49 +225,8 @@ public class ExecutionEngine {
     public void startCooldown(String nsr_id, String vnfr_id, long cooldown) {
         List<String> vnfrIds = new ArrayList<>();
         vnfrIds.add(vnfr_id);
-
         executionManagement.executeCooldown(nsr_id, vnfr_id, cooldown);
     }
-
-//    public VirtualNetworkFunctionRecord updateVNFRStatus(String nsr_id, String vnfr_id, Status status) throws SDKException {
-//        VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-//        vnfr.setStatus(status);
-//        return updateVNFR(vnfr);
-//        //nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(nsr_id, vnfr_id, vnfr);
-//    }
-
-    public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
-//        log.trace("Updating VNFR on NFVO: " + vnfr);
-//        try {
-//            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().updateVNFR(vnfr.getParent_ns_id(), vnfr.getId(), vnfr);
-//        } catch (SDKException e) {
-//            log.error(e.getMessage(), e);
-//            return vnfr;
-//        }
-//        log.trace("Updated VNFR on NFVO: " + vnfr);
-        return vnfr;
-    }
-
-
-    /*public VirtualNetworkFunctionRecord updateVNFR(VirtualNetworkFunctionRecord vnfr) {
-        OrVnfmGenericMessage response = null;
-        log.trace("Updating VNFR on NFVO: " + vnfr);
-        try {
-            response = (OrVnfmGenericMessage) vnfmHelper.sendAndReceive(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
-            log.debug("Updated VNFR on NFVO: " + vnfr.getId());
-            //response = (OrVnfmGenericMessage) vnfmHelper.sendToNfvo(VnfmUtils.getNfvMessage(Action.UPDATEVNFR, vnfr));
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        if (response.getVnfr() == null) {
-            log.error("Problems while updating VNFR on NFVO. Returned VNFR is null.");
-            return vnfr;
-        } else {
-            vnfr = response.getVnfr();
-        }
-        log.trace("Updated VNFR on NFVO: " + vnfr);
-        return vnfr;
-    }*/
 
     public NFVORequestor getNfvoRequestor() {
         return nfvoRequestor;
