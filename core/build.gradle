@@ -27,8 +27,6 @@ repositories {
 dependencies {
     compile 'org.openbaton:plugin:1.1.0-SNAPSHOT'
     compile 'org.openbaton:monitoring:1.1.0-SNAPSHOT'
-    compile 'org.openbaton:vim-int:1.1.0-SNAPSHOT'
-    compile 'org.openbaton:vim-impl:1.1.0-SNAPSHOT'
 
     compile project(':as-catalogue')
     compile project(':as-utils')
