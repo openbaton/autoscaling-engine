@@ -75,6 +75,12 @@ Starting the AutoScaling System can be achieved easily by using the the provided
 ./autoscaling-engine.sh start
 ```
 
+Once the AutoScaling System is started, you can access the screen session by executing:
+
+```bash
+screen -r autoscaling-engine
+```
+
 **Note** Since the AutoScaling System subscribes to specific events towards the NFVO, you should take care about that the NFVO is already running when starting the AutoScaling System. Otherwise the AutoScaling System will wait for 600 seconds for the availability of the NFVO before terminating automatically.
 
 ## Use it
