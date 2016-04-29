@@ -1,11 +1,34 @@
+/*
+ *
+ *  *
+ *  * Copyright (c) 2015 Technische Universität Berlin
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
+ *  *
+ *  *       http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *  *
+ *
+ */
+
 package org.openbaton.autoscaling;
 
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.configuration.PropertiesConfiguration;
+import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.openbaton.autoscaling.core.management.ASBeanConfiguration;
 import org.openbaton.autoscaling.core.management.ElasticityManagement;
 import org.openbaton.autoscaling.utils.Utils;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
+import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.EndpointType;
 import org.openbaton.catalogue.nfvo.EventEndpoint;
@@ -14,9 +37,6 @@ import org.openbaton.exceptions.VimException;
 import org.openbaton.plugin.utils.PluginStartup;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.autoscaling.configuration.AutoScalingProperties;
-import org.openbaton.autoscaling.configuration.NfvoProperties;
-import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,18 +49,22 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created by mpa on 27.10.15.
  */
 @SpringBootApplication
 @ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling", "org.openbaton"})
-@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class , PropertiesConfiguration.class})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class, PropertiesConfiguration.class})
 public class Application implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
 
     protected static Logger log = LoggerFactory.getLogger(Application.class);
@@ -78,11 +102,9 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
         fetchNSRsFromNFVO();
     }
 
-    @PreDestroy
     private void exit() throws SDKException {
         unsubscribe();
         destroyPlugins();
-
         List<NetworkServiceRecord> nsrs = new ArrayList<>();
         try {
             nsrs = nfvoRequestor.getNetworkServiceRecordAgent().findAll();
@@ -91,8 +113,28 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
         } catch (ClassNotFoundException e) {
             log.error(e.getMessage(), e);
         }
+        Set<Future<Boolean>> pendingTasks = new HashSet<>();
         for (NetworkServiceRecord nsr : nsrs) {
-            elasticityManagement.deactivate(nsr.getId());
+            for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+                pendingTasks.add(elasticityManagement.deactivate(nsr.getId(), vnfr.getId()));
+            }
+        }
+        for (Future<Boolean> pendingTask : pendingTasks) {
+            try {
+                pendingTask.get(60, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            } catch (ExecutionException e) {
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            } catch (TimeoutException e) {
+                if (log.isDebugEnabled()) {
+                    log.error(e.getMessage(), e);
+                }
+            }
         }
     }
 

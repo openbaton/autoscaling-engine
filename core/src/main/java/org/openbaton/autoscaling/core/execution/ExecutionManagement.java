@@ -1,23 +1,26 @@
 /*
  *
+ *  *
  *  * Copyright (c) 2015 Technische Universität Berlin
- *  *  Licensed under the Apache License, Version 2.0 (the "License");
- *  *  you may not use this file except in compliance with the License.
- *  *  You may obtain a copy of the License at
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
  *  *
- *  *         http://www.apache.org/licenses/LICENSE-2.0
+ *  *       http://www.apache.org/licenses/LICENSE-2.0
  *  *
- *  *  Unless required by applicable law or agreed to in writing, software
- *  *  distributed under the License is distributed on an "AS IS" BASIS,
- *  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  See the License for the specific language governing permissions and
- *  *  limitations under the License.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *  *
  *
  */
 
 package org.openbaton.autoscaling.core.execution;
 
 import org.openbaton.autoscaling.catalogue.Action;
+import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.execution.task.CooldownTask;
 import org.openbaton.autoscaling.core.execution.task.ExecutionTask;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
@@ -26,7 +29,6 @@ import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
-import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ErrorHandler;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
@@ -83,7 +85,7 @@ public class ExecutionManagement {
     }
 
     public void executeActions(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {
-        log.info("[EXECUTOR] RECEIVED_ACTION " + new Date().getTime());
+        //log.info("[EXECUTOR] RECEIVED_ACTION " + new Date().getTime());
         if (actionMonitor.requestAction(vnfr_id, Action.SCALE)) {
             log.info("Executing scaling actions for VNFR " + vnfr_id + " -> " + actions);
             log.debug("Creating new ExecutionTask of ScalingActions: " + actions + " for VNFR with id: " + vnfr_id);
@@ -143,7 +145,7 @@ public class ExecutionManagement {
     public Future<Boolean> stop(String nsr_id, String vnfr_id) {
         log.debug("Stopping ExecutionTask/CooldownTask for VNFR with id: " + vnfr_id);
         int i = 60;
-        while (!actionMonitor.isTerminated(vnfr_id) && actionMonitor.getAction(vnfr_id) != Action.INACTIVE && i>=0) {
+        while (!actionMonitor.isTerminated(vnfr_id) && actionMonitor.getAction(vnfr_id) != Action.INACTIVE && i >= 0) {
             actionMonitor.terminate(vnfr_id);
             log.debug("Waiting for finishing ExecutionTask/Cooldown for VNFR with id: " + vnfr_id + " (" + i + "s)");
             log.debug(actionMonitor.toString());

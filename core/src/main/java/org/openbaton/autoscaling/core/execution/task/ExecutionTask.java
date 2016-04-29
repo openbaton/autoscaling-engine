@@ -1,17 +1,19 @@
 /*
  *
+ *  *
  *  * Copyright (c) 2015 Technische Universität Berlin
- *  *  Licensed under the Apache License, Version 2.0 (the "License");
- *  *  you may not use this file except in compliance with the License.
- *  *  You may obtain a copy of the License at
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
  *  *
- *  *         http://www.apache.org/licenses/LICENSE-2.0
+ *  *       http://www.apache.org/licenses/LICENSE-2.0
  *  *
- *  *  Unless required by applicable law or agreed to in writing, software
- *  *  distributed under the License is distributed on an "AS IS" BASIS,
- *  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  See the License for the specific language governing permissions and
- *  *  limitations under the License.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *  *
  *
  */
 
@@ -21,7 +23,6 @@ import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.core.execution.ExecutionEngine;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.common.ScalingAction;
-import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
@@ -31,7 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Date;
+import java.util.Set;
 
 /**
  * Created by mpa on 27.10.15.
@@ -92,9 +94,9 @@ public class ExecutionTask implements Runnable {
                 }
                 switch (action.getType()) {
                     case SCALE_OUT:
-                        log.info("[EXECUTOR] START_SCALE_OUT " + new Date().getTime());
+                        //log.info("[EXECUTOR] START_SCALE_OUT " + new Date().getTime());
                         vnfr = executionEngine.scaleOut(vnfr, Integer.parseInt(action.getValue()));
-                        log.info("[EXECUTOR] FINISH_SCALE_OUT " + new Date().getTime());
+                        //log.info("[EXECUTOR] FINISH_SCALE_OUT " + new Date().getTime());
                         break;
                     case SCALE_OUT_TO:
                         executionEngine.scaleOutTo(vnfr, Integer.parseInt(action.getValue()));
@@ -133,7 +135,7 @@ public class ExecutionTask implements Runnable {
 //            }
             log.info("Executed scaling actions for VNFR " + vnfr.getId());
             if (actionMonitor.getAction(vnfr_id) == Action.SCALED) {
-                log.info("[EXECUTOR] START_COOLDOWN " + new Date().getTime());
+                //log.info("[EXECUTOR] START_COOLDOWN " + new Date().getTime());
                 executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
             } else {
                 actionMonitor.finishedAction(vnfr_id);
