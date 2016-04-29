@@ -28,5 +28,3 @@ include 'as-utils'
 
 project(':as-catalogue').projectDir = file('catalogue')
 project(':as-utils').projectDir = file('utils')
-
-
