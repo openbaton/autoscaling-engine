@@ -26,6 +26,7 @@ import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.common.ScalingActionType;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.Status;
+import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
@@ -93,7 +94,13 @@ public class DecisionTask implements Runnable {
                         }
                     } else if (action.getType() == ScalingActionType.SCALE_IN) {
                         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-                            if (vdu.getVnfc_instance().size() > 1) {
+                            Set<VNFCInstance> vnfcInstancesToRemove = new HashSet<>();
+                            for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
+                                if (vnfcInstance.getState() == null || !vnfcInstance.getState().equals("standby")) {
+                                    vnfcInstancesToRemove.add(vnfcInstance);
+                                }
+                            }
+                            if (vnfcInstancesToRemove.size() > 1) {
                                 log.debug("VDU with id " + vdu.getId() + " allows a scale-in. At least one less VNFCInstance is possible");
                                 filteredActions.add(action);
                                 break;
