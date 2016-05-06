@@ -156,7 +156,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
 
     private void startPlugins() {
         try {
-            PluginStartup.startPluginRecursive("./plugins", true, autoScalingProperties.getRabbitmq().getBrokerIp(), String.valueOf(springProperties.getRabbitmq().getPort()), 15, springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), autoScalingProperties.getRabbitmq().getManagement().getPort());
+            PluginStartup.startPluginRecursive("./plugins", true, autoScalingProperties.getRabbitmq().getBrokerIp(), String.valueOf(springProperties.getRabbitmq().getPort()), 15, springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), autoScalingProperties.getRabbitmq().getManagement().getPort(), "/tmp/openbaton/plugin-log/");
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
