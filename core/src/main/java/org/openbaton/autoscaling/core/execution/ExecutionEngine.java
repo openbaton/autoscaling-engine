@@ -44,7 +44,9 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by mpa on 27.10.15.
@@ -171,18 +173,20 @@ public class ExecutionEngine {
             boolean scaled = false;
             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                 if (scaled == true) break;
-                if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
+                Set<VNFCInstance> vnfcInstancesToRemove = new HashSet<>();
+                for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
+                    if (vnfcInstance.getState() == null || !vnfcInstance.getState().equals("standby")) {
+                        vnfcInstancesToRemove.add(vnfcInstance);
+                    }
+                }
+                if (vnfcInstancesToRemove.size() > 1 && vnfcInstancesToRemove.iterator().hasNext()) {
                     try {
-                        log.trace("Request NFVO to execute ScalingAction -> scale-in");
-                        for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                            if (vnfcInstance.getState() == null || !vnfcInstance.getState().equals("standby")) {
-                                vnfcInstance_remove = vnfcInstance;
-                            }
-                        }
+                        vnfcInstance_remove = vnfcInstancesToRemove.iterator().next();
                         if (vnfcInstance_remove == null) {
                             log.warn("Not found VNFCInstance in VDU " + vdu.getId() + " that could be removed");
                             break;
                         }
+                        log.trace("Request NFVO to execute ScalingAction -> scale-in");
                         nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
                         log.trace("NFVO executed ScalingAction -> scale-in");
                         log.info("Removed VNFCInstance from VNFR " + vnfr.getId());
