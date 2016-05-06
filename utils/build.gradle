@@ -25,9 +25,9 @@ repositories {
 }
 
 dependencies {
-    compile 'org.openbaton:exception:2.0.0'
+    compile 'org.openbaton:exception:2.0.1'
 
-    compile('org.openbaton:sdk:2.0.0') /*{
+    compile('org.openbaton:sdk:2.0.1') /*{
         exclude module: 'catalogue'
     }*/
     compile 'org.slf4j:slf4j-api:1.6.1'

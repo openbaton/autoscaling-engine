@@ -174,7 +174,16 @@ public class ExecutionEngine {
                 if (vdu.getVnfc_instance().size() > 1 && vdu.getVnfc_instance().iterator().hasNext()) {
                     try {
                         log.trace("Request NFVO to execute ScalingAction -> scale-in");
-                        nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId());
+                        for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
+                            if (vnfcInstance.getState() == null || !vnfcInstance.getState().equals("standby")) {
+                                vnfcInstance_remove = vnfcInstance;
+                            }
+                        }
+                        if (vnfcInstance_remove == null) {
+                            log.warn("Not found VNFCInstance in VDU " + vdu.getId() + " that could be removed");
+                            break;
+                        }
+                        nfvoRequestor.getNetworkServiceRecordAgent().deleteVNFCInstance(vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfcInstance_remove.getId());
                         log.trace("NFVO executed ScalingAction -> scale-in");
                         log.info("Removed VNFCInstance from VNFR " + vnfr.getId());
                         actionMonitor.finishedAction(vnfr.getId(), org.openbaton.autoscaling.catalogue.Action.SCALED);
