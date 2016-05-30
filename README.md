@@ -93,33 +93,36 @@ A AutoScaling Policy defines conditions and actions in order to allow automatic 
 An example of an AutoScalePolicy can be found below followed by descriptions for each parameter.
 
 ```json
-{
-  "name":"scale-out",
-  "threshold":100,
-  "period":30,
-  "cooldown":60,
-  "mode":"REACTIVE",
-  "type":"WEIGHTED",
-  "alarms": [
-    {
-	"metric":"cpu_load",
-	"statistic":"avg",
-	"comparisonOperator":"<=",
-	"threshold":40,
-	"weight":1
-    }
-  ],
-  "actions": [
-    {
-	"type":"SCALE_OUT",
-	"value":"2"
-    }
-  ]
-}
+"auto_scale_policy":[
+  {
+    "name":"scale-out",
+    "threshold":100,
+    "comparisonOperator":">=",
+    "period":30,
+    "cooldown":60,
+    "mode":"REACTIVE",
+    "type":"WEIGHTED",
+    "alarms": [
+      {
+        "metric":"system.cpu.load[percpu,avg1]",
+        "statistic":"avg",
+        "comparisonOperator":">",
+        "threshold":0.70,
+        "weight":1
+      }
+    ],
+    "actions": [
+      {
+        "type":"SCALE_OUT",
+        "value":"2"
+      }
+    ]
+  }
+]
 ```
 
-This AutoScalePolicy indicates an scaling-out operation of two new VNFC Instances if the averaged value of all measurement results of the metric `cpu_load` is greater than the threshold of 40.
-This conditions is checked every 30 seconds as defined via the period. Once the scaling-out is finished it starts a cooldown of 60 seconds. For this cooldown time further scaling requests are rejected by the AutoScaling System.
+This AutoScalePolicy indicates an scaling-out operation of two new VNFC Instances if the averaged value of all measurement results of the metric `cpu load` is greater than the threshold of 0.7 (70%).
+This condition is checked every 30 seconds as defined via the period. Once the scaling-out is finished it starts a cooldown of 60 seconds. For this cooldown time further scaling requests are rejected by the AutoScaling System.
 
 The following table describes the meanings of the parameters more in detail.
 
@@ -127,6 +130,7 @@ The following table describes the meanings of the parameters more in detail.
 | -------------   				| -------------
 | name | This is the human-readable name of the AutoScalePolicy used for identification. |
 | threshold | Is a value in percentage that indicates how many sub alarms have to be fired before firing the high-alarm of the AutoScalePolicy. For example, a value of 100 indicates that all sub alarms have to be fired in order to execute the actions of this AutoScalePolicy. |
+| comparisonOperator | This comparison operator is used to check the percentages of thrown alarms. 100% means that all weighted alarms must be thrown. 50% would mean that only half of the weighted alarms must be thrown in oder to trigger the scaling action.|
 | period | This is the period of checking conditions of AutoScalePolicies. For example, a value of 30 indicates, that every 30 seconds all the conditions of the defined AutoScalePolicy are checked. |
 | cooldown | This is the amount of time the VNF needs to wait between two scaling operations to ensure that the executed scaling action takes effect. Further scaling actions that are requested during the cooldown period are rejected. |
 | mode | This defines the mode of the AutoScalePolicy. This is mainly about the way of recognizing alarms and conditions, like: `REACTIVE`, `PROACTIVE`, `PREDICTIVE`. At this moment `REACTIVE` is provided only. |
