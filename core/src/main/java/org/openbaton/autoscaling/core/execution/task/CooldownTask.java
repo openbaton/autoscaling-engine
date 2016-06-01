@@ -39,8 +39,6 @@ public class CooldownTask implements Runnable {
 
     private String nsr_id;
 
-    private String vnfr_id;
-
     private String name;
 
     private ExecutionEngine executionEngine;
@@ -49,14 +47,13 @@ public class CooldownTask implements Runnable {
 
     private ActionMonitor actionMonitor;
 
-    public CooldownTask(String nsr_id, String vnfr_id, long cooldown, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
+    public CooldownTask(String nsr_id, long cooldown, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
         this.actionMonitor = actionMonitor;
-        log.debug("Initializing CooldownTask for VNFR with id: " + vnfr_id);
+        log.debug("Initializing CooldownTask for NSR with id: " + nsr_id);
         this.nsr_id = nsr_id;
-        this.vnfr_id = vnfr_id;
         this.cooldown = cooldown;
         this.executionEngine = executionEngine;
-        this.name = "ExecutionTask#" + nsr_id + ":" + vnfr_id;
+        this.name = "ExecutionTask#" + nsr_id;
     }
 
     @Override
@@ -69,15 +66,15 @@ public class CooldownTask implements Runnable {
                 Thread.sleep(increment * 1000);
                 i = i + increment;
                 //terminate gracefully at this point in time if suggested from the outside
-                if (actionMonitor.isTerminating(vnfr_id)) {
-                    actionMonitor.finishedAction(vnfr_id, Action.TERMINATED);
+                if (actionMonitor.isTerminating(nsr_id)) {
+                    actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
                     return;
                 }
             }
         } catch (InterruptedException e) {
-            log.warn("Cooldown for VNFR with id: " + vnfr_id + "was interrupted");
+            log.warn("Cooldown for NSR with id: " + nsr_id + " was interrupted");
         }
-        actionMonitor.removeId(vnfr_id);
-        log.info("Cooldown finished for VNFR with id " + vnfr_id);
+        actionMonitor.removeId(nsr_id);
+        log.info("Cooldown finished for VNFR with id " + nsr_id);
     }
 }

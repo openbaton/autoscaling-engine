@@ -294,7 +294,7 @@ public class DetectionManagement {
             actionMonitor.finishedAction(autoScalePolicy.getId(), Action.TERMINATED);
             return;
         }
-        decisionManagement.decide(nsr_id, vnfr_id, autoScalePolicy);
+        decisionManagement.decide(nsr_id, autoScalePolicy);
     }
 
 }

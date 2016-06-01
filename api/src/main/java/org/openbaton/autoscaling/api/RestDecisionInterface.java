@@ -62,7 +62,7 @@ public class RestDecisionInterface {
         AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
 //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
 //        log.debug("NSR=" + nsr);
-        decisionManagement.decide(nsrId, vnfrId, autoScalePolicy);
+        decisionManagement.decide(nsrId, autoScalePolicy);
     }
 
     /**
@@ -85,7 +85,7 @@ public class RestDecisionInterface {
         AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
 //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
 //        log.debug("NSR=" + nsr);
-        decisionManagement.stop(nsrId, vnfrId);
+        decisionManagement.stop(nsrId);
     }
 
 //    /**

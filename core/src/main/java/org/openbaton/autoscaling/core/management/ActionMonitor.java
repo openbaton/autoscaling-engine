@@ -107,7 +107,7 @@ public class ActionMonitor {
 
     @Override
     public String toString() {
-        return "VnfrMonitor{" +
+        return "ActionMonitor{" +
                 "states=" + states +
                 '}';
     }

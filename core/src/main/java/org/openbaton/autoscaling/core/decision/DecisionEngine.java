@@ -35,6 +35,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -63,14 +66,14 @@ public class DecisionEngine {
         this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
     }
 
-    public void sendDecision(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown) {
+    public void sendDecision(String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown) {
         //log.info("[DECISION_MAKER] DECIDED_ABOUT_ACTIONS " + new Date().getTime());
         log.debug("Send actions to Executor: " + actions.toString());
-        executionManagement.executeActions(nsr_id, vnfr_id, actions, cooldown);
+        executionManagement.executeActions(nsr_id, actionVnfrMap, actions, cooldown);
     }
 
-    public Status getStatus(String nsr_id, String vnfr_id) {
-        log.debug("Check Status of VNFR with id: " + vnfr_id);
+    public Status getStatus(String nsr_id) {
+        log.debug("Check Status of NSR with id: " + nsr_id);
         NetworkServiceRecord networkServiceRecord = null;
         try {
             networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -95,6 +98,23 @@ public class DecisionEngine {
             log.error(e.getMessage(), e);
             throw e;
         }
+    }
+
+    public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(String nsr_id, String type) throws SDKException {
+        List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
+        List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
+        try {
+             vnfrsAll.addAll(nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecords(nsr_id));
+        } catch (SDKException e) {
+            log.error(e.getMessage(), e);
+            throw e;
+        }
+        for (VirtualNetworkFunctionRecord vnfr : vnfrsAll) {
+            if (vnfr.getType().equals(type)) {
+                vnfrsOfTypeX.add(vnfr);
+            }
+        }
+        return vnfrsOfTypeX;
     }
 
 }

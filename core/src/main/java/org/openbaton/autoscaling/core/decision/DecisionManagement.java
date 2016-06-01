@@ -81,36 +81,36 @@ public class DecisionManagement {
         this.taskScheduler.initialize();
     }
 
-    public void decide(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+    public void decide(String nsr_id, AutoScalePolicy autoScalePolicy) {
         //log.info("[DECISION_MAKER] DECISION_REQUESTED " + new Date().getTime());
-        log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        log.trace("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
-        actionMonitor.requestAction(vnfr_id, Action.DECIDE);
-        DecisionTask decisionTask = new DecisionTask(nsr_id, vnfr_id, autoScalePolicy, decisionEngine, actionMonitor);
+        log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of NSR with id: " + nsr_id);
+        log.trace("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of NSR with id: " + nsr_id);
+        actionMonitor.requestAction(nsr_id, Action.DECIDE);
+        DecisionTask decisionTask = new DecisionTask(nsr_id, autoScalePolicy, decisionEngine, actionMonitor);
         taskScheduler.execute(decisionTask);
     }
 
-    public void stop(String nsr_id) {
-        log.debug("Stopping DecisionTask for all VNFRs of NSR with id: " + nsr_id);
-        NetworkServiceRecord nsr = null;
-        try {
-            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
-        } catch (SDKException e) {
-            log.error(e.getMessage(), e);
-        } catch (ClassNotFoundException e) {
-            log.error(e.getMessage(), e);
-        }
-        if (nsr != null && nsr.getVnfr() != null) {
-            for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-                stop(nsr_id, vnfr.getId());
-            }
-        }
-    }
+//    public void stop(String nsr_id) {
+//        log.debug("Stopping DecisionTask for NSR with id: " + nsr_id);
+//        NetworkServiceRecord nsr = null;
+//        try {
+//            nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+//        } catch (SDKException e) {
+//            log.error(e.getMessage(), e);
+//        } catch (ClassNotFoundException e) {
+//            log.error(e.getMessage(), e);
+//        }
+//        if (nsr != null && nsr.getVnfr() != null) {
+//            for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+//                stop(nsr_id, vnfr.getId());
+//            }
+//        }
+//    }
 
     @Async
-    public Future<Boolean> stop(String nsr_id, String vnfr_id) {
-        log.debug("Invoking termination of all DecisionTasks for VNFR with id: " + vnfr_id);
-        actionMonitor.removeId(vnfr_id);
+    public Future<Boolean> stop(String nsr_id) {
+        log.debug("Invoking termination of DecisionTask for NSR with id: " + nsr_id);
+        actionMonitor.removeId(nsr_id);
         return new AsyncResult<Boolean>(true);
     }
 }

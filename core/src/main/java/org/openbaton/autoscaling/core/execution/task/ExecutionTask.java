@@ -33,6 +33,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -47,9 +48,9 @@ public class ExecutionTask implements Runnable {
 
     private String nsr_id;
 
-    private String vnfr_id;
-
     private Set<ScalingAction> actions;
+
+    private Map<String, String> actionVnfrMap;
 
     private String name;
 
@@ -59,20 +60,20 @@ public class ExecutionTask implements Runnable {
 
     private ActionMonitor actionMonitor;
 
-    public ExecutionTask(String nsr_id, String vnfr_id, Set<ScalingAction> actions, long cooldown, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
+    public ExecutionTask(String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
         this.actionMonitor = actionMonitor;
-        log.debug("Initializing ExecutionTask for VNFR with id: " + vnfr_id + ". Actions: " + actions);
+        log.debug("Initializing ExecutionTask for NSR with id: " + nsr_id + ". Actions: " + actions);
         this.nsr_id = nsr_id;
-        this.vnfr_id = vnfr_id;
+        this.actionVnfrMap = actionVnfrMap;
         this.actions = actions;
         this.cooldown = cooldown;
         this.executionEngine = executionEngine;
-        this.name = "ExecutionTask#" + nsr_id + ":" + vnfr_id;
+        this.name = "ExecutionTask#" + nsr_id;
     }
 
     @Override
     public void run() {
-        log.info("Executing scaling actions for VNFR " + vnfr_id);
+        log.info("Executing scaling actions for NSR " + nsr_id);
         VirtualNetworkFunctionRecord vnfr = null;
 //        try {
 //            vnfr = executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.SCALING);
@@ -86,10 +87,10 @@ public class ExecutionTask implements Runnable {
 //        }
         try {
             for (ScalingAction action : actions) {
-                vnfr = executionEngine.getNfvoRequestor().getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+                vnfr = executionEngine.getNfvoRequestor().getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, actionVnfrMap.get(action.getId()));
                 if (vnfr == null) {
                     log.warn("Cannot execute ScalingAction. VNFR was not found or problems with the SDK");
-                    actionMonitor.finishedAction(vnfr_id);
+                    actionMonitor.finishedAction(nsr_id);
                     return;
                 }
                 switch (action.getType()) {
@@ -133,12 +134,12 @@ public class ExecutionTask implements Runnable {
 //                }
 //                actionMonitor.finishedAction(vnfr_id);
 //            }
-            log.info("Executed scaling actions for VNFR " + vnfr.getId());
-            if (actionMonitor.getAction(vnfr_id) == Action.SCALED) {
+            log.info("Executed scaling actions for NSR " + vnfr.getId());
+            if (actionMonitor.getAction(nsr_id) == Action.SCALED) {
                 //log.info("[EXECUTOR] START_COOLDOWN " + new Date().getTime());
-                executionEngine.startCooldown(nsr_id, vnfr_id, cooldown);
+                executionEngine.startCooldown(nsr_id, cooldown);
             } else {
-                actionMonitor.finishedAction(vnfr_id);
+                actionMonitor.finishedAction(nsr_id);
             }
         }
     }

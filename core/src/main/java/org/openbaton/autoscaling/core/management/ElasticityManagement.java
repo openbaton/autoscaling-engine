@@ -122,8 +122,8 @@ public class ElasticityManagement {
         } catch (NotFoundException e) {
             log.error(e.getMessage(), e);
         }
-        pendingTasks.add(decisionManagement.stop(nsr_id, vnfr_id));
-        pendingTasks.add(executionManagement.stop(nsr_id, vnfr_id));
+        pendingTasks.add(decisionManagement.stop(nsr_id));
+        pendingTasks.add(executionManagement.stop(nsr_id));
         for (Future<Boolean> pendingTask : pendingTasks) {
             try {
                 pendingTask.get(60, TimeUnit.SECONDS);
@@ -154,8 +154,8 @@ public class ElasticityManagement {
         } catch (NotFoundException e) {
             log.error(e.getMessage(), e);
         }
-        pendingTasks.add(decisionManagement.stop(nsr_id, vnfr.getId()));
-        pendingTasks.add(executionManagement.stop(nsr_id, vnfr.getId()));
+        pendingTasks.add(decisionManagement.stop(nsr_id));
+        pendingTasks.add(executionManagement.stop(nsr_id));
         for (Future<Boolean> pendingTask : pendingTasks) {
             try {
                 pendingTask.get(60, TimeUnit.SECONDS);

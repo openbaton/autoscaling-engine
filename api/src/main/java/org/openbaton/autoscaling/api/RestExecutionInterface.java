@@ -33,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
 
 @RestController
@@ -66,7 +67,7 @@ public class RestExecutionInterface {
         String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
         String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
         Long cooldown = mapper.fromJson(json.get("cooldown"), Long.class);
-        executionManagement.executeActions(nsrId, vnfrId, new HashSet<ScalingAction>(), cooldown);
+        executionManagement.executeActions(nsrId, new HashMap(), new HashSet<ScalingAction>(), cooldown);
     }
 
     /**
@@ -88,7 +89,7 @@ public class RestExecutionInterface {
 //        log.debug("NSR=" + nsr);
         String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
         String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
-        executionManagement.stop(nsrId, vnfrId);
+        executionManagement.stop(nsrId);
 //        detectionEngine.deactivate(nsr);
     }
 
