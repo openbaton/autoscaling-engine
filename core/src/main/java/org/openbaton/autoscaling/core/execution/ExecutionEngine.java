@@ -204,6 +204,13 @@ public class ExecutionEngine {
                                 return vnfr;
                             }
                         }
+                        try {
+                            vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(vnfr.getParent_ns_id(), vnfr.getId());
+                        } catch (SDKException e) {
+                            log.error(e.getMessage(), e);
+                            log.warn("Cannot execute ScalingAction. VNFR was not found or problems with the SDK");
+                            actionMonitor.finishedAction(vnfr.getParent_ns_id());
+                        }
                         break;
                     } catch (SDKException e) {
                         log.warn(e.getMessage(), e);

@@ -145,8 +145,10 @@ public class DetectionManagement {
                 detectionTasks.get(nsr_id).put(vnfr_id, new HashMap<String, ScheduledFuture>());
             }
             if (detectionTasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
-                log.debug("Restarting Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
-                detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
+//                log.debug("Restarting Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
+//                detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
+                log.warn("Got new request for starting DetectionTask for AutoScalePolicy " + autoScalePolicy.getId() + " but it was already running. So do nothing");
+                return;
             }
             log.debug("Creating new DetectionTask for AutoScalingPolicy " + autoScalePolicy.getName() + " with id: " + autoScalePolicy.getId() + " of VNFR with id: " + vnfr_id);
             DetectionTask detectionTask = new DetectionTask(nsr_id, vnfr_id, autoScalePolicy, detectionEngine, nfvoProperties, actionMonitor);
