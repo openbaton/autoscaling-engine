@@ -114,7 +114,8 @@ An example of an AutoScalePolicy can be found below followed by descriptions for
     "actions": [
       {
         "type":"SCALE_OUT",
-        "value":"2"
+        "value":"2",
+        "target":"<target>"
       }
     ]
   }
@@ -158,6 +159,7 @@ An Action defines the operation that will be executed (if possible) when the sca
 | -------------   				| -------------
 | type | The type defines the type of the action to be executed. For example, `SCALE_OUT` indicates that resources shall be added and `SCALE_IN` means that resources shall be released. Currently provided types of actions are listed [here](#action-types). |
 | value | The value is related to the type of action. `SCALE_OUT` and `SCALE_IN` expects a value that defines how many instances should be scaled-out or scaled-in, `SCALE_OUT_TO` and `SCALE_IN_TO` expects a number to what the number of instances shall be scaled in or out. Supported types of actions are shown [here](#actions-types) |
+| target| [OPTIONAL] The target allows scaling of other VNFs when conditions are met of the considered VNF that includes the policy. The target points to the type of the VNF that should be scaled. If multiple VNFs has the same type, it will be chosen one of them to execute the scaling action. If the target is not defined, it will be executed scaling actions on the same VNF that includes the policy. |
 
 ##### Action types
 
