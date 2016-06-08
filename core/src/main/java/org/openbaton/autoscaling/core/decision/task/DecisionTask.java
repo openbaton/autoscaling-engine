@@ -95,7 +95,7 @@ public class DecisionTask implements Runnable {
                             for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
                                 Set<VNFCInstance> vnfcInstancesToRemove = new HashSet<>();
                                 for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                                    if (vnfcInstance.getState() == null || !vnfcInstance.getState().equals("standby")) {
+                                    if (vnfcInstance.getState() == null || vnfcInstance.getState().equals("active")) {
                                         vnfcInstancesToRemove.add(vnfcInstance);
                                     }
                                 }

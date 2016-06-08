@@ -43,9 +43,7 @@ import org.springframework.stereotype.Service;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -175,7 +173,7 @@ public class ExecutionEngine {
                 if (scaled == true) break;
                 Set<VNFCInstance> vnfcInstancesToRemove = new HashSet<>();
                 for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                    if (vnfcInstance.getState() == null || !vnfcInstance.getState().equals("standby")) {
+                    if (vnfcInstance.getState() == null || vnfcInstance.getState().equals("active")) {
                         vnfcInstancesToRemove.add(vnfcInstance);
                     }
                 }

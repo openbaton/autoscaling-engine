@@ -115,7 +115,7 @@ public class DetectionEngine {
         log.debug("Getting all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + ".");
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                if (vnfcInstance.getState() == null || !vnfcInstance.getState().equals("standby")) {
+                if (vnfcInstance.getState() == null || vnfcInstance.getState().equals("active")) {
                     hostnames.add(vnfcInstance.getHostname());
                 }
             }
