@@ -193,7 +193,7 @@ public class DetectionEngine {
         return false;
     }
 
-    public void sendAlarm(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
-        detectionManagement.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
+    public void sendAlarm(String projectId, String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+        detectionManagement.sendAlarm(projectId, nsr_id, vnfr_id, autoScalePolicy);
     }
 }

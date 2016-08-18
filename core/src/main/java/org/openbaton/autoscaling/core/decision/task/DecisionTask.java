@@ -52,11 +52,14 @@ public class DecisionTask implements Runnable {
 
     private String name;
 
+    private String projectId;
+
     private DecisionEngine decisionEngine;
 
     private ActionMonitor actionMonitor;
 
-    public DecisionTask(String nsr_id, AutoScalePolicy autoScalePolicy, DecisionEngine decisionEngine, ActionMonitor actionMonitor) {
+    public DecisionTask(String projectId, String nsr_id, AutoScalePolicy autoScalePolicy, DecisionEngine decisionEngine, ActionMonitor actionMonitor) {
+        this.projectId = projectId;
         this.nsr_id = nsr_id;
         this.autoScalePolicy = autoScalePolicy;
         this.decisionEngine = decisionEngine;
@@ -70,7 +73,7 @@ public class DecisionTask implements Runnable {
         log.info("Requested decison-making for NSR with id " + nsr_id);
         log.debug("Requested Decision-making for AutoScalePolicy with id: " + autoScalePolicy.getId() + "of NSR with id: " + nsr_id);
         Map<String, String> actionVnfrMap = new HashMap<>();
-        if (decisionEngine.getStatus(nsr_id) == Status.ACTIVE) {
+        if (decisionEngine.getStatus(projectId, nsr_id) == Status.ACTIVE) {
             log.debug("Status is ACTIVE. So continue with Decision-maikng. Next step is to check if scale-out or scale-in is possible based on numbers of already deployed VNFCInstances and limits");
             if (actionMonitor.isTerminating(nsr_id)) {
                 return;
@@ -78,7 +81,7 @@ public class DecisionTask implements Runnable {
             try {
                 Set<ScalingAction> filteredActions = new HashSet<>();
                 for (ScalingAction action : autoScalePolicy.getActions()) {
-                    List<VirtualNetworkFunctionRecord> vnfrsTarget = decisionEngine.getVNFRsOfTypeX(nsr_id, action.getTarget());
+                    List<VirtualNetworkFunctionRecord> vnfrsTarget = decisionEngine.getVNFRsOfTypeX(projectId, nsr_id, action.getTarget());
                     log.debug("Decision-Maker checks if it possible to execute Action of type " + action.getType() + " for VNFRs of type " + action.getTarget());
                     for (VirtualNetworkFunctionRecord vnfr : vnfrsTarget) {
                         if (action.getType() == ScalingActionType.SCALE_OUT) {
@@ -122,7 +125,7 @@ public class DecisionTask implements Runnable {
                 }
                 if (filteredActions.size() > 0) {
                     log.info("Send actions to ExecutionEngine -> " + filteredActions);
-                    decisionEngine.sendDecision(nsr_id, actionVnfrMap, filteredActions, autoScalePolicy.getCooldown());
+                    decisionEngine.sendDecision(projectId, nsr_id, actionVnfrMap, filteredActions, autoScalePolicy.getCooldown());
                 }
             } catch (SDKException e) {
                 log.warn("Not able to fetch the VNFR from the NFVO. Stop here and wait for the next request of decision-making....", e);

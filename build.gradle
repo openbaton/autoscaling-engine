@@ -38,7 +38,7 @@ project.ext {
     /**
      * OpenBaton Related Version
      */
-    openbatonVersion = '2.0.3-SNAPSHOT'
+    openbatonVersion = '2.1.2'
     /**
      * Application Related Version
      */

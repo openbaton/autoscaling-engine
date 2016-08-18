@@ -57,12 +57,13 @@ public class RestDecisionInterface {
         Gson mapper = new GsonBuilder().create();
 //        Action action = mapper.fromJson(json.get("action"), Action.class);
 //        log.debug("ACTION=" + action);
+        String projectId = mapper.fromJson(json.get("project_id"), String.class);
         String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
         String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
         AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
 //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
 //        log.debug("NSR=" + nsr);
-        decisionManagement.decide(nsrId, autoScalePolicy);
+        decisionManagement.decide(projectId, nsrId, autoScalePolicy);
     }
 
     /**
@@ -80,12 +81,13 @@ public class RestDecisionInterface {
         Gson mapper = new GsonBuilder().create();
 //        Action action = mapper.fromJson(json.get("action"), Action.class);
 //        log.debug("ACTION=" + action);
+        String projectId = mapper.fromJson(json.get("project_id"), String.class);
         String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
         String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
         AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
 //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
 //        log.debug("NSR=" + nsr);
-        decisionManagement.stop(nsrId);
+        decisionManagement.stop(projectId, nsrId);
     }
 
 //    /**

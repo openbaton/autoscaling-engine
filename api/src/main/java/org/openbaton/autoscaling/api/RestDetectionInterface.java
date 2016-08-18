@@ -59,15 +59,16 @@ public class RestDetectionInterface {
         Gson mapper = new GsonBuilder().create();
 //        Action action = mapper.fromJson(json.get("action"), Action.class);
 //        log.debug("ACTION=" + action);
+        String projectId = mapper.fromJson(json.get("project_id"), String.class);
         String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
         String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
         AutoScalePolicy autoScalePolicy = mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
 //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
 //        log.debug("NSR=" + nsr);
         if (autoScalePolicy != null) {
-            detectionManagement.start(nsrId, vnfrId, autoScalePolicy);
+            detectionManagement.start(projectId, nsrId, vnfrId, autoScalePolicy);
         } else {
-            detectionManagement.start(nsrId, vnfrId);
+            detectionManagement.start(projectId, nsrId, vnfrId);
         }
     }
 
@@ -88,9 +89,10 @@ public class RestDetectionInterface {
 //        log.debug("ACTION=" + action);
 //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
 //        log.debug("NSR=" + nsr);
+        String projectId = mapper.fromJson(json.get("project_id"), String.class);
         String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
         String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
-        detectionManagement.stop(nsrId, vnfrId);
+        detectionManagement.stop(projectId, nsrId, vnfrId);
     }
 
     /**

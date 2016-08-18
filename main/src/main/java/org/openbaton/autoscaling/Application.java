@@ -32,6 +32,7 @@ import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.EndpointType;
 import org.openbaton.catalogue.nfvo.EventEndpoint;
+import org.openbaton.catalogue.security.Project;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.plugin.utils.PluginStartup;
@@ -87,13 +88,18 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
 
     private ElasticityManagement elasticityManagement;
 
-    private void init() throws SDKException {
+    private void init() throws SDKException, ClassNotFoundException {
         //start all the plugins needed
         startPlugins();
         //waiting until the NFVO is available
         waitForNfvo();
         this.elasticityManagement = context.getBean(ElasticityManagement.class);
-        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), "*", false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
+        for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
+            if (project.getName().equals("default")) {
+                nfvoRequestor.setProjectId(project.getId());
+            }
+        }
         subscriptionIds = new ArrayList<>();
         subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
         subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
@@ -107,7 +113,10 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
         destroyPlugins();
         List<NetworkServiceRecord> nsrs = new ArrayList<>();
         try {
-            nsrs = nfvoRequestor.getNetworkServiceRecordAgent().findAll();
+            for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
+                nfvoRequestor.setProjectId(project.getId());
+                nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
+            }
         } catch (SDKException e) {
             log.warn("Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start", e);
         } catch (ClassNotFoundException e) {
@@ -116,7 +125,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
         Set<Future<Boolean>> pendingTasks = new HashSet<>();
         for (NetworkServiceRecord nsr : nsrs) {
             for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-                pendingTasks.add(elasticityManagement.deactivate(nsr.getId(), vnfr.getId()));
+                pendingTasks.add(elasticityManagement.deactivate(nsr.getProjectId(), nsr.getId(), vnfr.getId()));
             }
         }
         for (Future<Boolean> pendingTask : pendingTasks) {
@@ -177,7 +186,10 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
         log.debug("Fetching previously deployed NSRs from NFVO to start the autoscaling for them.");
         List<NetworkServiceRecord> nsrs = new ArrayList<>();
         try {
-            nsrs = nfvoRequestor.getNetworkServiceRecordAgent().findAll();
+            for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
+                nfvoRequestor.setProjectId(project.getId());
+                nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
+            }
         } catch (SDKException e) {
             log.warn("Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start", e);
         } catch (ClassNotFoundException e) {

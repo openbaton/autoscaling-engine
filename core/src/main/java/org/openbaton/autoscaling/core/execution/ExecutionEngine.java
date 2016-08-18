@@ -58,8 +58,6 @@ public class ExecutionEngine {
     @Autowired
     private ConfigurableApplicationContext context;
 
-    private NFVORequestor nfvoRequestor;
-
     private ExecutionManagement executionManagement;
 
     private ActionMonitor actionMonitor;
@@ -79,7 +77,6 @@ public class ExecutionEngine {
     public void init() {
         //this.resourceManagement = context.getBean(ResourceManagement.class);
         this.executionManagement = context.getBean(ExecutionManagement.class);
-        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
     }
 
     private MonitoringPluginCaller getClient() {
@@ -90,7 +87,8 @@ public class ExecutionEngine {
         this.actionMonitor = actionMonitor;
     }
 
-    public VirtualNetworkFunctionRecord scaleOut(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws NotFoundException {
+    public VirtualNetworkFunctionRecord scaleOut(String projectId, VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws NotFoundException {
+        NFVORequestor nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         log.debug("Executing scale-out for VNFR with id: " + vnfr.getId());
         for (int i = 1; i <= numberOfInstances; i++) {
             if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {
@@ -145,22 +143,23 @@ public class ExecutionEngine {
         return vnfr;
     }
 
-    public void scaleOutTo(VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException {
+    public void scaleOutTo(String projectId, VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException {
         int vnfci_counter = 0;
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             vnfci_counter += vdu.getVnfc_instance().size();
         }
         for (int i = vnfci_counter + 1; i <= value; i++) {
-            scaleOut(vnfr, 1);
+            scaleOut(projectId, vnfr, 1);
         }
     }
 
-    public void scaleOutToFlavour(VirtualNetworkFunctionRecord vnfr, String flavour_id) throws SDKException, NotFoundException {
+    public void scaleOutToFlavour(String projectId, VirtualNetworkFunctionRecord vnfr, String flavour_id) throws SDKException, NotFoundException {
         throw new NotImplementedException();
     }
 
-    public VirtualNetworkFunctionRecord scaleIn(VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws NotFoundException {
+    public VirtualNetworkFunctionRecord scaleIn(String projectId, VirtualNetworkFunctionRecord vnfr, int numberOfInstances) throws NotFoundException {
         log.debug("Executing scale-in for VNFR with id: " + vnfr.getId());
+        NFVORequestor nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         for (int i = 1; i <= numberOfInstances; i++) {
             VNFCInstance vnfcInstance_remove = null;
             if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {
@@ -226,26 +225,21 @@ public class ExecutionEngine {
         return vnfr;
     }
 
-    public void scaleInTo(VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException {
+    public void scaleInTo(String projectId, VirtualNetworkFunctionRecord vnfr, int value) throws SDKException, NotFoundException, VimException {
         int vnfci_counter = 0;
         for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
             vnfci_counter += vdu.getVnfc_instance().size();
         }
         for (int i = vnfci_counter; i > value; i--) {
-            scaleIn(vnfr, 1);
+            scaleIn(projectId, vnfr, 1);
         }
     }
 
-    public void scaleInToFlavour(VirtualNetworkFunctionRecord vnfr, String flavour_id) throws SDKException, NotFoundException {
+    public void scaleInToFlavour(String projectId, VirtualNetworkFunctionRecord vnfr, String flavour_id) throws SDKException, NotFoundException {
         throw new NotImplementedException();
     }
 
-    public void startCooldown(String nsr_id, long cooldown) {
-        executionManagement.executeCooldown(nsr_id, cooldown);
+    public void startCooldown(String projectId, String nsr_id, long cooldown) {
+        executionManagement.executeCooldown(projectId, nsr_id, cooldown);
     }
-
-    public NFVORequestor getNfvoRequestor() {
-        return nfvoRequestor;
-    }
-
 }

@@ -55,25 +55,23 @@ public class DecisionEngine {
     //@Autowired
     private ExecutionManagement executionManagement;
 
-    private NFVORequestor nfvoRequestor;
-
     @Autowired
     private NfvoProperties nfvoProperties;
 
     @PostConstruct
     public void init() {
         this.executionManagement = context.getBean(ExecutionManagement.class);
-        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
     }
 
-    public void sendDecision(String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown) {
+    public void sendDecision(String projectId, String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown) {
         //log.info("[DECISION_MAKER] DECIDED_ABOUT_ACTIONS " + new Date().getTime());
         log.debug("Send actions to Executor: " + actions.toString());
-        executionManagement.executeActions(nsr_id, actionVnfrMap, actions, cooldown);
+        executionManagement.executeActions(projectId, nsr_id, actionVnfrMap, actions, cooldown);
     }
 
-    public Status getStatus(String nsr_id) {
+    public Status getStatus(String projectId, String nsr_id) {
         log.debug("Check Status of NSR with id: " + nsr_id);
+        NFVORequestor nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         NetworkServiceRecord networkServiceRecord = null;
         try {
             networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -90,7 +88,8 @@ public class DecisionEngine {
         return networkServiceRecord.getStatus();
     }
 
-    public VirtualNetworkFunctionRecord getVNFR(String nsr_id, String vnfr_id) throws SDKException {
+    public VirtualNetworkFunctionRecord getVNFR(String projectId, String nsr_id, String vnfr_id) throws SDKException {
+        NFVORequestor nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         try {
             VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
             return vnfr;
@@ -100,7 +99,8 @@ public class DecisionEngine {
         }
     }
 
-    public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(String nsr_id, String type) throws SDKException {
+    public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(String projectId, String nsr_id, String type) throws SDKException {
+        NFVORequestor nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
         List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
         try {

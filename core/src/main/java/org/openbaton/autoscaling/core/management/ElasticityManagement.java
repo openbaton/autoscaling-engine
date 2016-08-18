@@ -74,9 +74,9 @@ public class ElasticityManagement {
     private void exit() throws SDKException {
     }
 
-    public void activate(String nsr_id) throws NotFoundException, VimException {
+    public void activate(String projectId, String nsr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
-        detectionManagment.start(nsr_id);
+        detectionManagment.start(projectId, nsr_id);
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 
@@ -84,46 +84,46 @@ public class ElasticityManagement {
         log.debug("Activating Elasticity for NSR with id: " + nsr.getId());
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
             for (AutoScalePolicy autoScalePolicy : vnfr.getAuto_scale_policy())
-                detectionManagment.start(nsr.getId(), vnfr.getId(), autoScalePolicy);
+                detectionManagment.start(nsr.getProjectId(), nsr.getId(), vnfr.getId(), autoScalePolicy);
         }
         log.info("Activated Elasticity for NSR with id: " + nsr.getId());
     }
 
     @Async
-    public void activate(String nsr_id, String vnfr_id) throws NotFoundException, VimException {
+    public void activate(String projectId, String nsr_id, String vnfr_id) throws NotFoundException, VimException {
         log.debug("Activating Elasticity for NSR with id: " + nsr_id);
         //log.info("[AUTOSCALING] Activating Elasticity " + System.currentTimeMillis());
-        detectionManagment.start(nsr_id, vnfr_id);
+        detectionManagment.start(projectId, nsr_id, vnfr_id);
         //log.info("[AUTOSCALING] Activated Elasticity " + System.currentTimeMillis());
         log.info("Activated Elasticity for NSR with id: " + nsr_id);
     }
 
-    public void deactivate(String nsr_id) {
+    public void deactivate(String projectId, String nsr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
         try {
-            detectionManagment.stop(nsr_id);
+            detectionManagment.stop(projectId, nsr_id);
         } catch (NotFoundException e) {
             log.warn(e.getMessage());
             if (log.isDebugEnabled()) {
                 log.error(e.getMessage(), e);
             }
         }
-        decisionManagement.stop(nsr_id);
-        executionManagement.stop(nsr_id);
+        decisionManagement.stop(projectId, nsr_id);
+        executionManagement.stop(projectId, nsr_id);
         log.info("Deactivated Elasticity for NSR with id: " + nsr_id);
     }
 
     @Async
-    public Future<Boolean> deactivate(String nsr_id, String vnfr_id) {
+    public Future<Boolean> deactivate(String projectId, String nsr_id, String vnfr_id) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
         Set<Future<Boolean>> pendingTasks = new HashSet<>();
         try {
-            pendingTasks.add(detectionManagment.stop(nsr_id, vnfr_id));
+            pendingTasks.add(detectionManagment.stop(projectId, nsr_id, vnfr_id));
         } catch (NotFoundException e) {
             log.error(e.getMessage(), e);
         }
-        pendingTasks.add(decisionManagement.stop(nsr_id));
-        pendingTasks.add(executionManagement.stop(nsr_id));
+        pendingTasks.add(decisionManagement.stop(projectId, nsr_id));
+        pendingTasks.add(executionManagement.stop(projectId, nsr_id));
         for (Future<Boolean> pendingTask : pendingTasks) {
             try {
                 pendingTask.get(60, TimeUnit.SECONDS);
@@ -146,16 +146,16 @@ public class ElasticityManagement {
     }
 
     @Async
-    public Future<Boolean> deactivate(String nsr_id, VirtualNetworkFunctionRecord vnfr) {
+    public Future<Boolean> deactivate(String projectId, String nsr_id, VirtualNetworkFunctionRecord vnfr) {
         log.debug("Deactivating Elasticity for NSR with id: " + nsr_id);
         Set<Future<Boolean>> pendingTasks = new HashSet<>();
         try {
-            pendingTasks.add(detectionManagment.stop(nsr_id, vnfr));
+            pendingTasks.add(detectionManagment.stop(projectId, nsr_id, vnfr));
         } catch (NotFoundException e) {
             log.error(e.getMessage(), e);
         }
-        pendingTasks.add(decisionManagement.stop(nsr_id));
-        pendingTasks.add(executionManagement.stop(nsr_id));
+        pendingTasks.add(decisionManagement.stop(projectId, nsr_id));
+        pendingTasks.add(executionManagement.stop(projectId, nsr_id));
         for (Future<Boolean> pendingTask : pendingTasks) {
             try {
                 pendingTask.get(60, TimeUnit.SECONDS);

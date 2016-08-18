@@ -57,6 +57,8 @@ public class DetectionTask implements Runnable {
 
     private Properties properties;
 
+    private String projectId;
+
     private String nsr_id;
 
     private String vnfr_id;
@@ -69,14 +71,14 @@ public class DetectionTask implements Runnable {
 
     private boolean fired;
 
-    public DetectionTask(String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, DetectionEngine detectionEngine, NfvoProperties nfvoProperties, ActionMonitor actionMonitor) throws NotFoundException {
+    public DetectionTask(String projectId, String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy, DetectionEngine detectionEngine, NfvoProperties nfvoProperties, ActionMonitor actionMonitor) throws NotFoundException {
         this.nsr_id = nsr_id;
         this.vnfr_id = vnfr_id;
         this.autoScalePolicy = autoScalePolicy;
         this.detectionEngine = detectionEngine;
         this.actionMonitor = actionMonitor;
 
-        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
+        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         this.name = "DetectionTask#" + nsr_id + ":" + vnfr_id;
         this.first_time = true;
         this.fired = false;
@@ -164,7 +166,7 @@ public class DetectionTask implements Runnable {
                 log.info("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " is crossed -> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                 fired = true;
                 //log.info("[DETECTOR] DETECTED_ALARM " + new Date().getTime());
-                detectionEngine.sendAlarm(nsr_id, vnfr_id, autoScalePolicy);
+                detectionEngine.sendAlarm(projectId, nsr_id, vnfr_id, autoScalePolicy);
                 //} else {
                 //    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
                 //}

@@ -61,7 +61,7 @@ public class RestElasticityManagementInterface {
         log.trace("ACTION=" + action);
         NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
         log.trace("NSR=" + nsr);
-        elasticityManagement.activate(nsr.getId());
+        elasticityManagement.activate(nsr.getProjectId(), nsr.getId());
     }
 
     /**
@@ -81,7 +81,7 @@ public class RestElasticityManagementInterface {
         NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
         log.trace("NSR=" + nsr);
         for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-            elasticityManagement.deactivate(nsr.getId(), vnfr);
+            elasticityManagement.deactivate(nsr.getProjectId(), nsr.getId(), vnfr);
         }
     }
 

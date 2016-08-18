@@ -53,8 +53,6 @@ public class DecisionManagement {
     @Autowired
     private DecisionEngine decisionEngine;
 
-    private NFVORequestor nfvoRequestor;
-
     private ThreadPoolTaskScheduler taskScheduler;
 
     private ActionMonitor actionMonitor;
@@ -65,7 +63,6 @@ public class DecisionManagement {
     @PostConstruct
     public void init() {
         this.actionMonitor = new ActionMonitor();
-        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
         this.taskScheduler = new ThreadPoolTaskScheduler();
         this.taskScheduler.setPoolSize(10);
         this.taskScheduler.setWaitForTasksToCompleteOnShutdown(true);
@@ -81,12 +78,12 @@ public class DecisionManagement {
         this.taskScheduler.initialize();
     }
 
-    public void decide(String nsr_id, AutoScalePolicy autoScalePolicy) {
+    public void decide(String projectId, String nsr_id, AutoScalePolicy autoScalePolicy) {
         //log.info("[DECISION_MAKER] DECISION_REQUESTED " + new Date().getTime());
         log.debug("Processing decision request of AutoScalePolicy with id " + autoScalePolicy.getId() + " of NSR with id: " + nsr_id);
         log.trace("Creating new DecisionTask for AutoScalePolicy with id " + autoScalePolicy.getId() + " of NSR with id: " + nsr_id);
         actionMonitor.requestAction(nsr_id, Action.DECIDE);
-        DecisionTask decisionTask = new DecisionTask(nsr_id, autoScalePolicy, decisionEngine, actionMonitor);
+        DecisionTask decisionTask = new DecisionTask(projectId, nsr_id, autoScalePolicy, decisionEngine, actionMonitor);
         taskScheduler.execute(decisionTask);
     }
 
@@ -108,7 +105,7 @@ public class DecisionManagement {
 //    }
 
     @Async
-    public Future<Boolean> stop(String nsr_id) {
+    public Future<Boolean> stop(String projectId, String nsr_id) {
         log.debug("Invoking termination of DecisionTask for NSR with id: " + nsr_id);
         actionMonitor.removeId(nsr_id);
         return new AsyncResult<Boolean>(true);
