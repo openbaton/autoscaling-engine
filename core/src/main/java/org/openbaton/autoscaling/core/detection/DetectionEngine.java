@@ -50,150 +50,172 @@ import java.util.List;
 @Scope("singleton")
 public class DetectionEngine {
 
-    protected Logger log = LoggerFactory.getLogger(this.getClass());
+  protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    private ConfigurableApplicationContext context;
+  @Autowired private ConfigurableApplicationContext context;
 
-    private MonitoringPlugin monitor;
+  private MonitoringPlugin monitor;
 
-    //@Autowired
-    private DetectionManagement detectionManagement;
+  //@Autowired
+  private DetectionManagement detectionManagement;
 
-    @Autowired
-    private AutoScalingProperties autoScalingProperties;
+  @Autowired private AutoScalingProperties autoScalingProperties;
 
-    @Autowired
-    private SpringProperties springProperties;
+  @Autowired private SpringProperties springProperties;
 
-    @PostConstruct
-    public void init() {
-        this.detectionManagement = context.getBean(DetectionManagement.class);
+  @PostConstruct
+  public void init() {
+    this.detectionManagement = context.getBean(DetectionManagement.class);
+  }
+
+  public void initializeMonitor() {
+    this.monitor =
+        (MonitoringPluginCaller)
+            ((RabbitPluginBroker) context.getBean(RabbitPluginBroker.class))
+                .getMonitoringPluginCaller(
+                    autoScalingProperties.getRabbitmq().getBrokerIp(),
+                    springProperties.getRabbitmq().getUsername(),
+                    springProperties.getRabbitmq().getPassword(),
+                    springProperties.getRabbitmq().getPort(),
+                    "zabbix-plugin",
+                    "zabbix",
+                    autoScalingProperties.getRabbitmq().getManagement().getPort());
+    if (monitor == null) {
+      log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
     }
+  }
+  //    public void waitForState(String nsrId, String vnfrId, Set<Status> states) {
+  //        try {
+  //            Thread.sleep(15000);
+  //        } catch (InterruptedException e) {
+  //            log.error(e.getMessage(), e);
+  //        }
+  //        VirtualNetworkFunctionRecord vnfr = getVnfr(nsrId, vnfrId);
+  //        while (!states.contains(vnfr.getStatus())) {
+  //            log.debug("DetectionTask: Waiting until status of VNFR with id: " + vnfrId + " goes back to " + states);
+  //            try {
+  //                Thread.sleep(10000);
+  //            } catch (InterruptedException e) {
+  //                log.error(e.getMessage(), e);
+  //            }
+  //            vnfr = getVnfr(nsrId, vnfrId);
+  //        }
+  //    }
+  //
+  //    public VirtualNetworkFunctionRecord getVnfr(String nsrId, String vnfrId) {
+  //        try {
+  //            return nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsrId, vnfrId);
+  //        } catch (SDKException e) {
+  //            log.error(e.getMessage(), e);
+  //        }
+  //        return null;
+  //    }
 
-    public void initializeMonitor() {
-        this.monitor = (MonitoringPluginCaller) ((RabbitPluginBroker) context.getBean(RabbitPluginBroker.class)).getMonitoringPluginCaller(autoScalingProperties.getRabbitmq().getBrokerIp(), springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), springProperties.getRabbitmq().getPort(), "zabbix-plugin", "zabbix", autoScalingProperties.getRabbitmq().getManagement().getPort());
-        if (monitor == null) {
-            log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
-        }
+  public List<Item> getRawMeasurementResults(
+      VirtualNetworkFunctionRecord vnfr, String metric, String period) throws MonitoringException {
+    if (monitor == null) {
+      initializeMonitor();
     }
-//    public void waitForState(String nsrId, String vnfrId, Set<Status> states) {
-//        try {
-//            Thread.sleep(15000);
-//        } catch (InterruptedException e) {
-//            log.error(e.getMessage(), e);
-//        }
-//        VirtualNetworkFunctionRecord vnfr = getVnfr(nsrId, vnfrId);
-//        while (!states.contains(vnfr.getStatus())) {
-//            log.debug("DetectionTask: Waiting until status of VNFR with id: " + vnfrId + " goes back to " + states);
-//            try {
-//                Thread.sleep(10000);
-//            } catch (InterruptedException e) {
-//                log.error(e.getMessage(), e);
-//            }
-//            vnfr = getVnfr(nsrId, vnfrId);
-//        }
-//    }
-//
-//    public VirtualNetworkFunctionRecord getVnfr(String nsrId, String vnfrId) {
-//        try {
-//            return nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsrId, vnfrId);
-//        } catch (SDKException e) {
-//            log.error(e.getMessage(), e);
-//        }
-//        return null;
-//    }
-
-    public List<Item> getRawMeasurementResults(VirtualNetworkFunctionRecord vnfr, String metric, String period) throws MonitoringException {
-        if (monitor == null) {
-            initializeMonitor();
+    ArrayList<Item> measurementResults = new ArrayList<Item>();
+    ArrayList<String> hostnames = new ArrayList<String>();
+    ArrayList<String> metrics = new ArrayList<String>();
+    metrics.add(metric);
+    log.debug(
+        "Getting all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + ".");
+    for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
+      for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
+        if (vnfcInstance.getState() == null || vnfcInstance.getState().equals("active")) {
+          hostnames.add(vnfcInstance.getHostname());
         }
-        ArrayList<Item> measurementResults = new ArrayList<Item>();
-        ArrayList<String> hostnames = new ArrayList<String>();
-        ArrayList<String> metrics = new ArrayList<String>();
-        metrics.add(metric);
-        log.debug("Getting all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + ".");
-        for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
-            for (VNFCInstance vnfcInstance : vdu.getVnfc_instance()) {
-                if (vnfcInstance.getState() == null || vnfcInstance.getState().equals("active")) {
-                    hostnames.add(vnfcInstance.getHostname());
-                }
-            }
-        }
-        log.trace("Getting all measurement results for hostnames " + hostnames + " on metric " + metric + ".");
-        measurementResults.addAll(monitor.queryPMJob(hostnames, metrics, period));
-        log.debug("Got all measurement results for vnfr " + vnfr.getId() + " on metric " + metric + " -> " + measurementResults + ".");
-        return measurementResults;
+      }
     }
+    log.trace(
+        "Getting all measurement results for hostnames "
+            + hostnames
+            + " on metric "
+            + metric
+            + ".");
+    measurementResults.addAll(monitor.queryPMJob(hostnames, metrics, period));
+    log.debug(
+        "Got all measurement results for vnfr "
+            + vnfr.getId()
+            + " on metric "
+            + metric
+            + " -> "
+            + measurementResults
+            + ".");
+    return measurementResults;
+  }
 
-    public double calculateMeasurementResult(ScalingAlarm alarm, List<Item> measurementResults) {
-        log.debug("Calculating final measurement result...");
-        double result;
-        List<Double> consideredResults = new ArrayList<>();
-        for (Item measurementResult : measurementResults) {
-            consideredResults.add(Double.parseDouble(measurementResult.getValue()));
-        }
-        switch (alarm.getStatistic()) {
-            case "avg":
-                double sum = 0;
-                for (Double consideredResult : consideredResults) {
-                    sum += consideredResult;
-                }
-                result = sum / measurementResults.size();
-                break;
-            case "min":
-                result = Collections.min(consideredResults);
-                break;
-            case "max":
-                result = Collections.max(consideredResults);
-                break;
-            default:
-                result = -1;
-                break;
-        }
-        return result;
+  public double calculateMeasurementResult(ScalingAlarm alarm, List<Item> measurementResults) {
+    log.debug("Calculating final measurement result...");
+    double result;
+    List<Double> consideredResults = new ArrayList<>();
+    for (Item measurementResult : measurementResults) {
+      consideredResults.add(Double.parseDouble(measurementResult.getValue()));
     }
-
-    public boolean checkThreshold(String comparisonOperator, double threshold, double result) {
-        log.debug("Checking Threshold...");
-        switch (comparisonOperator) {
-            case ">":
-                if (result > threshold) {
-                    return true;
-                }
-                break;
-            case ">=":
-                if (result >= threshold) {
-                    return true;
-                }
-                break;
-            case "<":
-                if (result < threshold) {
-                    return true;
-                }
-                break;
-            case "<=":
-                if (result <= threshold) {
-                    return true;
-                }
-                break;
-            case "=":
-                if (result == threshold) {
-                    return true;
-                }
-                break;
-            case "!=":
-                if (result != threshold) {
-                    return true;
-                }
-                break;
-            default:
-                return false;
+    switch (alarm.getStatistic()) {
+      case "avg":
+        double sum = 0;
+        for (Double consideredResult : consideredResults) {
+          sum += consideredResult;
         }
+        result = sum / measurementResults.size();
+        break;
+      case "min":
+        result = Collections.min(consideredResults);
+        break;
+      case "max":
+        result = Collections.max(consideredResults);
+        break;
+      default:
+        result = -1;
+        break;
+    }
+    return result;
+  }
+
+  public boolean checkThreshold(String comparisonOperator, double threshold, double result) {
+    log.debug("Checking Threshold...");
+    switch (comparisonOperator) {
+      case ">":
+        if (result > threshold) {
+          return true;
+        }
+        break;
+      case ">=":
+        if (result >= threshold) {
+          return true;
+        }
+        break;
+      case "<":
+        if (result < threshold) {
+          return true;
+        }
+        break;
+      case "<=":
+        if (result <= threshold) {
+          return true;
+        }
+        break;
+      case "=":
+        if (result == threshold) {
+          return true;
+        }
+        break;
+      case "!=":
+        if (result != threshold) {
+          return true;
+        }
+        break;
+      default:
         return false;
     }
+    return false;
+  }
 
-    public void sendAlarm(String projectId, String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
-        detectionManagement.sendAlarm(projectId, nsr_id, vnfr_id, autoScalePolicy);
-    }
+  public void sendAlarm(
+      String projectId, String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy) {
+    detectionManagement.sendAlarm(projectId, nsr_id, vnfr_id, autoScalePolicy);
+  }
 }

@@ -31,108 +31,119 @@ import org.springframework.stereotype.Service;
 @PropertySource("classpath:application.properties")
 public class SpringProperties {
 
-    private Rabbitmq rabbitmq;
+  private Rabbitmq rabbitmq;
 
-    public Rabbitmq getRabbitmq() {
-        return rabbitmq;
+  public Rabbitmq getRabbitmq() {
+    return rabbitmq;
+  }
+
+  public void setRabbitmq(Rabbitmq rabbitmq) {
+    this.rabbitmq = rabbitmq;
+  }
+
+  @Override
+  public String toString() {
+    return "SpringProperties{" + "rabbitmq=" + rabbitmq + '}';
+  }
+
+  public static class Rabbitmq {
+    private String host;
+    private String username;
+    private String password;
+    private int port;
+    private Listener listener;
+
+    public String getHost() {
+      return host;
     }
 
-    public void setRabbitmq(Rabbitmq rabbitmq) {
-        this.rabbitmq = rabbitmq;
+    public void setHost(String host) {
+      this.host = host;
+    }
+
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(String password) {
+      this.password = password;
+    }
+
+    public int getPort() {
+      return port;
+    }
+
+    public void setPort(int port) {
+      this.port = port;
+    }
+
+    public Listener getListener() {
+      return listener;
+    }
+
+    public void setListener(Listener listener) {
+      this.listener = listener;
     }
 
     @Override
     public String toString() {
-        return "SpringProperties{" +
-                "rabbitmq=" + rabbitmq +
-                '}';
+      return "Rabbitmq{"
+          + "host='"
+          + host
+          + '\''
+          + ", username='"
+          + username
+          + '\''
+          + ", password='"
+          + password
+          + '\''
+          + ", port='"
+          + port
+          + '\''
+          + ", listener="
+          + listener
+          + '}';
     }
 
-    public static class Rabbitmq {
-        private String host;
-        private String username;
-        private String password;
-        private int port;
-        private Listener listener;
+    public static class Listener {
+      private String concurrency;
+      private String maxConcurrency;
 
-        public String getHost() {
-            return host;
-        }
+      public String getConcurrency() {
+        return concurrency;
+      }
 
-        public void setHost(String host) {
-            this.host = host;
-        }
+      public void setConcurrency(String concurrency) {
+        this.concurrency = concurrency;
+      }
 
-        public String getUsername() {
-            return username;
-        }
+      public String getMaxConcurrency() {
+        return maxConcurrency;
+      }
 
-        public void setUsername(String username) {
-            this.username = username;
-        }
+      public void setMaxConcurrency(String maxConcurrency) {
+        this.maxConcurrency = maxConcurrency;
+      }
 
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        public void setPort(int port) {
-            this.port = port;
-        }
-
-        public Listener getListener() {
-            return listener;
-        }
-
-        public void setListener(Listener listener) {
-            this.listener = listener;
-        }
-
-        @Override
-        public String toString() {
-            return "Rabbitmq{" +
-                    "host='" + host + '\'' +
-                    ", username='" + username + '\'' +
-                    ", password='" + password + '\'' +
-                    ", port='" + port + '\'' +
-                    ", listener=" + listener +
-                    '}';
-        }
-
-        public static class Listener {
-            private String concurrency;
-            private String maxConcurrency;
-
-            public String getConcurrency() {
-                return concurrency;
-            }
-
-            public void setConcurrency(String concurrency) {
-                this.concurrency = concurrency;
-            }
-
-            public String getMaxConcurrency() {
-                return maxConcurrency;
-            }
-
-            public void setMaxConcurrency(String maxConcurrency) {
-                this.maxConcurrency = maxConcurrency;
-            }
-
-            @Override
-            public String toString() {
-                return "Listener{" +
-                        "concurrency='" + concurrency + '\'' +
-                        ", maxConcurrency='" + maxConcurrency + '\'' +
-                        '}';
-            }
-        }
+      @Override
+      public String toString() {
+        return "Listener{"
+            + "concurrency='"
+            + concurrency
+            + '\''
+            + ", maxConcurrency='"
+            + maxConcurrency
+            + '\''
+            + '}';
+      }
     }
+  }
 }

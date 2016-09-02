@@ -21,6 +21,12 @@
  * Project settings
  */
 
+plugins {
+    id "nebula.os-package" version "2.2.6"
+    id 'com.github.sherter.google-java-format' version '0.3.2'
+}
+
+
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
@@ -71,3 +77,5 @@ dependencies {
 
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }
+
+build.dependsOn verifyGoogleJavaFormat

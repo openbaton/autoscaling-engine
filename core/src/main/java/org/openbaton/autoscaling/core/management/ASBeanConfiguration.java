@@ -36,39 +36,38 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 public class ASBeanConfiguration {
 
-    @Bean
-    public ElasticityManagement elasticityManagement() {
-        return new ElasticityManagement();
-    }
+  @Bean
+  public ElasticityManagement elasticityManagement() {
+    return new ElasticityManagement();
+  }
 
-    @Bean
-    public DetectionManagement detectionManagement() {
-        return new DetectionManagement();
-    }
+  @Bean
+  public DetectionManagement detectionManagement() {
+    return new DetectionManagement();
+  }
 
-    @Bean
-    public DetectionEngine detectionEngine() {
-        return new DetectionEngine();
-    }
+  @Bean
+  public DetectionEngine detectionEngine() {
+    return new DetectionEngine();
+  }
 
-    @Bean
-    public DecisionManagement decisionManagement() {
-        return new DecisionManagement();
-    }
+  @Bean
+  public DecisionManagement decisionManagement() {
+    return new DecisionManagement();
+  }
 
-    @Bean
-    public DecisionEngine decisionEngine() {
-        return new DecisionEngine();
-    }
+  @Bean
+  public DecisionEngine decisionEngine() {
+    return new DecisionEngine();
+  }
 
-    @Bean
-    public ExecutionManagement executionManagement() {
-        return new ExecutionManagement();
-    }
+  @Bean
+  public ExecutionManagement executionManagement() {
+    return new ExecutionManagement();
+  }
 
-    @Bean
-    public ExecutionEngine executionEngine() {
-        return new ExecutionEngine();
-    }
-
+  @Bean
+  public ExecutionEngine executionEngine() {
+    return new ExecutionEngine();
+  }
 }

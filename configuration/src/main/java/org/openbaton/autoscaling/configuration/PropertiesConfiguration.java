@@ -28,14 +28,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class PropertiesConfiguration {
 
-    @Bean
-    public NfvoProperties nfvoProperties() {
-        return new NfvoProperties();
-    }
+  @Bean
+  public NfvoProperties nfvoProperties() {
+    return new NfvoProperties();
+  }
 
-    @Bean
-    public AutoScalingProperties autoScalingProperties() {
-        return new AutoScalingProperties();
-    }
-
+  @Bean
+  public AutoScalingProperties autoScalingProperties() {
+    return new AutoScalingProperties();
+  }
 }

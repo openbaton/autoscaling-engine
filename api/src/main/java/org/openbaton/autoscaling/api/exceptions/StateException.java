@@ -26,8 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(value = HttpStatus.FORBIDDEN)
 public class StateException extends RuntimeException {
 
-    public StateException(String id) {
-        super("Network Service Descriptor with id: " + id + " is in the wrong state");
-    }
-
+  public StateException(String id) {
+    super("Network Service Descriptor with id: " + id + " is in the wrong state");
+  }
 }
