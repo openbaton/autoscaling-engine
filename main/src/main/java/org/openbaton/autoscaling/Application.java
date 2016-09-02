@@ -65,165 +65,201 @@ import java.util.concurrent.TimeoutException;
  */
 @SpringBootApplication
 @ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling", "org.openbaton"})
-@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {ASBeanConfiguration.class, PropertiesConfiguration.class})
+@ContextConfiguration(
+  loader = AnnotationConfigContextLoader.class,
+  classes = {ASBeanConfiguration.class, PropertiesConfiguration.class}
+)
 public class Application implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
 
-    protected static Logger log = LoggerFactory.getLogger(Application.class);
+  protected static Logger log = LoggerFactory.getLogger(Application.class);
 
-    @Autowired
-    private ConfigurableApplicationContext context;
+  @Autowired private ConfigurableApplicationContext context;
 
-    private NFVORequestor nfvoRequestor;
+  private NFVORequestor nfvoRequestor;
 
-    private List<String> subscriptionIds;
+  private List<String> subscriptionIds;
 
-    @Autowired
-    private AutoScalingProperties autoScalingProperties;
+  @Autowired private AutoScalingProperties autoScalingProperties;
 
-    @Autowired
-    private SpringProperties springProperties;
+  @Autowired private SpringProperties springProperties;
 
-    @Autowired
-    private NfvoProperties nfvoProperties;
+  @Autowired private NfvoProperties nfvoProperties;
 
-    private ElasticityManagement elasticityManagement;
+  private ElasticityManagement elasticityManagement;
 
-    private void init() throws SDKException, ClassNotFoundException {
-        //start all the plugins needed
-        startPlugins();
-        //waiting until the NFVO is available
-        waitForNfvo();
-        this.elasticityManagement = context.getBean(ElasticityManagement.class);
-        this.nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), "*", false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
-        for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
-            if (project.getName().equals("default")) {
-                nfvoRequestor.setProjectId(project.getId());
-            }
-        }
-        subscriptionIds = new ArrayList<>();
-        subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
-        subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
-        subscriptionIds.add(subscribe(Action.ERROR));
-
-        fetchNSRsFromNFVO();
+  private void init() throws SDKException, ClassNotFoundException {
+    //start all the plugins needed
+    startPlugins();
+    //waiting until the NFVO is available
+    waitForNfvo();
+    this.elasticityManagement = context.getBean(ElasticityManagement.class);
+    this.nfvoRequestor =
+        new NFVORequestor(
+            nfvoProperties.getUsername(),
+            nfvoProperties.getPassword(),
+            "*",
+            false,
+            nfvoProperties.getIp(),
+            nfvoProperties.getPort(),
+            "1");
+    for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
+      if (project.getName().equals("default")) {
+        nfvoRequestor.setProjectId(project.getId());
+      }
     }
+    subscriptionIds = new ArrayList<>();
+    subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
+    subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
+    subscriptionIds.add(subscribe(Action.ERROR));
 
-    private void exit() throws SDKException {
-        unsubscribe();
-        destroyPlugins();
-        List<NetworkServiceRecord> nsrs = new ArrayList<>();
-        try {
-            for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
-                nfvoRequestor.setProjectId(project.getId());
-                nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
-            }
-        } catch (SDKException e) {
-            log.warn("Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start", e);
-        } catch (ClassNotFoundException e) {
+    fetchNSRsFromNFVO();
+  }
+
+  private void exit() throws SDKException {
+    unsubscribe();
+    destroyPlugins();
+    List<NetworkServiceRecord> nsrs = new ArrayList<>();
+    try {
+      for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
+        nfvoRequestor.setProjectId(project.getId());
+        nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
+      }
+    } catch (SDKException e) {
+      log.warn(
+          "Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start",
+          e);
+    } catch (ClassNotFoundException e) {
+      log.error(e.getMessage(), e);
+    }
+    Set<Future<Boolean>> pendingTasks = new HashSet<>();
+    for (NetworkServiceRecord nsr : nsrs) {
+      for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+        pendingTasks.add(
+            elasticityManagement.deactivate(nsr.getProjectId(), nsr.getId(), vnfr.getId()));
+      }
+    }
+    for (Future<Boolean> pendingTask : pendingTasks) {
+      try {
+        pendingTask.get(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        if (log.isDebugEnabled()) {
+          log.error(e.getMessage(), e);
+        }
+      } catch (ExecutionException e) {
+        if (log.isDebugEnabled()) {
+          log.error(e.getMessage(), e);
+        }
+      } catch (TimeoutException e) {
+        if (log.isDebugEnabled()) {
+          log.error(e.getMessage(), e);
+        }
+      }
+    }
+  }
+
+  private String subscribe(Action action) throws SDKException {
+    log.debug("Subscribing to all NSR Events with Action " + action);
+    EventEndpoint eventEndpoint = new EventEndpoint();
+    eventEndpoint.setName("Subscription:" + action);
+    eventEndpoint.setEndpoint(
+        "http://"
+            + autoScalingProperties.getServer().getIp()
+            + ":"
+            + autoScalingProperties.getServer().getPort()
+            + "/elasticity-management/"
+            + action);
+    eventEndpoint.setEvent(action);
+    eventEndpoint.setType(EndpointType.REST);
+    return nfvoRequestor.getEventAgent().create(eventEndpoint).getId();
+  }
+
+  private void unsubscribe() throws SDKException {
+    for (String subscriptionId : subscriptionIds) {
+      nfvoRequestor.getEventAgent().delete(subscriptionId);
+    }
+  }
+
+  private void startPlugins() {
+    try {
+      PluginStartup.startPluginRecursive(
+          "./plugins",
+          true,
+          autoScalingProperties.getRabbitmq().getBrokerIp(),
+          String.valueOf(springProperties.getRabbitmq().getPort()),
+          15,
+          springProperties.getRabbitmq().getUsername(),
+          springProperties.getRabbitmq().getPassword(),
+          autoScalingProperties.getRabbitmq().getManagement().getPort(),
+          "/tmp/openbaton/plugin-log/");
+    } catch (IOException e) {
+      log.error(e.getMessage(), e);
+    }
+  }
+
+  private void destroyPlugins() {
+    PluginStartup.destroy();
+  }
+
+  private void waitForNfvo() {
+    if (!Utils.isNfvoStarted(nfvoProperties.getIp(), nfvoProperties.getPort())) {
+      log.error("After 150 sec the Nfvo is not started yet. Is there an error?");
+      System.exit(1); // 1 stands for the error in running nfvo TODO define error codes (doing)
+    }
+  }
+
+  private void fetchNSRsFromNFVO() {
+    log.debug("Fetching previously deployed NSRs from NFVO to start the autoscaling for them.");
+    List<NetworkServiceRecord> nsrs = new ArrayList<>();
+    try {
+      for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
+        nfvoRequestor.setProjectId(project.getId());
+        nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
+      }
+    } catch (SDKException e) {
+      log.warn(
+          "Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start",
+          e);
+    } catch (ClassNotFoundException e) {
+      log.error(e.getMessage(), e);
+    }
+    for (NetworkServiceRecord nsr : nsrs) {
+      try {
+        if (nsr.getStatus() == Status.ACTIVE || nsr.getStatus() == Status.SCALING) {
+          log.debug("Adding previously deployed NSR with id: " + nsr.getId() + " to autoscaling");
+          try {
+            elasticityManagement.activate(nsr);
+          } catch (VimException e) {
             log.error(e.getMessage(), e);
+          }
+        } else {
+          log.warn(
+              "Cannot add NSR with id: "
+                  + nsr.getId()
+                  + " to autoscaling because it is in state: "
+                  + nsr.getStatus()
+                  + " and not in state "
+                  + Status.ACTIVE
+                  + " or "
+                  + Status.ERROR
+                  + ". ");
         }
-        Set<Future<Boolean>> pendingTasks = new HashSet<>();
-        for (NetworkServiceRecord nsr : nsrs) {
-            for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-                pendingTasks.add(elasticityManagement.deactivate(nsr.getProjectId(), nsr.getId(), vnfr.getId()));
-            }
-        }
-        for (Future<Boolean> pendingTask : pendingTasks) {
-            try {
-                pendingTask.get(60, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                if (log.isDebugEnabled()) {
-                    log.error(e.getMessage(), e);
-                }
-            } catch (ExecutionException e) {
-                if (log.isDebugEnabled()) {
-                    log.error(e.getMessage(), e);
-                }
-            } catch (TimeoutException e) {
-                if (log.isDebugEnabled()) {
-                    log.error(e.getMessage(), e);
-                }
-            }
-        }
+      } catch (NotFoundException e) {
+        log.warn("Not found NSR with id: " + nsr.getId());
+      }
     }
+  }
 
-    private String subscribe(Action action) throws SDKException {
-        log.debug("Subscribing to all NSR Events with Action " + action);
-        EventEndpoint eventEndpoint = new EventEndpoint();
-        eventEndpoint.setName("Subscription:" + action);
-        eventEndpoint.setEndpoint("http://" + autoScalingProperties.getServer().getIp() + ":" + autoScalingProperties.getServer().getPort() + "/elasticity-management/" + action);
-        eventEndpoint.setEvent(action);
-        eventEndpoint.setType(EndpointType.REST);
-        return nfvoRequestor.getEventAgent().create(eventEndpoint).getId();
+  @Override
+  public void onApplicationEvent(ContextClosedEvent event) {
+    try {
+      exit();
+    } catch (SDKException e) {
+      log.error(e.getMessage(), e);
     }
+  }
 
-    private void unsubscribe() throws SDKException {
-        for (String subscriptionId : subscriptionIds) {
-            nfvoRequestor.getEventAgent().delete(subscriptionId);
-        }
-    }
-
-    private void startPlugins() {
-        try {
-            PluginStartup.startPluginRecursive("./plugins", true, autoScalingProperties.getRabbitmq().getBrokerIp(), String.valueOf(springProperties.getRabbitmq().getPort()), 15, springProperties.getRabbitmq().getUsername(), springProperties.getRabbitmq().getPassword(), autoScalingProperties.getRabbitmq().getManagement().getPort(), "/tmp/openbaton/plugin-log/");
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
-    private void destroyPlugins() {
-        PluginStartup.destroy();
-    }
-
-    private void waitForNfvo() {
-        if (!Utils.isNfvoStarted(nfvoProperties.getIp(), nfvoProperties.getPort())) {
-            log.error("After 150 sec the Nfvo is not started yet. Is there an error?");
-            System.exit(1); // 1 stands for the error in running nfvo TODO define error codes (doing)
-        }
-    }
-
-    private void fetchNSRsFromNFVO() {
-        log.debug("Fetching previously deployed NSRs from NFVO to start the autoscaling for them.");
-        List<NetworkServiceRecord> nsrs = new ArrayList<>();
-        try {
-            for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
-                nfvoRequestor.setProjectId(project.getId());
-                nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
-            }
-        } catch (SDKException e) {
-            log.warn("Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start", e);
-        } catch (ClassNotFoundException e) {
-            log.error(e.getMessage(), e);
-        }
-        for (NetworkServiceRecord nsr : nsrs) {
-            try {
-                if (nsr.getStatus() == Status.ACTIVE || nsr.getStatus() == Status.SCALING) {
-                    log.debug("Adding previously deployed NSR with id: " + nsr.getId() + " to autoscaling");
-                    try {
-                        elasticityManagement.activate(nsr);
-                    } catch (VimException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                } else {
-                    log.warn("Cannot add NSR with id: " + nsr.getId() + " to autoscaling because it is in state: " + nsr.getStatus() + " and not in state " + Status.ACTIVE + " or " + Status.ERROR + ". ");
-                }
-            } catch (NotFoundException e) {
-                log.warn("Not found NSR with id: " + nsr.getId());
-            }
-        }
-    }
-
-    @Override
-    public void onApplicationEvent(ContextClosedEvent event) {
-        try {
-            exit();
-        } catch (SDKException e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public void run(String... args) throws Exception {
-        init();
-    }
+  @Override
+  public void run(String... args) throws Exception {
+    init();
+  }
 }

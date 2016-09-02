@@ -37,36 +37,36 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import javax.persistence.NoResultException;
 
-
 /**
  * Created by gca on 27/08/15.
  */
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-    private Logger log = LoggerFactory.getLogger(this.getClass());
+  private Logger log = LoggerFactory.getLogger(this.getClass());
 
+  @ExceptionHandler({NotFoundException.class, NoResultException.class})
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  protected ResponseEntity<Object> handleNotFoundException(Exception e, WebRequest request) {
+    log.error("Exception with message " + e.getMessage() + " was thrown");
+    ExceptionResource exc = new ExceptionResource("Not Found", e.getMessage());
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
 
-    @ExceptionHandler({NotFoundException.class, NoResultException.class})
-    @ResponseStatus(value = HttpStatus.NOT_FOUND)
-    protected ResponseEntity<Object> handleNotFoundException(Exception e, WebRequest request) {
-        log.error("Exception with message " + e.getMessage() + " was thrown");
-        ExceptionResource exc = new ExceptionResource("Not Found", e.getMessage());
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+    return handleExceptionInternal(e, exc, headers, HttpStatus.UNPROCESSABLE_ENTITY, request);
+  }
 
-        return handleExceptionInternal(e, exc, headers, HttpStatus.UNPROCESSABLE_ENTITY, request);
-    }
+  @ExceptionHandler({
+    BadFormatException.class,
+    NetworkServiceIntegrityException.class,
+    WrongStatusException.class
+  })
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  protected ResponseEntity<Object> handleInvalidRequest(Exception e, WebRequest request) {
+    log.error("Exception with message " + e.getMessage() + " was thrown");
+    ExceptionResource exc = new ExceptionResource("Bad Request", e.getMessage());
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
 
-    @ExceptionHandler({BadFormatException.class, NetworkServiceIntegrityException.class, WrongStatusException.class})
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    protected ResponseEntity<Object> handleInvalidRequest(Exception e, WebRequest request) {
-        log.error("Exception with message " + e.getMessage() + " was thrown");
-        ExceptionResource exc = new ExceptionResource("Bad Request", e.getMessage());
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        return handleExceptionInternal(e, exc, headers, HttpStatus.UNPROCESSABLE_ENTITY, request);
-    }
-
-
+    return handleExceptionInternal(e, exc, headers, HttpStatus.UNPROCESSABLE_ENTITY, request);
+  }
 }

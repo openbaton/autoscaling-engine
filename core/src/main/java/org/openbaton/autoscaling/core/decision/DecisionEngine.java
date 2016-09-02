@@ -47,74 +47,106 @@ import java.util.Set;
 @Scope("singleton")
 public class DecisionEngine {
 
-    protected Logger log = LoggerFactory.getLogger(this.getClass());
+  protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    private ConfigurableApplicationContext context;
+  @Autowired private ConfigurableApplicationContext context;
 
-    //@Autowired
-    private ExecutionManagement executionManagement;
+  //@Autowired
+  private ExecutionManagement executionManagement;
 
-    @Autowired
-    private NfvoProperties nfvoProperties;
+  @Autowired private NfvoProperties nfvoProperties;
 
-    @PostConstruct
-    public void init() {
-        this.executionManagement = context.getBean(ExecutionManagement.class);
+  @PostConstruct
+  public void init() {
+    this.executionManagement = context.getBean(ExecutionManagement.class);
+  }
+
+  public void sendDecision(
+      String projectId,
+      String nsr_id,
+      Map actionVnfrMap,
+      Set<ScalingAction> actions,
+      long cooldown) {
+    //log.info("[DECISION_MAKER] DECIDED_ABOUT_ACTIONS " + new Date().getTime());
+    log.debug("Send actions to Executor: " + actions.toString());
+    executionManagement.executeActions(projectId, nsr_id, actionVnfrMap, actions, cooldown);
+  }
+
+  public Status getStatus(String projectId, String nsr_id) {
+    log.debug("Check Status of NSR with id: " + nsr_id);
+    NFVORequestor nfvoRequestor =
+        new NFVORequestor(
+            nfvoProperties.getUsername(),
+            nfvoProperties.getPassword(),
+            projectId,
+            false,
+            nfvoProperties.getIp(),
+            nfvoProperties.getPort(),
+            "1");
+    NetworkServiceRecord networkServiceRecord = null;
+    try {
+      networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
+    } catch (SDKException e) {
+      log.warn(e.getMessage(), e);
+      return Status.NULL;
+    } catch (ClassNotFoundException e) {
+      log.warn(e.getMessage(), e);
+      return Status.NULL;
     }
-
-    public void sendDecision(String projectId, String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown) {
-        //log.info("[DECISION_MAKER] DECIDED_ABOUT_ACTIONS " + new Date().getTime());
-        log.debug("Send actions to Executor: " + actions.toString());
-        executionManagement.executeActions(projectId, nsr_id, actionVnfrMap, actions, cooldown);
+    if (networkServiceRecord == null || networkServiceRecord.getStatus() == null) {
+      return Status.NULL;
     }
+    return networkServiceRecord.getStatus();
+  }
 
-    public Status getStatus(String projectId, String nsr_id) {
-        log.debug("Check Status of NSR with id: " + nsr_id);
-        NFVORequestor nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
-        NetworkServiceRecord networkServiceRecord = null;
-        try {
-            networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
-        } catch (SDKException e) {
-            log.warn(e.getMessage(), e);
-            return Status.NULL;
-        } catch (ClassNotFoundException e) {
-            log.warn(e.getMessage(), e);
-            return Status.NULL;
-        }
-        if (networkServiceRecord == null || networkServiceRecord.getStatus() == null) {
-            return Status.NULL;
-        }
-        return networkServiceRecord.getStatus();
+  public VirtualNetworkFunctionRecord getVNFR(String projectId, String nsr_id, String vnfr_id)
+      throws SDKException {
+    NFVORequestor nfvoRequestor =
+        new NFVORequestor(
+            nfvoProperties.getUsername(),
+            nfvoProperties.getPassword(),
+            projectId,
+            false,
+            nfvoProperties.getIp(),
+            nfvoProperties.getPort(),
+            "1");
+    try {
+      VirtualNetworkFunctionRecord vnfr =
+          nfvoRequestor
+              .getNetworkServiceRecordAgent()
+              .getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
+      return vnfr;
+    } catch (SDKException e) {
+      log.error(e.getMessage(), e);
+      throw e;
     }
+  }
 
-    public VirtualNetworkFunctionRecord getVNFR(String projectId, String nsr_id, String vnfr_id) throws SDKException {
-        NFVORequestor nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
-        try {
-            VirtualNetworkFunctionRecord vnfr = nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
-            return vnfr;
-        } catch (SDKException e) {
-            log.error(e.getMessage(), e);
-            throw e;
-        }
+  public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(
+      String projectId, String nsr_id, String type) throws SDKException {
+    NFVORequestor nfvoRequestor =
+        new NFVORequestor(
+            nfvoProperties.getUsername(),
+            nfvoProperties.getPassword(),
+            projectId,
+            false,
+            nfvoProperties.getIp(),
+            nfvoProperties.getPort(),
+            "1");
+    List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
+    List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
+    try {
+      vnfrsAll.addAll(
+          nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecords(nsr_id));
+    } catch (SDKException e) {
+      log.error(e.getMessage(), e);
+      throw e;
     }
-
-    public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(String projectId, String nsr_id, String type) throws SDKException {
-        NFVORequestor nfvoRequestor = new NFVORequestor(nfvoProperties.getUsername(), nfvoProperties.getPassword(), projectId, false, nfvoProperties.getIp(), nfvoProperties.getPort(), "1");
-        List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
-        List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
-        try {
-             vnfrsAll.addAll(nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecords(nsr_id));
-        } catch (SDKException e) {
-            log.error(e.getMessage(), e);
-            throw e;
-        }
-        for (VirtualNetworkFunctionRecord vnfr : vnfrsAll) {
-            if (vnfr.getType().equals(type)) {
-                vnfrsOfTypeX.add(vnfr);
-            }
-        }
-        return vnfrsOfTypeX;
+    for (VirtualNetworkFunctionRecord vnfr : vnfrsAll) {
+      if (vnfr.getType().equals(type)) {
+        vnfrsOfTypeX.add(vnfr);
+      }
     }
-
+    return vnfrsOfTypeX;
+  }
 }

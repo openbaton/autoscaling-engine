@@ -30,51 +30,51 @@ import org.springframework.stereotype.Service;
 /**
  * Created by mpa on 27.10.15.
  */
-
 @Service
 @Scope("prototype")
 public class CooldownTask implements Runnable {
 
-    protected Logger log = LoggerFactory.getLogger(this.getClass());
+  protected Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private String nsr_id;
+  private String nsr_id;
 
-    private String name;
+  private String name;
 
-    private ExecutionEngine executionEngine;
+  private ExecutionEngine executionEngine;
 
-    private long cooldown;
+  private long cooldown;
 
-    private ActionMonitor actionMonitor;
+  private ActionMonitor actionMonitor;
 
-    public CooldownTask(String nsr_id, long cooldown, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
-        this.actionMonitor = actionMonitor;
-        log.debug("Initializing CooldownTask for NSR with id: " + nsr_id);
-        this.nsr_id = nsr_id;
-        this.cooldown = cooldown;
-        this.executionEngine = executionEngine;
-        this.name = "ExecutionTask#" + nsr_id;
-    }
+  public CooldownTask(
+      String nsr_id, long cooldown, ExecutionEngine executionEngine, ActionMonitor actionMonitor) {
+    this.actionMonitor = actionMonitor;
+    log.debug("Initializing CooldownTask for NSR with id: " + nsr_id);
+    this.nsr_id = nsr_id;
+    this.cooldown = cooldown;
+    this.executionEngine = executionEngine;
+    this.name = "ExecutionTask#" + nsr_id;
+  }
 
-    @Override
-    public void run() {
-        try {
-            int i = 0;
-            int increment = 5;
-            while (i < cooldown) {
-                log.debug("Waiting for Cooldown ... " + (cooldown - i) + "s");
-                Thread.sleep(increment * 1000);
-                i = i + increment;
-                //terminate gracefully at this point in time if suggested from the outside
-                if (actionMonitor.isTerminating(nsr_id)) {
-                    actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
-                    return;
-                }
-            }
-        } catch (InterruptedException e) {
-            log.warn("Cooldown for NSR with id: " + nsr_id + " was interrupted");
+  @Override
+  public void run() {
+    try {
+      int i = 0;
+      int increment = 5;
+      while (i < cooldown) {
+        log.debug("Waiting for Cooldown ... " + (cooldown - i) + "s");
+        Thread.sleep(increment * 1000);
+        i = i + increment;
+        //terminate gracefully at this point in time if suggested from the outside
+        if (actionMonitor.isTerminating(nsr_id)) {
+          actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
+          return;
         }
-        actionMonitor.removeId(nsr_id);
-        log.info("Cooldown finished for VNFR with id " + nsr_id);
+      }
+    } catch (InterruptedException e) {
+      log.warn("Cooldown for NSR with id: " + nsr_id + " was interrupted");
     }
+    actionMonitor.removeId(nsr_id);
+    log.info("Cooldown finished for VNFR with id " + nsr_id);
+  }
 }
