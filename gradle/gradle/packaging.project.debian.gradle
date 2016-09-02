@@ -45,7 +45,7 @@ task makedeb(type: Deb, dependsOn: [jar, build]) {
     // Copy files from "from path" to "into path"
     from('etc/autoscaling.properties')                  	   { into '/etc/openbaton/' }
     from(jar.outputs.files) 				                   { into '/usr/lib/openbaton/' }
-    from('gradle/gradle/scripts/project-template') 	           { into '/usr/bin/'}
-    from('gradle/gradle/scripts/project-template') 	           { into '/etc/init.d/'}
-    from('gradle/gradle/scripts/project-template.conf') 	   { into '/etc/init/'}
+    from('gradle/gradle/scripts/openbaton-autoscaling') 	           { into '/usr/bin/'}
+    from('gradle/gradle/scripts/openbaton-autoscaling') 	           { into '/etc/init.d/'}
+    from('gradle/gradle/scripts/openbaton-autoscaling.conf') 	   { into '/etc/init/'}
 }
