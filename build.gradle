@@ -50,6 +50,7 @@ project.ext {
      */
     applicationVersion = version
     applicationVersionDebian = "1";
+    applicationVersionFull = "${applicationVersion}"
 
     //------------------------------------------------//
     //------------------------------------------------//
