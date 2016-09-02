@@ -79,4 +79,6 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }
 
+apply from: 'gradle/gradle/packaging.project.debian.gradle'
+
 build.dependsOn verifyGoogleJavaFormat
