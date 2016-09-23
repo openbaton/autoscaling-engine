@@ -29,7 +29,7 @@ Once this is done, go inside the cloned folder and make use of the provided scri
 ./autoscaling-engine.sh compile
 ```
 
-Before starting it you have to do the configuration of the AutoScaling System that is described in the [next chapter](#configuring-the-autoscaling-system) followed by the guide of [how to start](#starting-the-autoscaling-system) and [how to use](#use-it) it.
+Before starting it you have to do the configuration of the AutoScaling System that is described in the [next chapter](#configuring-the-autoscaling-system) followed by the guide of [how to start](#starting-the-autoscaling-system) and [how to use](#how-to-use-the-autoscaling-system) it.
 
 ## Configuring the AutoScaling System
 
@@ -85,7 +85,7 @@ screen -r autoscaling-engine
 
 **Note** Since the AutoScaling System subscribes to specific events towards the NFVO, you should take care about that the NFVO is already running when starting the AutoScaling System. Otherwise the AutoScaling System will wait for 600 seconds for the availability of the NFVO before terminating automatically.
 
-# How to use XXX
+# How to use the AutoScaling System
 
 This guide shows you how to make use of the AutoScaling System. In particular, it describes how to define AutoScaling Policies.
 
@@ -160,7 +160,7 @@ An Action defines the operation that will be executed (if possible) when the sca
 | Params          				| Meaning       	|
 | -------------   				| -------------
 | type | The type defines the type of the action to be executed. For example, `SCALE_OUT` indicates that resources shall be added and `SCALE_IN` means that resources shall be released. Currently provided types of actions are listed [here](#action-types). |
-| value | The value is related to the type of action. `SCALE_OUT` and `SCALE_IN` expects a value that defines how many instances should be scaled-out or scaled-in, `SCALE_OUT_TO` and `SCALE_IN_TO` expects a number to what the number of instances shall be scaled in or out. Supported types of actions are shown [here](#actions-types) |
+| value | The value is related to the type of action. `SCALE_OUT` and `SCALE_IN` expects a value that defines how many instances should be scaled-out or scaled-in, `SCALE_OUT_TO` and `SCALE_IN_TO` expects a number to what the number of instances shall be scaled in or out. Supported types of actions are shown [here](#action-types) |
 | target| [OPTIONAL] The target allows scaling of other VNFs when conditions are met of the considered VNF that includes the policy. The target points to the type of the VNF that should be scaled. If multiple VNFs has the same type, it will be chosen one of them to execute the scaling action. If the target is not defined, it will be executed scaling actions on the same VNF that includes the policy. |
 
 ##### Action types
