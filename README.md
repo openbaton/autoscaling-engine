@@ -222,6 +222,12 @@ The Open Baton project provides community support through the Open Baton Public 
 * [CogNet][cognet]
 
 [fokus-logo]: https://raw.githubusercontent.com/openbaton/openbaton.github.io/master/images/fokus.png
+[cognet]: http://www.cognet.5g-ppp.eu/cognet-in-5gpp/
+[autoscaling-repo]: https://github.com/openbaton/autoscaling
+[zabbix-plugin]: https://github.com/openbaton/zabbix-plugin
+[zabbix-plugin-doc]: http://openbaton.github.io/documentation/zabbix-plugin/
+[zabbix]: http://www.zabbix.com/
+[spring.io]:https://spring.io/
 [openbaton]: http://openbaton.org
 [openbaton-doc]: http://openbaton.org/documentation
 [openbaton-github]: http://github.org/openbaton
@@ -231,4 +237,5 @@ The Open Baton project provides community support through the Open Baton Public 
 [tub-logo]: https://raw.githubusercontent.com/openbaton/openbaton.github.io/master/images/tu.png
 [nubomedia]: https://www.nubomedia.eu/
 [mcn]: http://mobile-cloud-networking.eu/site/
-[cognet]: http://www.cognet.5g-ppp.eu/cognet-in-5gpp/
+[cognet]: http://www.cognet.5g-ppp.eu/cognet-in-5gpp
+
