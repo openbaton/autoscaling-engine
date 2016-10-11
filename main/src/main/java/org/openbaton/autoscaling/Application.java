@@ -224,7 +224,8 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     }
     for (NetworkServiceRecord nsr : nsrs) {
       try {
-        if (nsr.getStatus() == Status.ACTIVE || nsr.getStatus() == Status.SCALING) {
+        if (nsr.getStatus().ordinal() == Status.ACTIVE.ordinal()
+            || nsr.getStatus().ordinal() == Status.SCALING.ordinal()) {
           log.debug("Adding previously deployed NSR with id: " + nsr.getId() + " to autoscaling");
           try {
             elasticityManagement.activate(nsr);
