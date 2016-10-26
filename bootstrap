@@ -3,7 +3,7 @@
 . /lib/lsb/init-functions
 
 #general configuration
-_PROJECT_NAME="openbaton-autoscaling"
+_PROJECT_NAME="autoscaling"
 
 _DEFAULT_PROPERTIES_FILE="${_PROJECT_BASE}/etc/autoscaling.properties"
 
