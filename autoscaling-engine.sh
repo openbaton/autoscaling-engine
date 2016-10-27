@@ -1,52 +1,97 @@
 #!/bin/bash
 
-_openbaton_base="/opt/openbaton"
-_autoscaling_engine_base="${_openbaton_base}/autoscaling"
-_autoscaling_engine_config_file="/etc/openbaton/ase.properties"
-
 source ./gradle.properties
 
 _version=${version}
 
-function check_already_running {
-        result=$(screen -ls | grep autoscaling-engine | wc -l);
-        if [ "${result}" -ne "0" ]; then
-                echo "AutoScaling-Engine is already running... Attach to screen via \"screen -r autoscaling-engine\""
-		exit;
-        fi
+_project_base="/opt/openbaton/openbaton-ase"
+_process_name="openbaton-ase"
+_screen_name="openbaton"
+_config_file="/etc/openbaton/ase.properties"
+
+function checkBinary {
+  if command -v $1 >/dev/null 2>&1; then
+     return 0
+   else
+     echo >&2 "FAILED."
+     return 1
+   fi
 }
 
-function start {
+_ex='sh -c'
+if [ "$_user" != 'root' ]; then
+    if checkBinary sudo; then
+        _ex='sudo -E sh -c'
+    elif checkBinary su; then
+        _ex='su -c'
+    fi
+fi
+
+
+function check_already_running {
+    pgrep -f ${_process_name}-${_version}.jar
+    if [ "$?" -eq "0" ]; then
+        echo "${_process_name} is already running.."
+        exit;
+    fi
+}
+
+function start_checks {
     check_already_running
     if [ ! -d build/  ]
         then
             compile
     fi
-    screen -c screenrc -d -m -S autoscaling-engine -t autoscaling-engine java -jar "build/libs/autoscaling-engine-${_version}.jar" --spring.config.location=file:${_autoscaling_engine_config_file}
-    echo "Starting AutoScaling-Engine..."
 }
 
-function stop {
-    if screen -list | grep "openbaton-ase"; then
-	    #screen -S autoscaling-engine -p 0 -X stuff "exit$(printf \\r)"
-	    screen -ls | grep autoscaling-engine | cut -d. -f1 | awk '{print $1}' | xargs kill
+function init {
+    if [ ! -f $_config_file ]; then
+        if [ $EUID != 0 ]; then
+            echo "creating the directory and copying the file"
+            sudo -E sh -c "mkdir /etc/openbaton; cp ${_project_base}/etc/ase.properties ${_config_file}"
+            #echo "copying the file, insert the administrator password" | sudo -kS cp ${_nubomedia_paas_base}/src/main/resources/paas.properties ${_nubomedia_config_file}
+        else
+            echo "creating the directory"
+            mkdir /etc/openbaton
+            echo "copying the file"
+            cp ${_project_base}/src/main/resources/application.properties ${_config_file}
+        fi
     else
-        echo "AutoScaling-Engine is not running..."
+        echo "Properties file already exist"
     fi
 }
 
+function start {
+    start_checks
+    screen_exists=$(screen -ls | grep ${_screen_name} | wc -l);
+    if [ "${screen_exists}" -eq 0 ]; then
+        screen -c screenrc -d -m -S ${_screen_name} -t autoscaling java -jar "$_project_base/build/libs/$_process_name-$_version.jar" --spring.config.location=file:${_config_file}
+    else
+        screen -S $_screen_name -p 0 -X screen -t autoscaling java -jar "$_project_base/build/libs/$_process_name-$_version.jar" --spring.config.location=file:${_config_file}
+    fi
+}
+
+function start_fg {
+    start_checks
+    java -jar "build/libs/${_process_name}-$_version.jar" --spring.config.location=file:${_config_file}
+}
+
+
+#function stop {
+#    if screen -list | grep ${_screen_name}; then
+#	    screen -S ${_screen_name} -p 0 -X stuff "exit$(printf \\r)"
+#    fi
+#}
+
 function restart {
     kill
+    sleep 2
     start
 }
 
 
 function kill {
-    if screen -list | grep "openbaton-ase"; then
-	    screen -ls | grep autoscaling-engine | cut -d. -f1 | awk '{print $1}' | xargs kill
-    else
-        echo "AutoScaling-Engine is not running..."
-    fi
+    pkill -f ${_process_name}-${_version}.jar
 }
 
 
@@ -66,8 +111,8 @@ function end {
     exit
 }
 function usage {
-    echo -e "AutoScaling-Engine\n"
-    echo -e "Usage:\n\t ./ms-vnfm.sh [compile|start|stop|test|kill|clean]"
+    echo -e "network-slicing-engine\n"
+    echo -e "Usage:\n\t ./autoscaling-engine.sh [compile|init|start|start_fg|test|kill|clean]"
 }
 
 ##
@@ -92,12 +137,16 @@ do
             start ;;
         "start" )
             start ;;
-        "stop" )
-            stop ;;
+        "start_fg" )
+            start_fg ;;
+        #"stop" )
+        #    stop ;;
         "restart" )
             restart ;;
         "compile" )
             compile ;;
+        "init" )
+            init ;;
         "kill" )
             kill ;;
         "test" )
