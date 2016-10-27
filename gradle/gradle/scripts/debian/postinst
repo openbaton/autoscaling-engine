@@ -2,9 +2,9 @@
 
 . /lib/lsb/init-functions
 
-_PROJECT_NAME=openbaton-autoscaling
-_CONFIG_FILE=/etc/openbaton/autosclaing.properties
-_DEFAULT_CONFIG_FILE=etc/autoscaling.properties
+_PROJECT_NAME=openbaton-ase
+_CONFIG_FILE=/etc/openbaton/ase.properties
+_DEFAULT_CONFIG_FILE=etc/ase.properties
 _PROJECT_EXE_FOLDER=/usr/bin
 _PROJECT_LOGS_FOLDER=/var/log/openbaton
 _DATABASE_NAME=openbatonautoscaling
