@@ -4,8 +4,8 @@ source ./gradle.properties
 
 _version=${version}
 
-_project_base="/opt/openbaton/openbaton-ase"
-_process_name="openbaton-ase"
+_project_base="/opt/openbaton/autoscaling-engine"
+_process_name="autoscaling-engine"
 _screen_name="openbaton"
 _config_file="/etc/openbaton/ase.properties"
 
@@ -54,7 +54,7 @@ function init {
             echo "creating the directory"
             mkdir /etc/openbaton
             echo "copying the file"
-            cp ${_project_base}/src/main/resources/application.properties ${_config_file}
+            cp ${_project_base}/etc/ase.properties ${_config_file}
         fi
     else
         echo "Properties file already exist"
@@ -111,7 +111,7 @@ function end {
     exit
 }
 function usage {
-    echo -e "network-slicing-engine\n"
+    echo -e "autoscaling-engine\n"
     echo -e "Usage:\n\t ./autoscaling-engine.sh [compile|init|start|start_fg|test|kill|clean]"
 }
 
