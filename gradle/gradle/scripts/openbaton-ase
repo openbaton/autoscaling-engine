@@ -4,10 +4,10 @@ set -e
 
 . /lib/lsb/init-functions
 
-_PROJECT_CONFIG_FILE=/etc/openbaton/application.properties
-_PROJECT_NAME="openbaton-autoscaling"
+_PROJECT_CONFIG_FILE=/etc/openbaton/ase.properties
+_PROJECT_NAME="openbaton-ase"
 _INSTALL_DIR=/usr/lib/openbaton
-_PID_FILE=/var/run/project-template.pid
+_PID_FILE=/var/run/openbaton-ase.pid
 _DAEMON_USER=root
 _OSTYPE=$(uname)
 

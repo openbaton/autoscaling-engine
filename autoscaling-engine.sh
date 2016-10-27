@@ -2,7 +2,7 @@
 
 _openbaton_base="/opt/openbaton"
 _autoscaling_engine_base="${_openbaton_base}/autoscaling"
-_autoscaling_engine_config_file="/etc/openbaton/autoscaling.properties"
+_autoscaling_engine_config_file="/etc/openbaton/ase.properties"
 
 source ./gradle.properties
 
@@ -27,7 +27,7 @@ function start {
 }
 
 function stop {
-    if screen -list | grep "autoscaling-engine"; then
+    if screen -list | grep "openbaton-ase"; then
 	    #screen -S autoscaling-engine -p 0 -X stuff "exit$(printf \\r)"
 	    screen -ls | grep autoscaling-engine | cut -d. -f1 | awk '{print $1}' | xargs kill
     else
@@ -42,7 +42,7 @@ function restart {
 
 
 function kill {
-    if screen -list | grep "autoscaling-engine"; then
+    if screen -list | grep "openbaton-ase"; then
 	    screen -ls | grep autoscaling-engine | cut -d. -f1 | awk '{print $1}' | xargs kill
     else
         echo "AutoScaling-Engine is not running..."

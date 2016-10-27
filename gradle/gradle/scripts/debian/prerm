@@ -2,7 +2,7 @@
 
 . /lib/lsb/init-functions
 
-_PROJECT_NAME="openbaton-autoscaling"
+_PROJECT_NAME="openbaton-ase"
 _PROJECT_BASE=/usr
 _PROJECT_LOGS_FOLDER=/var/log/openbaton
 

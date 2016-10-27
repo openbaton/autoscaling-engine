@@ -36,7 +36,7 @@ Before starting it you have to do the configuration of the AutoScaling System th
 This chapter describes what needs to be done before starting the AutoScaling System. This includes the configuration file and properties, and also how to make use of monitoring plugin.
 
 ### Configuration file
-The configuration file must be copied to `etc/openbaton/autoscaling.properties` by executing the following command from inside the repository folder:
+The configuration file must be copied to `etc/openbaton/ase.properties` by executing the following command from inside the repository folder:
 
 ```bash
 cp etc/autoscaling.properties /etc/openbaton/autoscaling.properties
@@ -91,7 +91,7 @@ This guide shows you how to make use of the AutoScaling System. In particular, i
 
 ### Creating AutoScaling Policies
 
-A AutoScaling Policy defines conditions and actions in order to allow automatic scaling at runtime. The list of AutoScalePolicies are defined at the level of the VNFD/VNFR.
+An AutoScaling Policy defines conditions and actions in order to allow automatic scaling at runtime. The list of AutoScalePolicies are defined at the level of the VNFD/VNFR.
 An example of an AutoScalePolicy can be found below followed by descriptions for each parameter.
 
 ```json

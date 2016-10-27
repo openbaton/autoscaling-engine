@@ -3,16 +3,16 @@
 . /lib/lsb/init-functions
 
 #general configuration
-_PROJECT_NAME="autoscaling"
+_PROJECT_NAME="openbaton-ase"
 
-_DEFAULT_PROPERTIES_FILE="${_PROJECT_BASE}/etc/autoscaling.properties"
+_DEFAULT_PROPERTIES_FILE="${_PROJECT_BASE}/etc/ase.properties"
 
 _BASE="/opt"
 _PROJECT_ROOT_BASE="${_BASE}/openbaton"
 _PROJECT_BASE="${_PROJECT_ROOT_BASE}/${_PROJECT_NAME}"
 
 _PROJECT_PROPERTIES_FOLDER="/etc/openbaton"
-_PROJECT_PROPERTIES_FILE="${_PROJECT_PROPERTIES_FOLDER}/${_PROJECT_NAME}.properties"
+_PROJECT_PROPERTIES_FILE="${_PROJECT_PROPERTIES_FOLDER}/ase.properties"
 _PROJECT_LOG_FOLDER="/var/log/openbaton"
 
 #debian configuration
@@ -20,7 +20,7 @@ _APT_KEY_SERVER="http://get.openbaton.org/keys/public.gpg.key"
 _APT_REPOSITORY="http://get.openbaton.org/repos/apt/debian/"
 
 #git configuration
-_PROJECT_REPO="https://github.com/openbaton/autoscaling.git"
+_PROJECT_REPO="https://github.com/openbaton/autoscaling-engine.git"
 _SCRIPT_NAME="autoscaling-engine.sh"
 _TAG="develop"
 #_TAG="tags/1.0.0"
