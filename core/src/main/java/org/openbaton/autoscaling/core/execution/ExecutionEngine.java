@@ -130,6 +130,7 @@ public class ExecutionEngine {
             actionMonitor.finishedAction(
                 vnfr.getParent_ns_id(), org.openbaton.autoscaling.catalogue.Action.SCALED);
             scaled = true;
+            nfvoRequestor.setProjectId(projectId);
             while (nfvoRequestor
                     .getNetworkServiceRecordAgent()
                     .findById(vnfr.getParent_ns_id())
@@ -147,8 +148,10 @@ public class ExecutionEngine {
                     vnfr.getParent_ns_id(), org.openbaton.autoscaling.catalogue.Action.TERMINATED);
                 return vnfr;
               }
+              nfvoRequestor.setProjectId(projectId);
             }
             try {
+              nfvoRequestor.setProjectId(projectId);
               vnfr =
                   nfvoRequestor
                       .getNetworkServiceRecordAgent()
