@@ -72,5 +72,4 @@ public class ASBeanConfiguration {
   public ExecutionEngine executionEngine() {
     return new ExecutionEngine();
   }
-
 }
