@@ -111,6 +111,7 @@ public class ExecutionTask implements Runnable {
     //        }
     try {
       for (ScalingAction action : actions) {
+        nfvoRequestor.setProjectId(projectId);
         vnfr =
             nfvoRequestor
                 .getNetworkServiceRecordAgent()

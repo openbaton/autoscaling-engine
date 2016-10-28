@@ -26,6 +26,7 @@ import org.openbaton.autoscaling.core.detection.DetectionEngine;
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.execution.ExecutionEngine;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
+import org.openbaton.sdk.NFVORequestor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -71,4 +72,5 @@ public class ASBeanConfiguration {
   public ExecutionEngine executionEngine() {
     return new ExecutionEngine();
   }
+
 }

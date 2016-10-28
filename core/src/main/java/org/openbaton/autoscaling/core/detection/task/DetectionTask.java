@@ -85,6 +85,7 @@ public class DetectionTask implements Runnable {
     this.autoScalePolicy = autoScalePolicy;
     this.detectionEngine = detectionEngine;
     this.actionMonitor = actionMonitor;
+    this.projectId = projectId;
 
     this.nfvoRequestor =
         new NFVORequestor(
@@ -136,6 +137,7 @@ public class DetectionTask implements Runnable {
             + vnfr_id);
     VirtualNetworkFunctionRecord vnfr = null;
     try {
+      nfvoRequestor.setProjectId(projectId);
       vnfr =
           nfvoRequestor
               .getNetworkServiceRecordAgent()
