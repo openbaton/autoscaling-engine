@@ -44,36 +44,6 @@ DAEMON_USER=root
 OSTYPE=$(uname)
 
 
-
-#_PROJECT_CONFIG_FILE=/etc/openbaton/ase.properties
-#_PROJECT_NAME="openbaton-ase"
-#_INSTALL_DIR=/usr/lib/openbaton
-#_PID_FILE=/var/run/openbaton-ase.pid
-#_DAEMON_USER=root
-#_OSTYPE=$(uname)
-#
-#_USER="$(id -un 2>/dev/null || true)"
-#
-#_ex='sh -c'
-#
-#checkBinary () {
-#  if command -v $1 >/dev/null 2>&1 ; then
-#      log_success_msg "Checking for '$1'"
-#      return 0
-#  else
-#      log_failure_msg "Checking for '$1'"
-#      return 1
-#  fi
-#}
-#
-#if [ "$_USER" != 'root' ]; then
-#    if checkBinary sudo; then
-#        _ex='sudo -E sh -c'
-#    elif checkBinary su; then
-#        _ex='su -c'
-#    fi
-#fi
-
 ####################
 #### Open Baton ####
 ####################
