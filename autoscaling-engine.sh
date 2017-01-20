@@ -7,7 +7,7 @@ _version=${version}
 _project_base="/opt/openbaton/autoscaling-engine"
 _process_name="autoscaling-engine"
 _screen_name="openbaton"
-_config_file="/etc/openbaton/ase.properties"
+_config_file="/etc/openbaton/openbaton-ase.properties"
 
 function checkBinary {
   if command -v $1 >/dev/null 2>&1; then
