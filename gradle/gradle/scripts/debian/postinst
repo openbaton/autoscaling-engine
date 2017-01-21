@@ -53,7 +53,6 @@ OPENBATON_NFVO_CONFIG_FILE=openbaton-nfvo.properties
 configure_rabbitmq () {
     # Set the RabbitMQ IP
     rabbitmq_broker_ip=$( awk '$0 ~ "nfvo.rabbit.brokerIp ="' "${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_NFVO_CONFIG_FILE}" | awk -F'= ' '{print $2}' )
-    log_success_msg "---------- IP: ${rabbitmq_broker_ip}"
     if [ ! -z ${rabbitmq_broker_ip+x} ] ; then # The empty string is considered as unset
         log_success_msg "Setting RabbitMQ IP into Auto Scaling Engine: ${rabbitmq_broker_ip}"
         export rabbitmq_broker_ip=${rabbitmq_broker_ip}
@@ -62,7 +61,6 @@ configure_rabbitmq () {
 
     # Set the RabbitMQ Management port
     rabbitmq_management_port=$( awk '$0 ~ "nfvo.rabbit.management.port ="' "${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_NFVO_CONFIG_FILE}" | awk -F'= ' '{print $2}' )
-    log_success_msg "-- PORT: ${rabbitmq_management_port}"
     if [ ! -z ${rabbitmq_management_port+x} ] ; then # The empty string is considered as unset
         log_success_msg "Setting RabbitMQ Management port into Auto Scaling Engine: ${rabbitmq_management_port}"
         export rabbitmq_management_port=${rabbitmq_management_port}
@@ -73,7 +71,6 @@ configure_rabbitmq () {
 configure_nfvo_admin_credentials () {
     # Set the NFVO admin's password
     nfvo_admin_password=$( awk '$0 ~ "nfvo.security.admin.password ="' "${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_NFVO_CONFIG_FILE}" | awk -F'= ' '{print $2}' )
-    log_success_msg "-- PSWD: ${nfvo_admin_password}"
     if [ ! -z ${nfvo_admin_password+x} ] ; then # The empty string is considered as unset
         log_success_msg "Setting NFVO admin's password into Auto Scaling Engine: ${nfvo_admin_password}"
         export nfvo_admin_password=${nfvo_admin_password}
