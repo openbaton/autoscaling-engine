@@ -21,7 +21,10 @@
 repositories {
     mavenCentral()
     maven {
-        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+        url "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
+    maven {
+        url "https://oss.sonatype.org/content/repositories/releases/"
     }
 }
 
@@ -34,7 +37,7 @@ dependencies {
 
     compile project(':configuration')
 
-    compile('org.openbaton:sdk:3.0.0') /*{
+    compile('org.openbaton:sdk:' + openbatonVersion) /*{
         exclude module: 'catalogue'
     }*/
 

@@ -36,7 +36,7 @@ import org.openbaton.catalogue.nfvo.EventEndpoint;
 import org.openbaton.catalogue.security.Project;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
-import org.openbaton.plugin.utils.PluginStartup;
+import org.openbaton.plugin.mgmt.PluginStartup;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
