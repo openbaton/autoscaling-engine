@@ -21,7 +21,10 @@
 repositories {
     mavenCentral()
     maven {
-        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+        url "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
+    maven {
+        url "https://oss.sonatype.org/content/repositories/releases/"
     }
 }
 

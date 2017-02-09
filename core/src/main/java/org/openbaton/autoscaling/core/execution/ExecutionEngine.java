@@ -86,7 +86,8 @@ public class ExecutionEngine {
                 springProperties.getRabbitmq().getPort(),
                 "icinga-agent",
                 "icinga",
-                autoScalingProperties.getRabbitmq().getManagement().getPort());
+                autoScalingProperties.getRabbitmq().getManagement().getPort(),
+                120000);
   }
 
   public void setActionMonitor(ActionMonitor actionMonitor) {

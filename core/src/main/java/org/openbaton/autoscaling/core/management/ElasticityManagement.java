@@ -20,6 +20,8 @@
 
 package org.openbaton.autoscaling.core.management;
 
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.DetectionManagement;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
@@ -28,10 +30,14 @@ import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
+import org.openbaton.monitoring.interfaces.MonitoringPlugin;
+import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
+import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
@@ -41,6 +47,7 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -67,8 +74,56 @@ public class ElasticityManagement {
 
   @Autowired private ExecutionManagement executionManagement;
 
+  @Autowired private AutoScalingProperties autoScalingProperties;
+
+  @Autowired private SpringProperties springProperties;
+
+  @Autowired private ConfigurableApplicationContext context;
+
   @PostConstruct
-  public void init() throws SDKException {}
+  public void init() throws SDKException, TimeoutException, IOException, NotFoundException {
+    log.info("Check if monitoring plugin is available...");
+    MonitoringPlugin monitor;
+    log.info(
+        "Get monitoring plugin with following parameters: "
+            + autoScalingProperties.getRabbitmq().getBrokerIp()
+            + ' '
+            + springProperties.getRabbitmq().getUsername()
+            + ' '
+            + springProperties.getRabbitmq().getPassword()
+            + ' '
+            + springProperties.getRabbitmq().getPort()
+            + ' '
+            + "zabbix-plugin"
+            + ' '
+            + "zabbix"
+            + ' '
+            + autoScalingProperties.getRabbitmq().getManagement().getPort());
+    //    monitor =
+    //        (MonitoringPluginCaller)
+    //            context.getBean(RabbitPluginBroker.class)
+    //                .getMonitoringPluginCaller(
+    //                    autoScalingProperties.getRabbitmq().getBrokerIp(),
+    //                    springProperties.getRabbitmq().getUsername(),
+    //                    springProperties.getRabbitmq().getPassword(),
+    //                    springProperties.getRabbitmq().getPort(),
+    //                    "zabbix-plugin",
+    //                    "zabbix",
+    //                    autoScalingProperties.getRabbitmq().getManagement().getPort());
+    monitor =
+        new MonitoringPluginCaller(
+            autoScalingProperties.getRabbitmq().getBrokerIp(),
+            springProperties.getRabbitmq().getUsername(),
+            springProperties.getRabbitmq().getPassword(),
+            springProperties.getRabbitmq().getPort(),
+            "zabbix-plugin",
+            "zabbix",
+            autoScalingProperties.getRabbitmq().getManagement().getPort(),
+            120000);
+    if (monitor == null) {
+      log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
+    }
+  }
 
   @PreDestroy
   private void exit() throws SDKException {}

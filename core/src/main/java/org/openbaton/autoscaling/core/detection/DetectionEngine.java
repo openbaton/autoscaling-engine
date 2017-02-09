@@ -70,6 +70,15 @@ public class DetectionEngine {
   }
 
   public void initializeMonitor() {
+    log.info(
+        "Get monitoring plugin with following parameters: "
+            + autoScalingProperties.getRabbitmq().getBrokerIp(),
+        springProperties.getRabbitmq().getUsername(),
+        springProperties.getRabbitmq().getPassword(),
+        springProperties.getRabbitmq().getPort(),
+        "zabbix-plugin",
+        "zabbix",
+        autoScalingProperties.getRabbitmq().getManagement().getPort());
     this.monitor =
         (MonitoringPluginCaller)
             ((RabbitPluginBroker) context.getBean(RabbitPluginBroker.class))
@@ -80,7 +89,8 @@ public class DetectionEngine {
                     springProperties.getRabbitmq().getPort(),
                     "zabbix-plugin",
                     "zabbix",
-                    autoScalingProperties.getRabbitmq().getManagement().getPort());
+                    autoScalingProperties.getRabbitmq().getManagement().getPort(),
+                    120000);
     if (monitor == null) {
       log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
     }
