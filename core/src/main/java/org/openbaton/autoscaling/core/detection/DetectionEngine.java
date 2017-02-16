@@ -29,6 +29,7 @@ import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.exceptions.MonitoringException;
+import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.monitoring.interfaces.MonitoringPlugin;
 import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
 import org.openbaton.plugin.utils.RabbitPluginBroker;
@@ -40,9 +41,11 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created by mpa on 27.10.15.
@@ -69,7 +72,7 @@ public class DetectionEngine {
     this.detectionManagement = context.getBean(DetectionManagement.class);
   }
 
-  public void initializeMonitor() {
+  public void initializeMonitor() throws NotFoundException {
     log.info(
         "Get monitoring plugin with following parameters: "
             + autoScalingProperties.getRabbitmq().getBrokerIp(),
@@ -79,51 +82,27 @@ public class DetectionEngine {
         "zabbix-plugin",
         "zabbix",
         autoScalingProperties.getRabbitmq().getManagement().getPort());
-    this.monitor =
-        (MonitoringPluginCaller)
-            ((RabbitPluginBroker) context.getBean(RabbitPluginBroker.class))
-                .getMonitoringPluginCaller(
-                    autoScalingProperties.getRabbitmq().getBrokerIp(),
-                    springProperties.getRabbitmq().getUsername(),
-                    springProperties.getRabbitmq().getPassword(),
-                    springProperties.getRabbitmq().getPort(),
-                    "zabbix-plugin",
-                    "zabbix",
-                    autoScalingProperties.getRabbitmq().getManagement().getPort(),
-                    120000);
-    if (monitor == null) {
-      log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
+    try {
+      monitor =
+          new MonitoringPluginCaller(
+              autoScalingProperties.getRabbitmq().getBrokerIp(),
+              springProperties.getRabbitmq().getUsername(),
+              springProperties.getRabbitmq().getPassword(),
+              springProperties.getRabbitmq().getPort(),
+              "zabbix-plugin",
+              "zabbix",
+              autoScalingProperties.getRabbitmq().getManagement().getPort(),
+              120000);
+    } catch (TimeoutException e) {
+      log.error(e.getMessage(), e);
+    } catch (IOException e) {
+      log.error(e.getMessage(), e);
     }
   }
-  //    public void waitForState(String nsrId, String vnfrId, Set<Status> states) {
-  //        try {
-  //            Thread.sleep(15000);
-  //        } catch (InterruptedException e) {
-  //            log.error(e.getMessage(), e);
-  //        }
-  //        VirtualNetworkFunctionRecord vnfr = getVnfr(nsrId, vnfrId);
-  //        while (!states.contains(vnfr.getStatus())) {
-  //            log.debug("DetectionTask: Waiting until status of VNFR with id: " + vnfrId + " goes back to " + states);
-  //            try {
-  //                Thread.sleep(10000);
-  //            } catch (InterruptedException e) {
-  //                log.error(e.getMessage(), e);
-  //            }
-  //            vnfr = getVnfr(nsrId, vnfrId);
-  //        }
-  //    }
-  //
-  //    public VirtualNetworkFunctionRecord getVnfr(String nsrId, String vnfrId) {
-  //        try {
-  //            return nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecord(nsrId, vnfrId);
-  //        } catch (SDKException e) {
-  //            log.error(e.getMessage(), e);
-  //        }
-  //        return null;
-  //    }
 
   public List<Item> getRawMeasurementResults(
-      VirtualNetworkFunctionRecord vnfr, String metric, String period) throws MonitoringException {
+      VirtualNetworkFunctionRecord vnfr, String metric, String period)
+      throws MonitoringException, NotFoundException {
     if (monitor == null) {
       initializeMonitor();
     }
@@ -148,6 +127,13 @@ public class DetectionEngine {
             + metric
             + ".");
     measurementResults.addAll(monitor.queryPMJob(hostnames, metrics, period));
+    if (hostnames.size() != measurementResults.size()) {
+      throw new MonitoringException(
+          "Requested amount of measurements is greater than the received amount of measurements -> "
+              + hostnames.size()
+              + ">"
+              + measurementResults.size());
+    }
     log.debug(
         "Got all measurement results for vnfr "
             + vnfr.getId()

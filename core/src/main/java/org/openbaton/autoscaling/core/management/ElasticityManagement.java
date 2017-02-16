@@ -110,18 +110,26 @@ public class ElasticityManagement {
     //                    "zabbix-plugin",
     //                    "zabbix",
     //                    autoScalingProperties.getRabbitmq().getManagement().getPort());
-    monitor =
-        new MonitoringPluginCaller(
-            autoScalingProperties.getRabbitmq().getBrokerIp(),
-            springProperties.getRabbitmq().getUsername(),
-            springProperties.getRabbitmq().getPassword(),
-            springProperties.getRabbitmq().getPort(),
-            "zabbix-plugin",
-            "zabbix",
-            autoScalingProperties.getRabbitmq().getManagement().getPort(),
-            120000);
-    if (monitor == null) {
-      log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
+    try {
+      monitor =
+          new MonitoringPluginCaller(
+              autoScalingProperties.getRabbitmq().getBrokerIp(),
+              springProperties.getRabbitmq().getUsername(),
+              springProperties.getRabbitmq().getPassword(),
+              springProperties.getRabbitmq().getPort(),
+              "zabbix-plugin",
+              "zabbix",
+              autoScalingProperties.getRabbitmq().getManagement().getPort(),
+              120000);
+      if (monitor == null) {
+        log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
+      }
+    } catch (NotFoundException e) {
+      if (log.isDebugEnabled()) {
+        log.error("Monitoring plugin is not yet available...", e);
+      } else {
+        log.error("Monitoring plugin is not yet available...");
+      }
     }
   }
 

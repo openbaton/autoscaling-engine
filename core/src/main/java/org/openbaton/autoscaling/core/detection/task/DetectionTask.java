@@ -169,10 +169,24 @@ public class DetectionTask implements Runnable {
 
         } catch (MonitoringException e) {
           //log.error(e.getMessage(), e);
-          log.warn(
-              "Not found all the measurement results for VNFR "
-                  + vnfr.getId()
-                  + ". Trying next time again");
+          if (log.isDebugEnabled())
+            log.error(
+                "Not found all the measurement results for VNFR "
+                    + vnfr.getId()
+                    + ". Trying again next time...",
+                e);
+          else
+            log.error(
+                "Not found all the measurement results for VNFR "
+                    + vnfr.getId()
+                    + ". Trying again next time...");
+
+          break;
+        } catch (NotFoundException e) {
+          if (log.isDebugEnabled())
+            log.error("Monitoring plugin is not available, Trying again next time...", e);
+          else log.error("Monitoring plugin is not available, Trying again next time...");
+
           break;
         }
         double finalAlarmResult =

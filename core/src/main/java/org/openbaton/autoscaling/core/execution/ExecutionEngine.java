@@ -64,30 +64,10 @@ public class ExecutionEngine {
 
   @Autowired private NfvoProperties nfvoProperties;
 
-  @Autowired private AutoScalingProperties autoScalingProperties;
-
-  @Autowired private SpringProperties springProperties;
-
-  private MonitoringPluginCaller client;
-
   @PostConstruct
   public void init() {
     //this.resourceManagement = context.getBean(ResourceManagement.class);
     this.executionManagement = context.getBean(ExecutionManagement.class);
-  }
-
-  private MonitoringPluginCaller getClient() {
-    return (MonitoringPluginCaller)
-        ((RabbitPluginBroker) context.getBean("rabbitPluginBroker"))
-            .getMonitoringPluginCaller(
-                autoScalingProperties.getRabbitmq().getBrokerIp(),
-                springProperties.getRabbitmq().getUsername(),
-                springProperties.getRabbitmq().getPassword(),
-                springProperties.getRabbitmq().getPort(),
-                "icinga-agent",
-                "icinga",
-                autoScalingProperties.getRabbitmq().getManagement().getPort(),
-                120000);
   }
 
   public void setActionMonitor(ActionMonitor actionMonitor) {
