@@ -38,6 +38,8 @@ public class AutoScalingProperties {
 
   private Management management;
 
+  private Plugin plugin;
+
   public Rabbitmq getRabbitmq() {
     return rabbitmq;
   }
@@ -62,6 +64,14 @@ public class AutoScalingProperties {
     this.management = management;
   }
 
+  public Plugin getPlugin() {
+    return plugin;
+  }
+
+  public void setPlugin(Plugin plugin) {
+    this.plugin = plugin;
+  }
+
   @Override
   public String toString() {
     return "AutoScalingProperties{"
@@ -71,6 +81,8 @@ public class AutoScalingProperties {
         + server
         + ", management="
         + management
+        + ", plugin="
+        + plugin
         + '}';
   }
 
@@ -202,6 +214,60 @@ public class AutoScalingProperties {
     @Override
     public String toString() {
       return "Management{" + "port='" + port + '\'' + '}';
+    }
+  }
+
+  public static class Plugin {
+    private String dir;
+
+    private boolean startup;
+
+    private Log log;
+
+    public String getDir() {
+      return dir;
+    }
+
+    public void setDir(String dir) {
+      this.dir = dir;
+    }
+
+    public boolean isStartup() {
+      return startup;
+    }
+
+    public void setStartup(boolean startup) {
+      this.startup = startup;
+    }
+
+    public Log getLog() {
+      return log;
+    }
+
+    public void setLog(Log log) {
+      this.log = log;
+    }
+
+    @Override
+    public String toString() {
+      return "Plugin{" + "dir='" + dir + '\'' + ", startup=" + startup + ", log=" + log + '}';
+    }
+  }
+
+  public static class Log {
+    private String dir;
+
+    public String getDir() {
+      return dir;
+    }
+
+    public void setDir(String dir) {
+      this.dir = dir;
+    }
+
+    @Override
+    public String toString() {
+      return "Log{" + "dir='" + dir + '\'' + '}';
     }
   }
 }
