@@ -20,6 +20,7 @@
 
 package org.openbaton.autoscaling;
 
+import com.google.gson.JsonSyntaxException;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.configuration.PropertiesConfiguration;
@@ -89,7 +90,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
 
   private ElasticityManagement elasticityManagement;
 
-  private void init() throws SDKException, ClassNotFoundException {
+  private void init() throws ClassNotFoundException {
     subscriptionIds = new ArrayList<>();
     //start all the plugins needed
     startPlugins();
@@ -105,15 +106,25 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
             "1");
-    for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
-      if (project.getName().equals("default")) {
-        nfvoRequestor.setProjectId(project.getId());
+    try {
+      List<Project> projectList = nfvoRequestor.getProjectAgent().findAll();
+      for (Project project : projectList) {
+        if (project.getName().equals("default")) {
+          nfvoRequestor.setProjectId(project.getId());
+        }
       }
+      subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
+      subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
+      subscriptionIds.add(subscribe(Action.ERROR));
+    } catch (SDKException | IllegalStateException e) {
+      log.error(e.getMessage());
+      System.exit(1);
+    } catch (JsonSyntaxException e) {
+      log.error(
+          "Credentials may be incorrect for talking to the NFVO. Please check 'nfvo.username' and 'nfvo.password' -> "
+              + e.getMessage());
+      System.exit(1);
     }
-    subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
-    subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
-    subscriptionIds.add(subscribe(Action.ERROR));
-
     fetchNSRsFromNFVO();
   }
 
@@ -128,9 +139,13 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
           nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
         }
       } catch (SDKException e) {
-        log.warn(
-            "Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start",
-            e);
+        log.error(
+            "Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling -> "
+                + e.getMessage());
+      } catch (JsonSyntaxException e) {
+        log.error(
+            "Credentials may be incorrect for talking to the NFVO. Please check 'nfvo.username' and 'nfvo.password' -> "
+                + e.getMessage());
       } catch (ClassNotFoundException e) {
         log.error(e.getMessage(), e);
       }
