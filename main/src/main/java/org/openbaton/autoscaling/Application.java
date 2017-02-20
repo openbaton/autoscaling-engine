@@ -51,6 +51,7 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -89,6 +90,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
   private ElasticityManagement elasticityManagement;
 
   private void init() throws SDKException, ClassNotFoundException {
+    subscriptionIds = new ArrayList<>();
     //start all the plugins needed
     startPlugins();
     //waiting until the NFVO is available
@@ -108,7 +110,6 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
         nfvoRequestor.setProjectId(project.getId());
       }
     }
-    subscriptionIds = new ArrayList<>();
     subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
     subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
     subscriptionIds.add(subscribe(Action.ERROR));
@@ -120,41 +121,45 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     unsubscribe();
     destroyPlugins();
     List<NetworkServiceRecord> nsrs = new ArrayList<>();
-    try {
-      for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
-        nfvoRequestor.setProjectId(project.getId());
-        nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
-      }
-    } catch (SDKException e) {
-      log.warn(
-          "Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start",
-          e);
-    } catch (ClassNotFoundException e) {
-      log.error(e.getMessage(), e);
-    }
-    Set<Future<Boolean>> pendingTasks = new HashSet<>();
-    for (NetworkServiceRecord nsr : nsrs) {
-      for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
-        pendingTasks.add(
-            elasticityManagement.deactivate(nsr.getProjectId(), nsr.getId(), vnfr.getId()));
-      }
-    }
-    for (Future<Boolean> pendingTask : pendingTasks) {
+    if (nfvoRequestor != null) {
       try {
-        pendingTask.get(60, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        if (log.isDebugEnabled()) {
-          log.error(e.getMessage(), e);
+        for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
+          nfvoRequestor.setProjectId(project.getId());
+          nsrs.addAll(nfvoRequestor.getNetworkServiceRecordAgent().findAll());
         }
-      } catch (ExecutionException e) {
-        if (log.isDebugEnabled()) {
-          log.error(e.getMessage(), e);
-        }
-      } catch (TimeoutException e) {
-        if (log.isDebugEnabled()) {
-          log.error(e.getMessage(), e);
+      } catch (SDKException e) {
+        log.warn(
+            "Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start",
+            e);
+      } catch (ClassNotFoundException e) {
+        log.error(e.getMessage(), e);
+      }
+      Set<Future<Boolean>> pendingTasks = new HashSet<>();
+      for (NetworkServiceRecord nsr : nsrs) {
+        for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
+          pendingTasks.add(
+              elasticityManagement.deactivate(nsr.getProjectId(), nsr.getId(), vnfr.getId()));
         }
       }
+      for (Future<Boolean> pendingTask : pendingTasks) {
+        try {
+          pendingTask.get(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+          if (log.isDebugEnabled()) {
+            log.error(e.getMessage(), e);
+          }
+        } catch (ExecutionException e) {
+          if (log.isDebugEnabled()) {
+            log.error(e.getMessage(), e);
+          }
+        } catch (TimeoutException e) {
+          if (log.isDebugEnabled()) {
+            log.error(e.getMessage(), e);
+          }
+        }
+      }
+    } else {
+      log.warn("NFVORequestor is not initialized. Cannot unsubscribe from events...");
     }
   }
 
@@ -181,19 +186,32 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
   }
 
   private void startPlugins() {
-    try {
-      PluginStartup.startPluginRecursive(
-          "./plugins",
-          true,
-          autoScalingProperties.getRabbitmq().getBrokerIp(),
-          String.valueOf(springProperties.getRabbitmq().getPort()),
-          15,
-          springProperties.getRabbitmq().getUsername(),
-          springProperties.getRabbitmq().getPassword(),
-          autoScalingProperties.getRabbitmq().getManagement().getPort(),
-          "/tmp/openbaton/plugin-log/");
-    } catch (IOException e) {
-      log.error(e.getMessage(), e);
+    if (autoScalingProperties.getPlugin().isStartup()) {
+      File pluginFolder = new File(autoScalingProperties.getPlugin().getDir());
+      if (pluginFolder.exists() && pluginFolder.isDirectory()) {
+        try {
+          PluginStartup.startPluginRecursive(
+              autoScalingProperties.getPlugin().getDir(),
+              true,
+              autoScalingProperties.getRabbitmq().getBrokerIp(),
+              String.valueOf(springProperties.getRabbitmq().getPort()),
+              15,
+              springProperties.getRabbitmq().getUsername(),
+              springProperties.getRabbitmq().getPassword(),
+              autoScalingProperties.getRabbitmq().getManagement().getPort(),
+              autoScalingProperties.getPlugin().getLog().getDir());
+        } catch (IOException e) {
+          log.error(e.getMessage(), e);
+        }
+      } else {
+        log.warn(
+            "Plugin folder '"
+                + autoScalingProperties.getPlugin().getDir()
+                + "' was not found. You may change the following configuration parameter 'autoscaling.plugin.path' to the path where the plugin(s) are located");
+      }
+    } else {
+      log.warn(
+          "Startup of plugins issued by the autoscaling-engine is disabled. Please consider to set 'autoscaling.plugin.startup' to 'true'");
     }
   }
 
