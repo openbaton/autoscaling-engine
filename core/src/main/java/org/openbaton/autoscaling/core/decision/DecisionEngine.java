@@ -22,6 +22,7 @@ package org.openbaton.autoscaling.core.decision;
 
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
+import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
@@ -124,7 +125,7 @@ public class DecisionEngine {
   }
 
   public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(
-      String projectId, String nsr_id, String type) throws SDKException {
+      String projectId, String nsr_id, String type, String policyId) throws SDKException {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
             nfvoProperties.getUsername(),
@@ -143,9 +144,19 @@ public class DecisionEngine {
       log.error(e.getMessage(), e);
       throw e;
     }
-    for (VirtualNetworkFunctionRecord vnfr : vnfrsAll) {
-      if (vnfr.getType().equals(type)) {
-        vnfrsOfTypeX.add(vnfr);
+    if (type != null && !type.isEmpty()) {
+      for (VirtualNetworkFunctionRecord vnfr : vnfrsAll) {
+        if (vnfr.getType().equals(type)) {
+          vnfrsOfTypeX.add(vnfr);
+        }
+      }
+    } else {
+      for (VirtualNetworkFunctionRecord vnfr : vnfrsAll) {
+        for (AutoScalePolicy policy : vnfr.getAuto_scale_policy()) {
+          if (policy.getId().equals(policyId)) {
+            vnfrsOfTypeX.add(vnfr);
+          }
+        }
       }
     }
     return vnfrsOfTypeX;

@@ -90,8 +90,15 @@ public class DecisionTask implements Runnable {
       try {
         Set<ScalingAction> filteredActions = new HashSet<>();
         for (ScalingAction action : autoScalePolicy.getActions()) {
-          List<VirtualNetworkFunctionRecord> vnfrsTarget =
-              decisionEngine.getVNFRsOfTypeX(projectId, nsr_id, action.getTarget());
+          List<VirtualNetworkFunctionRecord> vnfrsTarget = new ArrayList<>();
+          if (action.getTarget() == null || action.getTarget().isEmpty()) {
+            vnfrsTarget =
+                decisionEngine.getVNFRsOfTypeX(projectId, nsr_id, null, autoScalePolicy.getId());
+          } else {
+            vnfrsTarget =
+                decisionEngine.getVNFRsOfTypeX(
+                    projectId, nsr_id, action.getTarget(), autoScalePolicy.getId());
+          }
           log.debug(
               "Decision-Maker checks if it possible to execute Action of type "
                   + action.getType()
