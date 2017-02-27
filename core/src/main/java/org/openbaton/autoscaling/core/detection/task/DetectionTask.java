@@ -20,6 +20,7 @@
 
 package org.openbaton.autoscaling.core.detection.task;
 
+import com.google.gson.JsonSyntaxException;
 import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.detection.DetectionEngine;
@@ -143,7 +144,17 @@ public class DetectionTask implements Runnable {
               .getNetworkServiceRecordAgent()
               .getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
     } catch (SDKException e) {
-      log.error(e.getMessage());
+      log.error("Error while requesting NSR " + nsr_id, e);
+      actionMonitor.finishedAction(autoScalePolicy.getId());
+      return;
+    } catch (JsonSyntaxException e) {
+      log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
+      actionMonitor.finishedAction(autoScalePolicy.getId());
+      return;
+    } catch (Exception e) {
+      log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
+      actionMonitor.finishedAction(autoScalePolicy.getId());
+      return;
     }
     //terminate gracefully at this point in time if suggested from the outside
     if (actionMonitor.isTerminating(autoScalePolicy.getId())) {

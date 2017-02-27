@@ -144,9 +144,10 @@ public class ExecutionEngine {
             }
             break;
           } catch (SDKException e) {
-            log.warn(e.getMessage(), e);
-          } catch (ClassNotFoundException e) {
-            log.warn(e.getMessage(), e);
+            log.error("Error while requesting VNFR " + vnfr.getId(), e);
+            break;
+          } catch (Exception e) {
+            log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
             break;
           }
         } else {

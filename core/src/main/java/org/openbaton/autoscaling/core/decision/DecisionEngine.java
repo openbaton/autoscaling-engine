@@ -119,13 +119,17 @@ public class DecisionEngine {
               .getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
       return vnfr;
     } catch (SDKException e) {
-      log.error(e.getMessage(), e);
+      log.error("Error while requesting NSR " + nsr_id, e);
+      throw e;
+    } catch (Exception e) {
+      log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
       throw e;
     }
   }
 
   public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(
-      String projectId, String nsr_id, String type, String policyId) throws SDKException {
+      String projectId, String nsr_id, String type, String policyId)
+      throws Exception {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
             nfvoProperties.getUsername(),
@@ -137,13 +141,9 @@ public class DecisionEngine {
             "1");
     List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
     List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
-    try {
-      vnfrsAll.addAll(
-          nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecords(nsr_id));
-    } catch (SDKException e) {
-      log.error(e.getMessage(), e);
-      throw e;
-    }
+    vnfrsAll.addAll(
+        nfvoRequestor.getNetworkServiceRecordAgent().getVirtualNetworkFunctionRecords(nsr_id));
+
     if (type != null && !type.isEmpty()) {
       for (VirtualNetworkFunctionRecord vnfr : vnfrsAll) {
         if (vnfr.getType().equals(type)) {

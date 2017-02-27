@@ -174,6 +174,8 @@ public class DecisionTask implements Runnable {
         log.warn(
             "Not able to fetch the VNFR from the NFVO. Stop here and wait for the next request of decision-making....",
             e);
+      } catch (Exception e) {
+        log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
       } finally {
         actionMonitor.finishedAction(nsr_id);
       }
