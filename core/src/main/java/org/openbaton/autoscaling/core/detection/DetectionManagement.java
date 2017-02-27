@@ -106,9 +106,11 @@ public class DetectionManagement {
     try {
       nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
     } catch (SDKException e) {
-      log.error(e.getMessage(), e);
-    } catch (ClassNotFoundException e) {
-      log.error(e.getMessage(), e);
+      log.error("Error while requesting NSR " + nsr_id, e);
+      return;
+    } catch (Exception e) {
+      log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
+      return;
     }
     if (nsr == null) {
       throw new NotFoundException("Not Found NetworkServiceDescriptor with id: " + nsr_id);
@@ -139,7 +141,11 @@ public class DetectionManagement {
               .getNetworkServiceRecordAgent()
               .getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
     } catch (SDKException e) {
-      log.error(e.getMessage(), e);
+      log.error("Error while requesting NSR " + nsr_id, e);
+      return;
+    } catch (Exception e) {
+      log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
+      return;
     }
     if (vnfr == null) {
       //throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
@@ -231,9 +237,11 @@ public class DetectionManagement {
     try {
       nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
     } catch (SDKException e) {
-      log.error(e.getMessage(), e);
-    } catch (ClassNotFoundException e) {
-      log.error(e.getMessage(), e);
+      log.error("Error while requesting NSR " + nsr_id, e);
+      return;
+    } catch (Exception e) {
+      log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
+      return;
     }
     for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
       stop(projectId, nsr_id, vnfr.getId());
@@ -264,7 +272,11 @@ public class DetectionManagement {
               .getNetworkServiceRecordAgent()
               .getVirtualNetworkFunctionRecord(nsr_id, vnfr_id);
     } catch (SDKException e) {
-      log.error(e.getMessage(), e);
+      log.error("Error while requesting NSR " + nsr_id, e);
+      return null;
+    } catch (Exception e) {
+      log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
+      return null;
     }
     if (vnfr == null) {
       //throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);

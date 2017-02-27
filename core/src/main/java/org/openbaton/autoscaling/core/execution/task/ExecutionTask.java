@@ -112,10 +112,18 @@ public class ExecutionTask implements Runnable {
     try {
       for (ScalingAction action : actions) {
         nfvoRequestor.setProjectId(projectId);
-        vnfr =
-            nfvoRequestor
-                .getNetworkServiceRecordAgent()
-                .getVirtualNetworkFunctionRecord(nsr_id, actionVnfrMap.get(action.getId()));
+        try {
+          vnfr =
+              nfvoRequestor
+                  .getNetworkServiceRecordAgent()
+                  .getVirtualNetworkFunctionRecord(nsr_id, actionVnfrMap.get(action.getId()));
+        } catch (SDKException e) {
+          log.error("Error while requesting NSR " + nsr_id, e);
+          return;
+        } catch (Exception e) {
+          log.error("Error while using NfvoRequestor -> " + e.getMessage(), e);
+          return;
+        }
         if (vnfr == null) {
           log.warn("Cannot execute ScalingAction. VNFR was not found or problems with the SDK");
           actionMonitor.finishedAction(nsr_id);
