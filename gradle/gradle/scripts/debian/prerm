@@ -60,6 +60,7 @@ save_old_config_file_for_upgrade () {
     cp ${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_COMPONENT_CONFIG_FILE} /tmp/
 }
 
+
 ##############
 #### Main ####
 ##############
