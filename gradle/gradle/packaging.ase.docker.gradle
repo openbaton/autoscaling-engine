@@ -16,7 +16,7 @@
  */
 ext {
     baseName = 'openbaton'
-    componentName = "autoscaling-engine"
+    componentName = "ase"
     versionName = "${version}".replaceAll("-SNAPSHOT", "")
     group = baseName
     applicationName = componentName
