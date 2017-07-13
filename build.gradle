@@ -17,6 +17,10 @@
 /**
  * Project settings
  */
+buildscript {
+    repositories { mavenCentral() }
+    dependencies { classpath("se.transmode.gradle:gradle-docker:1.2") }
+}
 
 plugins {
     id 'net.researchgate.release' version '2.3.4'
@@ -29,6 +33,7 @@ apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'jacoco'
+apply plugin: 'docker'
 
 apply from: 'gradle/gradle/git.helpers.gradle'
 apply from: 'gradle/gradle/command.line.helper.gradle'
@@ -92,5 +97,6 @@ dependencies {
 }
 
 apply from: 'gradle/gradle/packaging.ase.debian.gradle'
+apply from: 'gradle/gradle/packaging.ase.docker.gradle'
 
 compileJava.dependsOn tasks.googleJavaFormat
