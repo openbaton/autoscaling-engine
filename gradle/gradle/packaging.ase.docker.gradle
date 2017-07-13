@@ -18,8 +18,6 @@ ext {
     baseName = 'openbaton'
     componentName = "ase"
     versionName = "${version}".replaceAll("-SNAPSHOT", "")
-    group = baseName
-    applicationName = componentName
 }
 
 task buildDocker(type: Docker) {
