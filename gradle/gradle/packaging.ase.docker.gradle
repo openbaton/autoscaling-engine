@@ -27,11 +27,11 @@ task buildDocker(type: Docker) {
     tag = "${baseName}/${componentName}"
     addFile {
         from jar
-        rename {'ase.jar'}
+        rename {"${componentName}.jar"}
     }
     runCommand('mkdir -p /var/log/openbaton')
-    addFile('etc/ase.properties', '/etc/openbaton/ase.properties')
-    entryPoint(["java", "-jar", "/ase.jar", "--spring.config.location=file:/etc/openbaton/ase.properties"])
+    addFile("etc/${componentName}.properties", "/etc/openbaton/${componentName}.properties")
+    entryPoint(["java", "-jar", "/${componentName}.jar", "--spring.config.location=file:/etc/openbaton/${componentName}.properties"])
     exposePort(9998)
     exposePort(9999)
 }
