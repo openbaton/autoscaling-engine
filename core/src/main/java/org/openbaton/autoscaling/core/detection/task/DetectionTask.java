@@ -199,6 +199,12 @@ public class DetectionTask implements Runnable {
           else log.error("Monitoring plugin is not available, Trying again next time...");
 
           break;
+        } catch (Exception e) {
+          log.error(
+              "Exception occured while getting measurements -> "
+                  + e.getMessage()
+                  + ", Trying again next time...");
+          break;
         }
         double finalAlarmResult =
             detectionEngine.calculateMeasurementResult(alarm, measurementResults);
