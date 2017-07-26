@@ -128,8 +128,7 @@ public class DecisionEngine {
   }
 
   public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(
-      String projectId, String nsr_id, String type, String policyId)
-      throws Exception {
+      String projectId, String nsr_id, String type, String policyId) throws Exception {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
             nfvoProperties.getUsername(),

@@ -44,6 +44,8 @@ import org.springframework.stereotype.Service;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -105,7 +107,11 @@ public class ExecutionEngine {
             nfvoRequestor
                 .getNetworkServiceRecordAgent()
                 .createVNFCInstance(
-                    vnfr.getParent_ns_id(), vnfr.getId(), vdu.getId(), vnfComponent);
+                    vnfr.getParent_ns_id(),
+                    vnfr.getId(),
+                    //                    vdu.getId(),
+                    vnfComponent,
+                    new ArrayList<String>(vdu.getVimInstanceName()));
             log.trace("NFVO executed ScalingAction -> scale-out");
             log.info("Added new VNFCInstance to VDU " + vdu.getId());
             actionMonitor.finishedAction(

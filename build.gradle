@@ -40,14 +40,14 @@ project.ext {
     /**
      * Spring Related Variables
      */
-    springVersion = '4.2.0.RELEASE'
+    springVersion = '4.3.5.RELEASE'
     springBootVersion = '1.2.5.RELEASE'
     //------------------------------------------------//
     //------------------------------------------------//
     /**
      * OpenBaton Related Version
      */
-    openbatonVersion = '3.2.1-SNAPSHOT'
+    openbatonVersion = '4.0.0'
     /**
      * Application Related Version
      */

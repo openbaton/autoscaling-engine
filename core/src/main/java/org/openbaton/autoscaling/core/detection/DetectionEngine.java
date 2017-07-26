@@ -100,7 +100,7 @@ public class DetectionEngine {
     }
   }
 
-  public List<Item> getRawMeasurementResults(
+  public synchronized List<Item> getRawMeasurementResults(
       VirtualNetworkFunctionRecord vnfr, String metric, String period)
       throws MonitoringException, NotFoundException {
     if (monitor == null) {
