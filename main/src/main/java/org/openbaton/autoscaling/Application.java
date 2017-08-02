@@ -97,15 +97,19 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     //waiting until the NFVO is available
     waitForNfvo();
     this.elasticityManagement = context.getBean(ElasticityManagement.class);
-    this.nfvoRequestor =
-        new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            "*",
-            false,
-            nfvoProperties.getIp(),
-            nfvoProperties.getPort(),
-            "1");
+    try {
+      this.nfvoRequestor =
+          new NFVORequestor(
+              "autoscaling-engine",
+              "",
+              false,
+              nfvoProperties.getIp(),
+              nfvoProperties.getPort(),
+              "1");
+    } catch (SDKException e) {
+      log.error(e.getMessage(), e);
+      System.exit(1);
+    }
     try {
       List<Project> projectList = nfvoRequestor.getProjectAgent().findAll();
       for (Project project : projectList) {
@@ -213,6 +217,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
               15,
               springProperties.getRabbitmq().getUsername(),
               springProperties.getRabbitmq().getPassword(),
+              "/",
               autoScalingProperties.getRabbitmq().getManagement().getPort(),
               autoScalingProperties.getPlugin().getLog().getDir());
         } catch (IOException e) {
