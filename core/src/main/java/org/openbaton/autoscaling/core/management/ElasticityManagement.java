@@ -117,6 +117,7 @@ public class ElasticityManagement {
               springProperties.getRabbitmq().getUsername(),
               springProperties.getRabbitmq().getPassword(),
               springProperties.getRabbitmq().getPort(),
+              "/",
               "zabbix-plugin",
               "zabbix",
               autoScalingProperties.getRabbitmq().getManagement().getPort(),
