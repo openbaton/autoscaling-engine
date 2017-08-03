@@ -20,9 +20,9 @@
 
 package org.openbaton.autoscaling.core.execution;
 
-import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import org.openbaton.autoscaling.configuration.NfvoProperties;
-import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
@@ -31,8 +31,6 @@ import org.openbaton.catalogue.mano.record.VNFCInstance;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
-import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
-import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
@@ -41,13 +39,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import javax.annotation.PostConstruct;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.annotation.PostConstruct;
 
 /**
  * Created by mpa on 27.10.15.
@@ -263,8 +261,10 @@ public class ExecutionEngine {
           } catch (ClassNotFoundException e) {
             log.warn(e.getMessage(), e);
             break;
+          } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            break;
           }
-
         } else {
           log.warn("Minimum size of VDU with id: " + vdu.getId() + " reached...");
         }
