@@ -36,11 +36,13 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.annotation.PostConstruct;
 
 /**
  * Created by mpa on 27.10.15.
@@ -94,6 +96,9 @@ public class DecisionEngine {
     } catch (ClassNotFoundException e) {
       log.warn(e.getMessage(), e);
       return Status.NULL;
+    } catch (FileNotFoundException e) {
+      log.error("Key file not found");
+      return Status.NULL;
     }
     if (networkServiceRecord == null || networkServiceRecord.getStatus() == null) {
       return Status.NULL;
@@ -102,7 +107,7 @@ public class DecisionEngine {
   }
 
   public VirtualNetworkFunctionRecord getVNFR(String projectId, String nsr_id, String vnfr_id)
-      throws SDKException {
+      throws SDKException, FileNotFoundException {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
             nfvoProperties.getUsername(),

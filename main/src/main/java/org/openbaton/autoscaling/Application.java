@@ -43,6 +43,7 @@ import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationListener;
@@ -53,6 +54,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -90,6 +92,9 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
 
   private ElasticityManagement elasticityManagement;
 
+  @Value("${autoscaling.key.file.path:/etc/openbaton/service-key}")
+  private String keyFilePath;
+
   private void init() throws ClassNotFoundException {
     subscriptionIds = new ArrayList<>();
     //start all the plugins needed
@@ -102,10 +107,11 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
           new NFVORequestor(
               "autoscaling-engine",
               "",
-              false,
               nfvoProperties.getIp(),
               nfvoProperties.getPort(),
-              "1");
+              "1",
+              false,
+              keyFilePath);
     } catch (SDKException e) {
       log.error(e.getMessage(), e);
       System.exit(1);
@@ -128,12 +134,19 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
           "Credentials may be incorrect for talking to the NFVO. Please check 'nfvo.username' and 'nfvo.password' -> "
               + e.getMessage());
       System.exit(1);
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      System.exit(1);
     }
     fetchNSRsFromNFVO();
   }
 
   private void exit() throws SDKException {
-    unsubscribe();
+    try {
+      unsubscribe();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
     destroyPlugins();
     List<NetworkServiceRecord> nsrs = new ArrayList<>();
     if (nfvoRequestor != null) {
@@ -152,6 +165,8 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
                 + e.getMessage());
       } catch (ClassNotFoundException e) {
         log.error(e.getMessage(), e);
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
       }
       Set<Future<Boolean>> pendingTasks = new HashSet<>();
       for (NetworkServiceRecord nsr : nsrs) {
@@ -182,7 +197,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     }
   }
 
-  private String subscribe(Action action) throws SDKException {
+  private String subscribe(Action action) throws SDKException, FileNotFoundException {
     log.debug("Subscribing to all NSR Events with Action " + action);
     EventEndpoint eventEndpoint = new EventEndpoint();
     eventEndpoint.setName("Subscription:" + action);
@@ -198,7 +213,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     return nfvoRequestor.getEventAgent().create(eventEndpoint).getId();
   }
 
-  private void unsubscribe() throws SDKException {
+  private void unsubscribe() throws SDKException, FileNotFoundException {
     for (String subscriptionId : subscriptionIds) {
       nfvoRequestor.getEventAgent().delete(subscriptionId);
     }
@@ -260,6 +275,8 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
           e);
     } catch (ClassNotFoundException e) {
       log.error(e.getMessage(), e);
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
     }
     for (NetworkServiceRecord nsr : nsrs) {
       try {
