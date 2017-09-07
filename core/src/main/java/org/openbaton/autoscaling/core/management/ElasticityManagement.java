@@ -137,13 +137,15 @@ public class ElasticityManagement {
   @PreDestroy
   private void exit() throws SDKException {}
 
-  public void activate(String projectId, String nsr_id) throws NotFoundException, VimException {
+  public void activate(String projectId, String nsr_id)
+      throws NotFoundException, VimException, SDKException {
     log.debug("Activating Elasticity for NSR with id: " + nsr_id);
     detectionManagment.start(projectId, nsr_id);
     log.info("Activated Elasticity for NSR with id: " + nsr_id);
   }
 
-  public void activate(NetworkServiceRecord nsr) throws NotFoundException, VimException {
+  public void activate(NetworkServiceRecord nsr)
+      throws NotFoundException, VimException, SDKException {
     log.debug("Activating Elasticity for NSR with id: " + nsr.getId());
     for (VirtualNetworkFunctionRecord vnfr : nsr.getVnfr()) {
       for (AutoScalePolicy autoScalePolicy : vnfr.getAuto_scale_policy())
@@ -154,7 +156,7 @@ public class ElasticityManagement {
 
   @Async
   public void activate(String projectId, String nsr_id, String vnfr_id)
-      throws NotFoundException, VimException {
+      throws NotFoundException, VimException, SDKException {
     log.debug("Activating Elasticity for NSR with id: " + nsr_id);
     //log.info("[AUTOSCALING] Activating Elasticity " + System.currentTimeMillis());
     detectionManagment.start(projectId, nsr_id, vnfr_id);
@@ -171,6 +173,8 @@ public class ElasticityManagement {
       if (log.isDebugEnabled()) {
         log.error(e.getMessage(), e);
       }
+    } catch (SDKException e) {
+      log.error(e.getMessage());
     }
     decisionManagement.stop(projectId, nsr_id);
     executionManagement.stop(projectId, nsr_id);
@@ -185,6 +189,8 @@ public class ElasticityManagement {
       pendingTasks.add(detectionManagment.stop(projectId, nsr_id, vnfr_id));
     } catch (NotFoundException e) {
       log.error(e.getMessage(), e);
+    } catch (SDKException e) {
+      log.error(e.getMessage());
     }
     pendingTasks.add(decisionManagement.stop(projectId, nsr_id));
     pendingTasks.add(executionManagement.stop(projectId, nsr_id));

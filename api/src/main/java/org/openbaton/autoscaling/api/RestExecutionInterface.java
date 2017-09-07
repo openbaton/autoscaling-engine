@@ -27,6 +27,7 @@ import com.google.gson.JsonParser;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.catalogue.mano.common.ScalingAction;
 import org.openbaton.exceptions.NotFoundException;
+import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +58,7 @@ public class RestExecutionInterface {
     produces = MediaType.APPLICATION_JSON_VALUE
   )
   @ResponseStatus(HttpStatus.CREATED)
-  public void execute(@RequestBody String msg) throws NotFoundException {
+  public void execute(@RequestBody String msg) throws NotFoundException, SDKException {
     log.debug("========================");
     log.debug("msg=" + msg);
     JsonParser jsonParser = new JsonParser();

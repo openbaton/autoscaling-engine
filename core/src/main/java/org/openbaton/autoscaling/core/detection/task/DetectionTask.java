@@ -22,6 +22,7 @@ package org.openbaton.autoscaling.core.detection.task;
 
 import com.google.gson.JsonSyntaxException;
 import org.openbaton.autoscaling.catalogue.Action;
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.detection.DetectionEngine;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
@@ -79,8 +80,9 @@ public class DetectionTask implements Runnable {
       AutoScalePolicy autoScalePolicy,
       DetectionEngine detectionEngine,
       NfvoProperties nfvoProperties,
+      AutoScalingProperties autoScalingProperties,
       ActionMonitor actionMonitor)
-      throws NotFoundException {
+      throws NotFoundException, SDKException {
     this.nsr_id = nsr_id;
     this.vnfr_id = vnfr_id;
     this.autoScalePolicy = autoScalePolicy;
@@ -90,13 +92,13 @@ public class DetectionTask implements Runnable {
 
     this.nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     this.name = "DetectionTask#" + nsr_id + ":" + vnfr_id;
     this.first_time = true;
     this.fired = false;

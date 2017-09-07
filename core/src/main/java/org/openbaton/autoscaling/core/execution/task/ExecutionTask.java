@@ -21,6 +21,7 @@
 package org.openbaton.autoscaling.core.execution.task;
 
 import org.openbaton.autoscaling.catalogue.Action;
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.execution.ExecutionEngine;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
@@ -74,7 +75,9 @@ public class ExecutionTask implements Runnable {
       long cooldown,
       ExecutionEngine executionEngine,
       ActionMonitor actionMonitor,
-      NfvoProperties nfvoProperties) {
+      NfvoProperties nfvoProperties,
+      AutoScalingProperties autoScalingProperties)
+      throws SDKException {
     this.actionMonitor = actionMonitor;
     log.debug("Initializing ExecutionTask for NSR with id: " + nsr_id + ". Actions: " + actions);
     this.projectId = projectId;
@@ -86,13 +89,13 @@ public class ExecutionTask implements Runnable {
     this.name = "ExecutionTask#" + nsr_id;
     this.nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
   }
 
   @Override

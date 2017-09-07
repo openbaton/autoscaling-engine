@@ -20,6 +20,7 @@
 
 package org.openbaton.autoscaling.core.decision;
 
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.execution.ExecutionManagement;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
@@ -60,33 +61,32 @@ public class DecisionEngine {
 
   @Autowired private NfvoProperties nfvoProperties;
 
+  @Autowired private AutoScalingProperties autoScalingProperties;
+
   @PostConstruct
   public void init() {
     this.executionManagement = context.getBean(ExecutionManagement.class);
   }
 
   public void sendDecision(
-      String projectId,
-      String nsr_id,
-      Map actionVnfrMap,
-      Set<ScalingAction> actions,
-      long cooldown) {
+      String projectId, String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown)
+      throws SDKException {
     //log.info("[DECISION_MAKER] DECIDED_ABOUT_ACTIONS " + new Date().getTime());
     log.debug("Send actions to Executor: " + actions.toString());
     executionManagement.executeActions(projectId, nsr_id, actionVnfrMap, actions, cooldown);
   }
 
-  public Status getStatus(String projectId, String nsr_id) {
+  public Status getStatus(String projectId, String nsr_id) throws SDKException {
     log.debug("Check Status of NSR with id: " + nsr_id);
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     NetworkServiceRecord networkServiceRecord = null;
     try {
       networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -110,13 +110,13 @@ public class DecisionEngine {
       throws SDKException, FileNotFoundException {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     try {
       VirtualNetworkFunctionRecord vnfr =
           nfvoRequestor
@@ -136,13 +136,13 @@ public class DecisionEngine {
       String projectId, String nsr_id, String type, String policyId) throws Exception {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
     List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
     vnfrsAll.addAll(

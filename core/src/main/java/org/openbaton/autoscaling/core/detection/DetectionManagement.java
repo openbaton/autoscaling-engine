@@ -21,6 +21,7 @@
 package org.openbaton.autoscaling.core.detection;
 
 import org.openbaton.autoscaling.catalogue.Action;
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
 import org.openbaton.autoscaling.core.detection.task.DetectionTask;
@@ -71,6 +72,8 @@ public class DetectionManagement {
 
   @Autowired private NfvoProperties nfvoProperties;
 
+  @Autowired private AutoScalingProperties autoScalingProperties;
+
   @PostConstruct
   public void init() {
     this.actionMonitor = new ActionMonitor();
@@ -91,17 +94,17 @@ public class DetectionManagement {
     this.taskScheduler.initialize();
   }
 
-  public void start(String projectId, String nsr_id) throws NotFoundException {
+  public void start(String projectId, String nsr_id) throws NotFoundException, SDKException {
     log.debug("Activating Alarm Detection for NSR with id: " + nsr_id);
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     NetworkServiceRecord nsr = null;
     try {
       nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -123,17 +126,18 @@ public class DetectionManagement {
     log.info("Activated Alarm Detection for NSR with id: " + nsr_id);
   }
 
-  public void start(String projectId, String nsr_id, String vnfr_id) throws NotFoundException {
+  public void start(String projectId, String nsr_id, String vnfr_id)
+      throws NotFoundException, SDKException {
     log.debug("Activating Alarm Detection for VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     VirtualNetworkFunctionRecord vnfr = null;
     try {
       vnfr =
@@ -160,7 +164,7 @@ public class DetectionManagement {
 
   public void start(
       String projectId, String nsr_id, String vnfr_id, AutoScalePolicy autoScalePolicy)
-      throws NotFoundException {
+      throws NotFoundException, SDKException {
     log.debug(
         "Activating Alarm Detection for AutoScalePolicy with id: "
             + autoScalePolicy.getId()
@@ -199,6 +203,7 @@ public class DetectionManagement {
               autoScalePolicy,
               detectionEngine,
               nfvoProperties,
+              autoScalingProperties,
               actionMonitor);
       ScheduledFuture scheduledFuture =
           taskScheduler.scheduleAtFixedRate(detectionTask, autoScalePolicy.getPeriod() * 1000);
@@ -222,17 +227,17 @@ public class DetectionManagement {
     }
   }
 
-  public void stop(String projectId, String nsr_id) throws NotFoundException {
+  public void stop(String projectId, String nsr_id) throws NotFoundException, SDKException {
     log.debug("Deactivating Alarm Detection of NSR with id: " + nsr_id);
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     NetworkServiceRecord nsr = null;
     try {
       nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -251,18 +256,18 @@ public class DetectionManagement {
 
   @Async
   public Future<Boolean> stop(String projectId, String nsr_id, String vnfr_id)
-      throws NotFoundException {
+      throws NotFoundException, SDKException {
     log.debug(
         "Deactivating Alarm Detection of VNFR with id: " + vnfr_id + " of NSR with id: " + nsr_id);
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     VirtualNetworkFunctionRecord vnfr = null;
     Set<Future<Boolean>> futureTasks = new HashSet<>();
     Set<Boolean> tasks = new HashSet<>();
