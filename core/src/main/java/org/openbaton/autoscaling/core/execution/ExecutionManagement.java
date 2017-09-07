@@ -21,6 +21,7 @@
 package org.openbaton.autoscaling.core.execution;
 
 import org.openbaton.autoscaling.catalogue.Action;
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.execution.task.CooldownTask;
 import org.openbaton.autoscaling.core.execution.task.ExecutionTask;
@@ -61,6 +62,7 @@ public class ExecutionManagement {
   private ActionMonitor actionMonitor;
 
   @Autowired private NfvoProperties nfvoProperties;
+  @Autowired private AutoScalingProperties autoScalingProperties;
 
   @PostConstruct
   public void init() {
@@ -83,11 +85,8 @@ public class ExecutionManagement {
   }
 
   public void executeActions(
-      String projectId,
-      String nsr_id,
-      Map actionVnfrMap,
-      Set<ScalingAction> actions,
-      long cooldown) {
+      String projectId, String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown)
+      throws SDKException {
     //log.info("[EXECUTOR] RECEIVED_ACTION " + new Date().getTime());
     if (actionMonitor.requestAction(nsr_id, Action.SCALE)) {
       log.info("Executing scaling actions for NSR " + nsr_id + " -> " + actions);
@@ -105,7 +104,8 @@ public class ExecutionManagement {
               cooldown,
               executionEngine,
               actionMonitor,
-              nfvoProperties);
+              nfvoProperties,
+              autoScalingProperties);
       taskScheduler.execute(executionTask);
     } else {
       if (actionMonitor.getAction(nsr_id) == Action.SCALE) {

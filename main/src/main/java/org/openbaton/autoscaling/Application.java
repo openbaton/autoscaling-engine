@@ -92,9 +92,6 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
 
   private ElasticityManagement elasticityManagement;
 
-  @Value("${autoscaling.key.file.path:/etc/openbaton/service-key}")
-  private String keyFilePath;
-
   private void init() throws ClassNotFoundException {
     subscriptionIds = new ArrayList<>();
     //start all the plugins needed
@@ -110,8 +107,8 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
               nfvoProperties.getIp(),
               nfvoProperties.getPort(),
               "1",
-              false,
-              keyFilePath);
+              nfvoProperties.getSsl().isEnabled(),
+              autoScalingProperties.getKey().getFile().getPath());
     } catch (SDKException e) {
       log.error(e.getMessage(), e);
       System.exit(1);
@@ -287,6 +284,8 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
             elasticityManagement.activate(nsr);
           } catch (VimException e) {
             log.error(e.getMessage(), e);
+          } catch (SDKException e) {
+            log.error(e.getMessage());
           }
         } else {
           log.warn(

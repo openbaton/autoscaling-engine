@@ -20,6 +20,7 @@
 
 package org.openbaton.autoscaling.core.execution;
 
+import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import org.openbaton.autoscaling.configuration.NfvoProperties;
@@ -63,6 +64,7 @@ public class ExecutionEngine {
   private ActionMonitor actionMonitor;
 
   @Autowired private NfvoProperties nfvoProperties;
+  @Autowired private AutoScalingProperties autoScalingProperties;
 
   @PostConstruct
   public void init() {
@@ -76,16 +78,16 @@ public class ExecutionEngine {
 
   public VirtualNetworkFunctionRecord scaleOut(
       String projectId, VirtualNetworkFunctionRecord vnfr, int numberOfInstances)
-      throws NotFoundException {
+      throws NotFoundException, SDKException {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     log.debug("Executing scale-out for VNFR with id: " + vnfr.getId());
     for (int i = 1; i <= numberOfInstances; i++) {
       if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {
@@ -182,17 +184,17 @@ public class ExecutionEngine {
 
   public VirtualNetworkFunctionRecord scaleIn(
       String projectId, VirtualNetworkFunctionRecord vnfr, int numberOfInstances)
-      throws NotFoundException {
+      throws NotFoundException, SDKException {
     log.debug("Executing scale-in for VNFR with id: " + vnfr.getId());
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
-            nfvoProperties.getUsername(),
-            nfvoProperties.getPassword(),
-            projectId,
-            false,
+            "autoscaling-engine",
+            "",
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
-            "1");
+            "1",
+            nfvoProperties.getSsl().isEnabled(),
+            autoScalingProperties.getKey().getFile().getPath());
     for (int i = 1; i <= numberOfInstances; i++) {
       VNFCInstance vnfcInstance_remove = null;
       if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {

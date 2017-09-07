@@ -40,6 +40,8 @@ public class AutoScalingProperties {
 
   private Plugin plugin;
 
+  private Key key;
+
   public Rabbitmq getRabbitmq() {
     return rabbitmq;
   }
@@ -72,6 +74,14 @@ public class AutoScalingProperties {
     this.plugin = plugin;
   }
 
+  public Key getKey() {
+    return key;
+  }
+
+  public void setKey(Key key) {
+    this.key = key;
+  }
+
   @Override
   public String toString() {
     return "AutoScalingProperties{"
@@ -83,6 +93,8 @@ public class AutoScalingProperties {
         + management
         + ", plugin="
         + plugin
+        + ", key="
+        + key
         + '}';
   }
 
@@ -268,6 +280,40 @@ public class AutoScalingProperties {
     @Override
     public String toString() {
       return "Log{" + "dir='" + dir + '\'' + '}';
+    }
+  }
+
+  public static class Key {
+    private File file;
+
+    public File getFile() {
+      return file;
+    }
+
+    public void setFile(File file) {
+      this.file = file;
+    }
+
+    @Override
+    public String toString() {
+      return "Key{" + "file=" + file + '}';
+    }
+  }
+
+  public static class File {
+    private String path;
+
+    public String getPath() {
+      return path;
+    }
+
+    public void setPath(String path) {
+      this.path = path;
+    }
+
+    @Override
+    public String toString() {
+      return "File{" + "path='" + path + '\'' + '}';
     }
   }
 }

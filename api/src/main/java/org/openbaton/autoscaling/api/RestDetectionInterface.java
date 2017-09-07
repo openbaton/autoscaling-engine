@@ -29,6 +29,7 @@ import org.openbaton.catalogue.mano.common.AutoScalePolicy;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
+import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +57,8 @@ public class RestDetectionInterface {
     produces = MediaType.APPLICATION_JSON_VALUE
   )
   @ResponseStatus(HttpStatus.CREATED)
-  public void activate(@RequestBody String msg) throws NotFoundException, VimException {
+  public void activate(@RequestBody String msg)
+      throws NotFoundException, VimException, SDKException {
     log.debug("========================");
     log.debug("msg=" + msg);
     JsonParser jsonParser = new JsonParser();
@@ -89,7 +91,7 @@ public class RestDetectionInterface {
     produces = MediaType.APPLICATION_JSON_VALUE
   )
   @ResponseStatus(HttpStatus.CREATED)
-  public void deactivate(@RequestBody String msg) throws NotFoundException {
+  public void deactivate(@RequestBody String msg) throws NotFoundException, SDKException {
     log.debug("========================");
     log.debug("msg=" + msg);
     JsonParser jsonParser = new JsonParser();

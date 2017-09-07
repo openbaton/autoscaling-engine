@@ -30,6 +30,7 @@ import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
+import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +58,8 @@ public class RestElasticityManagementInterface {
     produces = MediaType.APPLICATION_JSON_VALUE
   )
   @ResponseStatus(HttpStatus.CREATED)
-  public void activate(@RequestBody String msg) throws NotFoundException, VimException {
+  public void activate(@RequestBody String msg)
+      throws NotFoundException, VimException, SDKException {
     log.trace("msg=" + msg);
     JsonParser jsonParser = new JsonParser();
     JsonObject json = jsonParser.parse(msg).getAsJsonObject();

@@ -36,6 +36,7 @@ public class NfvoProperties {
   private String port;
   private String username;
   private String password;
+  private SSL ssl;
 
   public String getIp() {
     return ip;
@@ -69,6 +70,31 @@ public class NfvoProperties {
     this.password = password;
   }
 
+  public SSL getSsl() {
+    return ssl;
+  }
+
+  public void setSsl(SSL ssl) {
+    this.ssl = ssl;
+  }
+
+  public static class SSL {
+    boolean enabled;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    @Override
+    public String toString() {
+      return "SSL{" + "enabled=" + enabled + '}';
+    }
+  }
+
   @Override
   public String toString() {
     return "NfvoProperties{"
@@ -84,6 +110,8 @@ public class NfvoProperties {
         + ", password='"
         + password
         + '\''
+        + ", ssl="
+        + ssl
         + '}';
   }
 }
