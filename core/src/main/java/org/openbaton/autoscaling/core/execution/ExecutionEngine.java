@@ -189,7 +189,7 @@ public class ExecutionEngine {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
             "autoscaling-engine",
-            "",
+            projectId,
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
             "1",
