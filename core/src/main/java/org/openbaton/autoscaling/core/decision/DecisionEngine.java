@@ -81,7 +81,7 @@ public class DecisionEngine {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
             "autoscaling-engine",
-            "",
+            projectId,
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
             "1",
@@ -111,7 +111,7 @@ public class DecisionEngine {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
             "autoscaling-engine",
-            "",
+            projectId,
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
             "1",
@@ -137,7 +137,7 @@ public class DecisionEngine {
     NFVORequestor nfvoRequestor =
         new NFVORequestor(
             "autoscaling-engine",
-            "",
+            projectId,
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
             "1",

@@ -232,7 +232,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
               "/",
               autoScalingProperties.getRabbitmq().getManagement().getPort(),
               autoScalingProperties.getPlugin().getLog().getDir());
-        } catch (IOException e) {
+        } catch (Exception e) {
           log.error(e.getMessage(), e);
         }
       } else {
