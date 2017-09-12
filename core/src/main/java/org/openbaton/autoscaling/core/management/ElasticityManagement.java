@@ -125,7 +125,7 @@ public class ElasticityManagement {
       if (monitor == null) {
         log.warn("DetectionTask: Monitor was not found. Cannot start Autoscaling...");
       }
-    } catch (NotFoundException e) {
+    } catch (Exception e) {
       if (log.isDebugEnabled()) {
         log.error("Monitoring plugin is not yet available...", e);
       } else {
