@@ -93,7 +93,7 @@ public class DetectionTask implements Runnable {
     this.nfvoRequestor =
         new NFVORequestor(
             "autoscaling-engine",
-            "",
+            projectId,
             nfvoProperties.getIp(),
             nfvoProperties.getPort(),
             "1",
