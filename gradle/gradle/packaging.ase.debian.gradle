@@ -80,6 +80,6 @@ task makeDeb(type: Deb, dependsOn: [jar, build, logDebianPackageJavaDependency])
     from("gradle/gradle/scripts/${fullName}.conf")                      { into '/etc/init/'}                                    // conf file to run the Component as a service (Upstart)
     from("gradle/gradle/scripts/systemd/${fullName}.service")           { into "/usr/lib/systemd/system/"}                      // executable to run the Component as a service (Systemd)
     from("gradle/gradle/scripts/systemd/${fullName}.env")               { into "/usr/lib/openbaton/systemd/env/"}               // environment file to run the Component as a service (Systemd)
-    from('gradle/gradle/scripts/systemd/${fullName}.preexecstart')      { into "/usr/lib/openbaton/systemd/preexecstart/"}      // preexecstart file to run the Component as a service (Systemd)
+    from("gradle/gradle/scripts/systemd/${fullName}.preexecstart")      { into "/usr/lib/openbaton/systemd/preexecstart/"}      // preexecstart file to run the Component as a service (Systemd)
 }
 
