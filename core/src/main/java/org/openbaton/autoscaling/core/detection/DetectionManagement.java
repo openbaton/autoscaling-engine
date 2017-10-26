@@ -104,7 +104,7 @@ public class DetectionManagement {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     NetworkServiceRecord nsr = null;
     try {
       nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -137,7 +137,7 @@ public class DetectionManagement {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     VirtualNetworkFunctionRecord vnfr = null;
     try {
       vnfr =
@@ -237,7 +237,7 @@ public class DetectionManagement {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     NetworkServiceRecord nsr = null;
     try {
       nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -267,7 +267,7 @@ public class DetectionManagement {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     VirtualNetworkFunctionRecord vnfr = null;
     Set<Future<Boolean>> futureTasks = new HashSet<>();
     Set<Boolean> tasks = new HashSet<>();

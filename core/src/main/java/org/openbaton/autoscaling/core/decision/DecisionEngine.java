@@ -86,18 +86,15 @@ public class DecisionEngine {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     NetworkServiceRecord networkServiceRecord = null;
     try {
       networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
     } catch (SDKException e) {
       log.warn(e.getMessage(), e);
       return Status.NULL;
-    } catch (ClassNotFoundException e) {
-      log.warn(e.getMessage(), e);
-      return Status.NULL;
     } catch (FileNotFoundException e) {
-      log.error("Key file not found");
+      log.error("Service file not found");
       return Status.NULL;
     }
     if (networkServiceRecord == null || networkServiceRecord.getStatus() == null) {
@@ -116,7 +113,7 @@ public class DecisionEngine {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     try {
       VirtualNetworkFunctionRecord vnfr =
           nfvoRequestor
@@ -142,7 +139,7 @@ public class DecisionEngine {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
     List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
     vnfrsAll.addAll(

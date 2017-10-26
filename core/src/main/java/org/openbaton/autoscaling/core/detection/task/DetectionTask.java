@@ -98,7 +98,7 @@ public class DetectionTask implements Runnable {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     this.name = "DetectionTask#" + nsr_id + ":" + vnfr_id;
     this.first_time = true;
     this.fired = false;

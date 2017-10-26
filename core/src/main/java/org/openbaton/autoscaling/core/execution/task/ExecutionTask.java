@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
@@ -95,7 +94,7 @@ public class ExecutionTask implements Runnable {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
   }
 
   @Override

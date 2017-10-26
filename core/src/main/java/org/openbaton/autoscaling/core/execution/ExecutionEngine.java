@@ -87,7 +87,7 @@ public class ExecutionEngine {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     log.debug("Executing scale-out for VNFR with id: " + vnfr.getId());
     for (int i = 1; i <= numberOfInstances; i++) {
       if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {
@@ -194,7 +194,7 @@ public class ExecutionEngine {
             nfvoProperties.getPort(),
             "1",
             nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getKey().getFile().getPath());
+            autoScalingProperties.getService().getKey());
     for (int i = 1; i <= numberOfInstances; i++) {
       VNFCInstance vnfcInstance_remove = null;
       if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {
@@ -260,9 +260,6 @@ public class ExecutionEngine {
             break;
           } catch (SDKException e) {
             log.warn(e.getMessage(), e);
-          } catch (ClassNotFoundException e) {
-            log.warn(e.getMessage(), e);
-            break;
           } catch (FileNotFoundException e) {
             e.printStackTrace();
             break;

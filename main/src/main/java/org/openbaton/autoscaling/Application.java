@@ -43,7 +43,6 @@ import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationListener;
@@ -55,7 +54,6 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -108,7 +106,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
               nfvoProperties.getPort(),
               "1",
               nfvoProperties.getSsl().isEnabled(),
-              autoScalingProperties.getKey().getFile().getPath());
+              autoScalingProperties.getService().getKey());
     } catch (SDKException e) {
       log.error(e.getMessage(), e);
       System.exit(1);
@@ -160,8 +158,6 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
         log.error(
             "Credentials may be incorrect for talking to the NFVO. Please check 'nfvo.username' and 'nfvo.password' -> "
                 + e.getMessage());
-      } catch (ClassNotFoundException e) {
-        log.error(e.getMessage(), e);
       } catch (FileNotFoundException e) {
         e.printStackTrace();
       }
@@ -270,8 +266,6 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
       log.warn(
           "Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start",
           e);
-    } catch (ClassNotFoundException e) {
-      log.error(e.getMessage(), e);
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     }
