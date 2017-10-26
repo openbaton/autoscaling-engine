@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @ConfigurationProperties(prefix = "autoscaling")
-@PropertySource("classpath:autoscaling.properties")
+//@PropertySource("classpath:openbaton-ase.properties")
 public class AutoScalingProperties {
 
   private Rabbitmq rabbitmq;
