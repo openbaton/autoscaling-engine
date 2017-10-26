@@ -21,7 +21,6 @@
 package org.openbaton.autoscaling.configuration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 
 /**
@@ -40,7 +39,7 @@ public class AutoScalingProperties {
 
   private Plugin plugin;
 
-  private Key key;
+  private Service service;
 
   public Rabbitmq getRabbitmq() {
     return rabbitmq;
@@ -74,12 +73,12 @@ public class AutoScalingProperties {
     this.plugin = plugin;
   }
 
-  public Key getKey() {
-    return key;
+  public Service getService() {
+    return service;
   }
 
-  public void setKey(Key key) {
-    this.key = key;
+  public void setService(Service service) {
+    this.service = service;
   }
 
   @Override
@@ -93,8 +92,8 @@ public class AutoScalingProperties {
         + management
         + ", plugin="
         + plugin
-        + ", key="
-        + key
+        + ", service="
+        + service
         + '}';
   }
 
@@ -283,20 +282,20 @@ public class AutoScalingProperties {
     }
   }
 
-  public static class Key {
-    private File file;
+  public static class Service {
+    private String key;
 
-    public File getFile() {
-      return file;
+    public String getKey() {
+      return key;
     }
 
-    public void setFile(File file) {
-      this.file = file;
+    public void setKey(String key) {
+      this.key = key;
     }
 
     @Override
     public String toString() {
-      return "Key{" + "file=" + file + '}';
+      return "Service{" + "key=" + key + '}';
     }
   }
 
