@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
  * Created by mpa on 25.01.16.
  */
 @Service
-@ConfigurationProperties(prefix = "autoscaling")
+@ConfigurationProperties(prefix = "ase")
 //@PropertySource("classpath:openbaton-ase.properties")
 public class AutoScalingProperties {
 
