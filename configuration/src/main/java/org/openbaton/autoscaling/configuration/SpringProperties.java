@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @ConfigurationProperties(prefix = "spring")
-@PropertySource("classpath:openbaton-ase.properties")
+@PropertySource("classpath:application.properties")
 public class SpringProperties {
 
   private Rabbitmq rabbitmq;
