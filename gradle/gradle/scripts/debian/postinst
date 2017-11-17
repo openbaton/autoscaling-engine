@@ -54,25 +54,41 @@ configure_rabbitmq () {
     # Set the RabbitMQ IP
     rabbitmq_broker_ip=$( awk '$0 ~ "nfvo.rabbit.brokerIp[[:space:]]*="' "${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_NFVO_CONFIG_FILE}" | awk -F'=' '{print $2}' )
     if [ ! -z ${rabbitmq_broker_ip+x} ] ; then # The empty string is considered as unset
-        log_success_msg "Setting RabbitMQ IP into Auto Scaling Engine: ${rabbitmq_broker_ip}"
+        log_success_msg "Setting RabbitMQ IP into AutoScaling Engine: ${rabbitmq_broker_ip}"
         export rabbitmq_broker_ip=${rabbitmq_broker_ip}
-        sed -i "s|autoscaling.rabbitmq.brokerIp\s*=\s*localhost|autoscaling.rabbitmq.brokerIp=${rabbitmq_broker_ip}|g" ${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_COMPONENT_CONFIG_FILE}
+        sed -i "s|ase.rabbitmq.brokerIp\s*=\s*localhost|ase.rabbitmq.brokerIp=${rabbitmq_broker_ip}|g" ${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_COMPONENT_CONFIG_FILE}
     fi
 
     # Set the RabbitMQ Management port
     rabbitmq_management_port=$( awk '$0 ~ "nfvo.rabbit.management.port[[:space:]]*="' "${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_NFVO_CONFIG_FILE}" | awk -F'=' '{print $2}' )
     if [ ! -z ${rabbitmq_management_port+x} ] ; then # The empty string is considered as unset
-        log_success_msg "Setting RabbitMQ Management port into Auto Scaling Engine: ${rabbitmq_management_port}"
+        log_success_msg "Setting RabbitMQ Management port into AutoScaling Engine: ${rabbitmq_management_port}"
         export rabbitmq_management_port=${rabbitmq_management_port}
-        sed -i "s|autoscaling.rabbitmq.management.port\s*=\s*15672|autoscaling.rabbitmq.management.port=${rabbitmq_management_port}|g" ${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_COMPONENT_CONFIG_FILE}
+        sed -i "s|ase.rabbitmq.management.port\s*=\s*15672|ase.rabbitmq.management.port=${rabbitmq_management_port}|g" ${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_COMPONENT_CONFIG_FILE}
+    fi
+
+    # Set the RabbitMQ password
+    rabbitmq_password=$( awk '$0 ~ "spring.rabbitmq.password[[:space:]]*="' "${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_NFVO_CONFIG_FILE}" | awk -F'=' '{print $2}' )
+    if [ ! -z ${rabbitmq_password+x} ] ; then # The empty string is considered as unset
+        log_success_msg "Setting RabbitMQ password into AutoScaling Engine: ****"
+        export rabbitmq_password=${rabbitmq_password}
+        sed -i "s|spring.rabbitmq.password\s*=\s*.*|spring.rabbitmq.password=${rabbitmq_password}|g" ${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_COMPONENT_CONFIG_FILE}
     fi
 } 
 
-configure_nfvo_admin_credentials () {
+configure_nfvo () {
+    # In case of "noninteractive" FRONTEND the default value will remain valid (openbaton_nfvo_ip: localhost)
+    if [ "${DEBIAN_FRONTEND}" != "Noninteractive" -a "${DEBIAN_FRONTEND}" != "noninteractive" ]; then
+        read -p " * Please, provide the IP of the NFVO [localhost]: " openbaton_nfvo_ip
+    fi
+    # Set the NFVO IP
+    export openbaton_nfvo_ip=${openbaton_nfvo_ip:-$OPENBATON_NFVO_IP_DEFAULT}
+    sed -i "s|nfvo.ip\s*=.*|nfvo.ip=${openbaton_nfvo_ip}|g" ${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_COMPONENT_CONFIG_FILE}
+
     # Set the NFVO admin's password
     nfvo_admin_password=$( awk '$0 ~ "nfvo.security.admin.password[[:space:]]*="' "${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_NFVO_CONFIG_FILE}" | awk -F'=' '{print $2}' )
     if [ ! -z ${nfvo_admin_password+x} ] ; then # The empty string is considered as unset
-        log_success_msg "Setting NFVO admin's password into Auto Scaling Engine: ${nfvo_admin_password}"
+        log_success_msg "Setting NFVO admin's password into AutoScaling Engine: ${nfvo_admin_password}"
         export nfvo_admin_password=${nfvo_admin_password}
         sed -i "s|nfvo.password\s*=\s*openbaton|nfvo.password=${nfvo_admin_password}|g" ${OPENBATON_BASE_CONFIG_DIR}/${OPENBATON_COMPONENT_CONFIG_FILE}
     fi
@@ -82,7 +98,7 @@ configure_new_installation () {
     log_success_msg "Configuring Open Baton ${OPENBATON_COMPONENT_NAME_FANCY} installation .."
     chmod a+x ${OPENBATON_COMPONENT_EXE_DIR}/openbaton-${OPENBATON_COMPONENT_NAME}
     configure_rabbitmq
-    configure_nfvo_admin_credentials
+    configure_nfvo
     log_success_msg "Open Baton ${OPENBATON_COMPONENT_NAME_FANCY} installation completed"
 }
 
