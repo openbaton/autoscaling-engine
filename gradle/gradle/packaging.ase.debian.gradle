@@ -64,7 +64,8 @@ task makeDeb(type: Deb, dependsOn: [jar, build, logDebianPackageJavaDependency])
         requires('openjdk-7-jre')
     }
 
-    requires('openbaton-plugin-monitoring-zabbix')
+    // the flag 4 is for openbaton-plugin-monitoring-zabbix greater than 4.0.0
+    requires('openbaton-plugin-monitoring-zabbix', '4.0.0', 4)
 
     // Copy files from "from path" to "into path"
     from("src/main/resources/application.properties") {                                                                         // properties file
@@ -75,9 +76,9 @@ task makeDeb(type: Deb, dependsOn: [jar, build, logDebianPackageJavaDependency])
         into "${baseBinaryDir}/${jarSubpathName}"
         rename("(.*)", "${fullName}-${version}.jar")
     }
-    from("gradle/gradle/scripts/${fullName}")                           { into '/usr/bin/' }                                    // executable to run the Component
-    from("gradle/gradle/scripts/${fullName}")                           { into '/etc/init.d/' }                                 // executable to run the Component as a service (SysV)
-    from("gradle/gradle/scripts/${fullName}.conf")                      { into '/etc/init/' }                                   // conf file to run the Component as a service (Upstart)
+    from("gradle/gradle/scripts/${fullName}")                           { into "/usr/bin/" }                                    // executable to run the Component
+    from("gradle/gradle/scripts/${fullName}")                           { into "/etc/init.d/" }                                 // executable to run the Component as a service (SysV)
+    from("gradle/gradle/scripts/${fullName}.conf")                      { into "/etc/init/" }                                   // conf file to run the Component as a service (Upstart)
     from("gradle/gradle/scripts/systemd/${fullName}.service")           { into "/usr/lib/systemd/system/" }                     // executable to run the Component as a service (Systemd)
     from("gradle/gradle/scripts/systemd/${fullName}.env")               { into "/usr/lib/openbaton/systemd/env/" }              // environment file to run the Component as a service (Systemd)
     from("gradle/gradle/scripts/systemd/${fullName}.preexecstart")      { into "/usr/lib/openbaton/systemd/preexecstart/" }     // preexecstart file to run the Component as a service (Systemd)
