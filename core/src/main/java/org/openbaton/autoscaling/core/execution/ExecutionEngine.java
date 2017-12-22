@@ -260,9 +260,6 @@ public class ExecutionEngine {
             break;
           } catch (SDKException e) {
             log.warn(e.getMessage(), e);
-          } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            break;
           }
         } else {
           log.warn("Minimum size of VDU with id: " + vdu.getId() + " reached...");

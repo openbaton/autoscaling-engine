@@ -93,9 +93,6 @@ public class DecisionEngine {
     } catch (SDKException e) {
       log.warn(e.getMessage(), e);
       return Status.NULL;
-    } catch (FileNotFoundException e) {
-      log.error("Service file not found");
-      return Status.NULL;
     }
     if (networkServiceRecord == null || networkServiceRecord.getStatus() == null) {
       return Status.NULL;

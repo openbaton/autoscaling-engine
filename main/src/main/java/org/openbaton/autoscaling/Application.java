@@ -158,8 +158,6 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
         log.error(
             "Credentials may be incorrect for talking to the NFVO. Please check 'nfvo.username' and 'nfvo.password' -> "
                 + e.getMessage());
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
       }
       Set<Future<Boolean>> pendingTasks = new HashSet<>();
       for (NetworkServiceRecord nsr : nsrs) {
@@ -266,8 +264,6 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
       log.warn(
           "Problem while fetching exisiting NSRs from the Orchestrator to start Autoscaling. Elasticity for previously deployed NSRs will not start",
           e);
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
     }
     for (NetworkServiceRecord nsr : nsrs) {
       try {
