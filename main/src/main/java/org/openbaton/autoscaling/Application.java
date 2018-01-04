@@ -101,7 +101,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
       this.nfvoRequestor =
           new NFVORequestor(
               "autoscaling-engine",
-              "",
+              "*",
               nfvoProperties.getIp(),
               nfvoProperties.getPort(),
               "1",
