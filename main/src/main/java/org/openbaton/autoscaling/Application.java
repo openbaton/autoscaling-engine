@@ -39,6 +39,7 @@ import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.plugin.mgmt.PluginStartup;
 import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.NfvoRequestorBuilder;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,15 +99,23 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     waitForNfvo();
     this.elasticityManagement = context.getBean(ElasticityManagement.class);
     try {
-      this.nfvoRequestor =
-          new NFVORequestor(
-              "autoscaling-engine",
-              "default",
-              nfvoProperties.getIp(),
-              nfvoProperties.getPort(),
-              "1",
-              nfvoProperties.getSsl().isEnabled(),
-              autoScalingProperties.getService().getKey());
+      NfvoRequestorBuilder nfvoRequestorBuilder = NfvoRequestorBuilder.create();
+      nfvoRequestorBuilder.nfvoIp(nfvoProperties.getIp());
+      nfvoRequestorBuilder.nfvoPort(Integer.parseInt(nfvoProperties.getPort()));
+      nfvoRequestorBuilder.serviceName("autoscaling-engine");
+      nfvoRequestorBuilder.serviceKey(autoScalingProperties.getService().getKey());
+      nfvoRequestorBuilder.sslEnabled(nfvoProperties.getSsl().isEnabled());
+      nfvoRequestorBuilder.version("1");
+      this.nfvoRequestor = nfvoRequestorBuilder.build();
+      //      this.nfvoRequestor =
+      //          new NFVORequestor(
+      //              "autoscaling-engine",
+      //              "default",
+      //              nfvoProperties.getIp(),
+      //              nfvoProperties.getPort(),
+      //              "1",
+      //              nfvoProperties.getSsl().isEnabled(),
+      //              autoScalingProperties.getService().getKey());
     } catch (SDKException e) {
       log.error(e.getMessage(), e);
       System.exit(1);
