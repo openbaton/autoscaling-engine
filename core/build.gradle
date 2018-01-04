@@ -19,6 +19,7 @@
  */
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots/"
@@ -29,8 +30,11 @@ repositories {
 }
 
 dependencies {
-    compile 'org.openbaton:plugin:' + openbatonVersion
-    compile 'org.openbaton:monitoring:' + openbatonVersion
+    compile 'org.openbaton:plugin:' + '5.1.4-SNAPSHOT'
+    compile 'org.openbaton:monitoring:' + '5.1.4-SNAPSHOT'
+
+    compile group: 'org.pacesys', name: 'openstack4j', version: '3.1.0'
+
 
     compile project(':as-catalogue')
     compile project(':as-utils')

@@ -52,7 +52,7 @@ project.ext {
     /**
      * OpenBaton Related Version
      */
-    openbatonVersion = '5.1.2'
+    openbatonVersion = '5.1.3-SNAPSHOT'
     /**
      * Application Related Version
      */
@@ -79,6 +79,7 @@ apply from: 'gradle/gradle/application.java.gradle'
 apply from: 'gradle/gradle/run.application.java.gradle'
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots/"
