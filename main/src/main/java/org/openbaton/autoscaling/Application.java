@@ -39,6 +39,7 @@ import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.plugin.mgmt.PluginStartup;
 import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.NfvoRequestorBuilder;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,14 +100,14 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     this.elasticityManagement = context.getBean(ElasticityManagement.class);
     try {
       this.nfvoRequestor =
-          new NFVORequestor(
-              "autoscaling-engine",
-              "",
-              nfvoProperties.getIp(),
-              nfvoProperties.getPort(),
-              "1",
-              nfvoProperties.getSsl().isEnabled(),
-              autoScalingProperties.getService().getKey());
+          NfvoRequestorBuilder.create()
+              .nfvoIp(nfvoProperties.getIp())
+              .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+              .serviceName("autoscaling-engine")
+              .serviceKey(autoScalingProperties.getService().getKey())
+              .sslEnabled(nfvoProperties.getSsl().isEnabled())
+              .version("1")
+              .build();
     } catch (SDKException e) {
       log.error(e.getMessage(), e);
       System.exit(1);

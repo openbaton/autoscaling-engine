@@ -32,7 +32,6 @@ import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.monitoring.interfaces.MonitoringPlugin;
 import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
-import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,6 +127,7 @@ public class DetectionEngine {
             + metric
             + ".");
     measurementResults.addAll(monitor.queryPMJob(hostnames, metrics, period));
+
     if (hostnames.size() != measurementResults.size()) {
       throw new MonitoringException(
           "Requested amount of measurements is greater than the received amount of measurements -> "
