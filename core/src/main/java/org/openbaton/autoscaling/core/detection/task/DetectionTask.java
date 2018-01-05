@@ -33,6 +33,7 @@ import org.openbaton.catalogue.nfvo.Item;
 import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.NfvoRequestorBuilder;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,14 +92,15 @@ public class DetectionTask implements Runnable {
     this.projectId = projectId;
 
     this.nfvoRequestor =
-        new NFVORequestor(
-            "autoscaling-engine",
-            projectId,
-            nfvoProperties.getIp(),
-            nfvoProperties.getPort(),
-            "1",
-            nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getService().getKey());
+        NfvoRequestorBuilder.create()
+            .nfvoIp(nfvoProperties.getIp())
+            .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+            .serviceName("autoscaling-engine")
+            .serviceKey(autoScalingProperties.getService().getKey())
+            .sslEnabled(nfvoProperties.getSsl().isEnabled())
+            .version("1")
+            .projectId(projectId)
+            .build();
     this.name = "DetectionTask#" + nsr_id + ":" + vnfr_id;
     this.first_time = true;
     this.fired = false;

@@ -29,6 +29,7 @@ import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.NfvoRequestorBuilder;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,14 +80,15 @@ public class DecisionEngine {
   public Status getStatus(String projectId, String nsr_id) throws SDKException {
     log.debug("Check Status of NSR with id: " + nsr_id);
     NFVORequestor nfvoRequestor =
-        new NFVORequestor(
-            "autoscaling-engine",
-            projectId,
-            nfvoProperties.getIp(),
-            nfvoProperties.getPort(),
-            "1",
-            nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getService().getKey());
+        NfvoRequestorBuilder.create()
+            .nfvoIp(nfvoProperties.getIp())
+            .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+            .serviceName("autoscaling-engine")
+            .serviceKey(autoScalingProperties.getService().getKey())
+            .sslEnabled(nfvoProperties.getSsl().isEnabled())
+            .version("1")
+            .projectId(projectId)
+            .build();
     NetworkServiceRecord networkServiceRecord = null;
     try {
       networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -103,14 +105,15 @@ public class DecisionEngine {
   public VirtualNetworkFunctionRecord getVNFR(String projectId, String nsr_id, String vnfr_id)
       throws SDKException, FileNotFoundException {
     NFVORequestor nfvoRequestor =
-        new NFVORequestor(
-            "autoscaling-engine",
-            projectId,
-            nfvoProperties.getIp(),
-            nfvoProperties.getPort(),
-            "1",
-            nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getService().getKey());
+        NfvoRequestorBuilder.create()
+            .nfvoIp(nfvoProperties.getIp())
+            .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+            .serviceName("autoscaling-engine")
+            .serviceKey(autoScalingProperties.getService().getKey())
+            .sslEnabled(nfvoProperties.getSsl().isEnabled())
+            .version("1")
+            .projectId(projectId)
+            .build();
     try {
       VirtualNetworkFunctionRecord vnfr =
           nfvoRequestor
@@ -129,14 +132,15 @@ public class DecisionEngine {
   public List<VirtualNetworkFunctionRecord> getVNFRsOfTypeX(
       String projectId, String nsr_id, String type, String policyId) throws Exception {
     NFVORequestor nfvoRequestor =
-        new NFVORequestor(
-            "autoscaling-engine",
-            projectId,
-            nfvoProperties.getIp(),
-            nfvoProperties.getPort(),
-            "1",
-            nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getService().getKey());
+        NfvoRequestorBuilder.create()
+            .nfvoIp(nfvoProperties.getIp())
+            .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+            .serviceName("autoscaling-engine")
+            .serviceKey(autoScalingProperties.getService().getKey())
+            .sslEnabled(nfvoProperties.getSsl().isEnabled())
+            .version("1")
+            .projectId(projectId)
+            .build();
     List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
     List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
     vnfrsAll.addAll(

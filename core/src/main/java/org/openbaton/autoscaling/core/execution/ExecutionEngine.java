@@ -21,6 +21,7 @@
 package org.openbaton.autoscaling.core.execution;
 
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
+import org.openbaton.sdk.NfvoRequestorBuilder;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import org.openbaton.autoscaling.configuration.NfvoProperties;
@@ -80,14 +81,15 @@ public class ExecutionEngine {
       String projectId, VirtualNetworkFunctionRecord vnfr, int numberOfInstances)
       throws NotFoundException, SDKException {
     NFVORequestor nfvoRequestor =
-        new NFVORequestor(
-            "autoscaling-engine",
-            projectId,
-            nfvoProperties.getIp(),
-            nfvoProperties.getPort(),
-            "1",
-            nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getService().getKey());
+        NfvoRequestorBuilder.create()
+            .nfvoIp(nfvoProperties.getIp())
+            .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+            .serviceName("autoscaling-engine")
+            .serviceKey(autoScalingProperties.getService().getKey())
+            .sslEnabled(nfvoProperties.getSsl().isEnabled())
+            .version("1")
+            .projectId(projectId)
+            .build();
     log.debug("Executing scale-out for VNFR with id: " + vnfr.getId());
     for (int i = 1; i <= numberOfInstances; i++) {
       if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {
@@ -187,14 +189,15 @@ public class ExecutionEngine {
       throws NotFoundException, SDKException {
     log.debug("Executing scale-in for VNFR with id: " + vnfr.getId());
     NFVORequestor nfvoRequestor =
-        new NFVORequestor(
-            "autoscaling-engine",
-            projectId,
-            nfvoProperties.getIp(),
-            nfvoProperties.getPort(),
-            "1",
-            nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getService().getKey());
+        NfvoRequestorBuilder.create()
+            .nfvoIp(nfvoProperties.getIp())
+            .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+            .serviceName("autoscaling-engine")
+            .serviceKey(autoScalingProperties.getService().getKey())
+            .sslEnabled(nfvoProperties.getSsl().isEnabled())
+            .version("1")
+            .projectId(projectId)
+            .build();
     for (int i = 1; i <= numberOfInstances; i++) {
       VNFCInstance vnfcInstance_remove = null;
       if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {

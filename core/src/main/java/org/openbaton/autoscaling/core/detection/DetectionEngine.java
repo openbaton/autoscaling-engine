@@ -38,6 +38,7 @@ import org.openbaton.monitoring.interfaces.MonitoringPlugin;
 import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
 import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.NfvoRequestorBuilder;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.api.exceptions.AuthenticationException;
@@ -144,15 +145,15 @@ public class DetectionEngine {
             + ".");
 
     NFVORequestor nfvoRequestor =
-        new NFVORequestor(
-            "autoscaling-engine",
-            vnfr.getProjectId(),
-            nfvoProperties.getIp(),
-            nfvoProperties.getPort(),
-            "1",
-            nfvoProperties.getSsl().isEnabled(),
-            autoScalingProperties.getService().getKey());
-
+        NfvoRequestorBuilder.create()
+            .nfvoIp(nfvoProperties.getIp())
+            .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+            .serviceName("autoscaling-engine")
+            .serviceKey(autoScalingProperties.getService().getKey())
+            .sslEnabled(nfvoProperties.getSsl().isEnabled())
+            .version("1")
+            .projectId(vnfr.getProjectId())
+            .build();
     List<BaseVimInstance> allVims = nfvoRequestor.getVimInstanceAgent().findAll();
 
     for (VirtualDeploymentUnit vdu : vnfr.getVdu()) {
