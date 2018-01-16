@@ -29,8 +29,8 @@ repositories {
 }
 
 dependencies {
-    compile 'org.openbaton:plugin:' + openbatonVersion
-    compile 'org.openbaton:monitoring:' + openbatonVersion
+    compile 'org.openbaton:plugin:' + '5.1.4-SNAPSHOT'
+    compile 'org.openbaton:monitoring:' + '5.1.4-SNAPSHOT'
 
     compile project(':as-catalogue')
     compile project(':as-utils')
