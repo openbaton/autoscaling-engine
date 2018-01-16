@@ -34,9 +34,6 @@ import org.openbaton.catalogue.nfvo.viminstances.OpenstackVimInstance;
 import org.openbaton.exceptions.MonitoringException;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimDriverException;
-import org.openbaton.monitoring.interfaces.MonitoringPlugin;
-import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
-import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.NFVORequestor;
 import org.openbaton.sdk.NfvoRequestorBuilder;
 import org.openbaton.sdk.api.exception.SDKException;
@@ -194,6 +191,7 @@ public class DetectionEngine {
       }
     }
     //    measurementResults.addAll(monitor.queryPMJob(hostnames, metrics, period));
+
     if (hostnames.size() != measurementResults.size()) {
       throw new MonitoringException(
           "Requested amount of measurements is greater than the received amount of measurements -> "
