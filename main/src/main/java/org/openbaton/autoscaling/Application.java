@@ -114,11 +114,12 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     }
     try {
       List<Project> projectList = nfvoRequestor.getProjectAgent().findAll();
-      for (Project project : projectList) {
-        if (project.getName().equals("default")) {
-          nfvoRequestor.setProjectId(project.getId());
-        }
-      }
+      //      for (Project project : projectList) {
+      //        if (project.getName().equals("default")) {
+      //          nfvoRequestor.setProjectId(project.getId());
+      //        }
+      //      }
+      //      nfvoRequestor.setProjectId("*");
       subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
       subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
       subscriptionIds.add(subscribe(Action.ERROR));
@@ -193,6 +194,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     log.debug("Subscribing to all NSR Events with Action " + action);
     EventEndpoint eventEndpoint = new EventEndpoint();
     eventEndpoint.setName("Subscription:" + action);
+    eventEndpoint.setProjectId("*");
     eventEndpoint.setEndpoint(
         "http://"
             + autoScalingProperties.getServer().getIp()
