@@ -105,8 +105,10 @@ public class DetectionManagement {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     NetworkServiceRecord nsr = null;
     try {
       nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -139,8 +141,10 @@ public class DetectionManagement {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     VirtualNetworkFunctionRecord vnfr = null;
     try {
       vnfr =
@@ -240,8 +244,10 @@ public class DetectionManagement {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     NetworkServiceRecord nsr = null;
     try {
       nsr = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -271,8 +277,10 @@ public class DetectionManagement {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     VirtualNetworkFunctionRecord vnfr = null;
     Set<Future<Boolean>> futureTasks = new HashSet<>();
     Set<Boolean> tasks = new HashSet<>();

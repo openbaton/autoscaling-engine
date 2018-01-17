@@ -88,8 +88,10 @@ public class ExecutionEngine {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     log.debug("Executing scale-out for VNFR with id: " + vnfr.getId());
     for (int i = 1; i <= numberOfInstances; i++) {
       if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {
@@ -196,8 +198,10 @@ public class ExecutionEngine {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     for (int i = 1; i <= numberOfInstances; i++) {
       VNFCInstance vnfcInstance_remove = null;
       if (actionMonitor.isTerminating(vnfr.getParent_ns_id())) {

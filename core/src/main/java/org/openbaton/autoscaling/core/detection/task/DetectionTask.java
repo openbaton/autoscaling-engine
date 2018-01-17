@@ -99,8 +99,10 @@ public class DetectionTask implements Runnable {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     this.name = "DetectionTask#" + nsr_id + ":" + vnfr_id;
     this.first_time = true;
     this.fired = false;
