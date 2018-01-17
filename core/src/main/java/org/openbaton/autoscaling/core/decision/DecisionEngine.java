@@ -87,8 +87,10 @@ public class DecisionEngine {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     NetworkServiceRecord networkServiceRecord = null;
     try {
       networkServiceRecord = nfvoRequestor.getNetworkServiceRecordAgent().findById(nsr_id);
@@ -112,8 +114,10 @@ public class DecisionEngine {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     try {
       VirtualNetworkFunctionRecord vnfr =
           nfvoRequestor
@@ -139,8 +143,10 @@ public class DecisionEngine {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
+
     List<VirtualNetworkFunctionRecord> vnfrsOfTypeX = new ArrayList<>();
     List<VirtualNetworkFunctionRecord> vnfrsAll = new ArrayList<>();
     vnfrsAll.addAll(

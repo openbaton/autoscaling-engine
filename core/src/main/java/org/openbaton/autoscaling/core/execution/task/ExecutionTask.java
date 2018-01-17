@@ -95,8 +95,9 @@ public class ExecutionTask implements Runnable {
             .serviceKey(autoScalingProperties.getService().getKey())
             .sslEnabled(nfvoProperties.getSsl().isEnabled())
             .version("1")
-            .projectId(projectId)
             .build();
+
+    nfvoRequestor.setProjectId(projectId);
   }
 
   @Override
