@@ -93,8 +93,6 @@ public class DetectionEngine {
               "zabbix",
               autoScalingProperties.getRabbitmq().getManagement().getPort(),
               120000);
-    } catch (TimeoutException e) {
-      log.error(e.getMessage(), e);
     } catch (IOException e) {
       log.error(e.getMessage(), e);
     }
