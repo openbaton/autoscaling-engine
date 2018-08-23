@@ -20,6 +20,11 @@
 
 package org.openbaton.autoscaling.core.detection;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import javax.annotation.PostConstruct;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
@@ -39,16 +44,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("singleton")
 public class DetectionEngine {
@@ -93,8 +89,7 @@ public class DetectionEngine {
               "zabbix",
               autoScalingProperties.getRabbitmq().getManagement().getPort(),
               120000);
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       log.error(e.getMessage(), e);
     }
   }

@@ -24,9 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 
-/**
- * Created by mpa on 25.01.16.
- */
+/** Created by mpa on 25.01.16. */
 @Service
 @ConfigurationProperties(prefix = "nfvo")
 @PropertySource("classpath:nfvo.properties")

@@ -20,6 +20,8 @@
 
 package org.openbaton.autoscaling.core.execution.task;
 
+import java.util.Map;
+import java.util.Set;
 import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
@@ -37,12 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.Set;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("prototype")
 public class ExecutionTask implements Runnable {

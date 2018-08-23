@@ -20,12 +20,11 @@
 
 package org.openbaton.autoscaling.core.management;
 
+import java.util.HashMap;
+import javax.annotation.PostConstruct;
 import org.openbaton.autoscaling.catalogue.Action;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
 
 @Service
 @Scope

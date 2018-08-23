@@ -20,15 +20,13 @@
 
 package org.openbaton.autoscaling.core.decision;
 
+import java.util.concurrent.Future;
+import javax.annotation.PostConstruct;
 import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.decision.task.DecisionTask;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
-import org.openbaton.catalogue.mano.record.NetworkServiceRecord;
-import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.openbaton.sdk.NFVORequestor;
-import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,12 +37,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ErrorHandler;
 
-import javax.annotation.PostConstruct;
-import java.util.concurrent.Future;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("singleton")
 public class DecisionManagement {

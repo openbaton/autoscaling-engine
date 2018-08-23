@@ -19,6 +19,7 @@
  */
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots/"
@@ -31,7 +32,7 @@ repositories {
 dependencies {
     compile 'org.openbaton:exception:' + openbatonVersion
 
-    compile('org.openbaton:sdk:' + openbatonVersion) /*{
+    compile('org.openbaton:sdk:' + '6.0.0-RC2') /*{
         exclude module: 'catalogue'
     }*/
     compile 'org.slf4j:slf4j-api:1.6.1'

@@ -23,9 +23,10 @@ buildscript {
 }
 
 plugins {
-    id 'net.researchgate.release' version '2.3.4'
+    id 'net.researchgate.release' version '2.6.0'
     id "nebula.ospackage" version "4.5.1"
-    id 'com.github.sherter.google-java-format' version '0.3.2'
+    id 'com.github.sherter.google-java-format' version '0.5'
+    id 'org.springframework.boot' version '1.5.11.RELEASE'
 }
 
 
@@ -40,19 +41,19 @@ apply from: 'gradle/gradle/command.line.helper.gradle'
 apply from: 'gradle/gradle/git.release.gradle'
 
 
-project.ext {
+ext {
     //------------------------------------------------//
     /**
      * Spring Related Variables
      */
     //springVersion = '4.3.5.RELEASE'
-    springBootVersion = '1.5.8.RELEASE'
+    springBootVersion = '1.5.11.RELEASE'
     //------------------------------------------------//
     //------------------------------------------------//
     /**
      * OpenBaton Related Version
      */
-    openbatonVersion = '5.2.1'
+    openbatonVersion = '6.0.0-RC1'
     /**
      * Application Related Version
      */
@@ -64,21 +65,17 @@ project.ext {
 
     applicationVersionSnapshot = (!applicationRelease) ? ".${asUTC(applicationDate, 'yyyyMMdd')}.git${applicationRevision}" : ""
     applicationVersionFull = "${applicationVersion}${applicationVersionSnapshot}"
-
-
-    //------------------------------------------------//
-    //------------------------------------------------//
-    /**
-     * gradle Related Vars
-     */
-    //------------------------------------------------//
     mainClass = 'org.openbaton.autoscaling.Starter'
 }
 
+
 apply from: 'gradle/gradle/application.java.gradle'
-apply from: 'gradle/gradle/run.application.java.gradle'
+//apply from: 'gradle/gradle/run.application.java.gradle'
+apply from: 'gradle/gradle/packaging.ase.debian.gradle'
+apply from: 'gradle/gradle/packaging.ase.docker.gradle'
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots/"
@@ -88,15 +85,23 @@ repositories {
     }
 }
 
+
+
 dependencies {
-    compile project(':main')
+    //compile project(':main')
+
+    compile project(':core')
+    compile project(':as-utils')
+    compile project(':api')
+
+    compile 'org.springframework.boot:spring-boot:' + springBootVersion
+    compile 'org.springframework.boot:spring-boot-autoconfigure:' + springBootVersion
 
     compile 'org.slf4j:slf4j-api:1.6.1'
 
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }
 
-apply from: 'gradle/gradle/packaging.ase.debian.gradle'
-apply from: 'gradle/gradle/packaging.ase.docker.gradle'
+
 
 compileJava.dependsOn tasks.googleJavaFormat

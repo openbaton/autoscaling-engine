@@ -20,6 +20,14 @@
 
 package org.openbaton.autoscaling.core.detection;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
+import javax.annotation.PostConstruct;
 import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
@@ -43,18 +51,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ErrorHandler;
 
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("singleton")
 public class DetectionManagement {

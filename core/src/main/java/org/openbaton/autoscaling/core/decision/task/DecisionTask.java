@@ -20,6 +20,7 @@
 
 package org.openbaton.autoscaling.core.decision.task;
 
+import java.util.*;
 import org.openbaton.autoscaling.core.decision.DecisionEngine;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.common.AutoScalePolicy;
@@ -35,11 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("prototype")
 public class DecisionTask implements Runnable {

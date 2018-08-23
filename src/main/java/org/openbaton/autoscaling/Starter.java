@@ -18,23 +18,16 @@
  *
  */
 
-repositories {
-    mavenCentral()
-    maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
-    maven {
-        url "https://oss.sonatype.org/content/repositories/releases/"
-    }
-}
+package org.openbaton.autoscaling;
 
-dependencies {
-    compile project(':core')
-    compile project(':as-utils')
-    compile project(':api')
+import org.springframework.boot.SpringApplication;
+import org.springframework.stereotype.Component;
 
-    compile 'org.springframework.boot:spring-boot:' + springBootVersion
-    compile 'org.springframework.boot:spring-boot-autoconfigure:' + springBootVersion
+/** Created by mpa on 27.10.15. */
+@Component
+public class Starter {
 
-    testCompile group: 'junit', name: 'junit', version: '4.11'
+  public static void main(String[] args) {
+    SpringApplication.run(Application.class, args);
+  }
 }

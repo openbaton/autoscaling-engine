@@ -20,7 +20,7 @@ rootProject.name = 'autoscaling-engine'
  *
  */
 
-include 'main'
+include 'src'
 include 'core'
 include 'configuration'
 include 'api'
