@@ -31,7 +31,6 @@ repositories {
 
 dependencies {
     compile 'org.springframework.boot:spring-boot:' + springBootVersion
-
     // https://mvnrepository.com/artifact/commons-configuration/commons-configuration
     compile group: 'commons-configuration', name: 'commons-configuration', version: '1.6'
 
