@@ -81,7 +81,7 @@ public class ExecutionManagement {
   public void executeActions(
       String projectId, String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown)
       throws SDKException {
-    //log.info("[EXECUTOR] RECEIVED_ACTION " + new Date().getTime());
+    // log.info("[EXECUTOR] RECEIVED_ACTION " + new Date().getTime());
     if (actionMonitor.requestAction(nsr_id, Action.SCALE)) {
       log.info("Executing scaling actions for NSR " + nsr_id + " -> " + actions);
       log.debug(

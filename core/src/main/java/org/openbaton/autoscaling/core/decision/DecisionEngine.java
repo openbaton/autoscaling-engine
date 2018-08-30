@@ -53,7 +53,7 @@ public class DecisionEngine {
 
   @Autowired private ConfigurableApplicationContext context;
 
-  //@Autowired
+  // @Autowired
   private ExecutionManagement executionManagement;
 
   @Autowired private NfvoProperties nfvoProperties;
@@ -68,7 +68,7 @@ public class DecisionEngine {
   public void sendDecision(
       String projectId, String nsr_id, Map actionVnfrMap, Set<ScalingAction> actions, long cooldown)
       throws SDKException {
-    //log.info("[DECISION_MAKER] DECIDED_ABOUT_ACTIONS " + new Date().getTime());
+    // log.info("[DECISION_MAKER] DECIDED_ABOUT_ACTIONS " + new Date().getTime());
     log.debug("Send actions to Executor: " + actions.toString());
     executionManagement.executeActions(projectId, nsr_id, actionVnfrMap, actions, cooldown);
   }

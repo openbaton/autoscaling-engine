@@ -72,9 +72,8 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 @SpringBootApplication
 @ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling", "org.openbaton"})
 @ContextConfiguration(
-  loader = AnnotationConfigContextLoader.class,
-  classes = {ASBeanConfiguration.class, PropertiesConfiguration.class}
-)
+    loader = AnnotationConfigContextLoader.class,
+    classes = {ASBeanConfiguration.class, PropertiesConfiguration.class})
 public class Application implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
 
   protected static Logger log = LoggerFactory.getLogger(Application.class);
@@ -96,9 +95,9 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
   private void init()
       throws ClassNotFoundException, NotFoundException, SDKException, ConfigurationException {
     subscriptionIds = new ArrayList<>();
-    //start all the plugins needed
+    // start all the plugins needed
     startPlugins();
-    //waiting until the NFVO is available
+    // waiting until the NFVO is available
     waitForNfvo();
     this.elasticityManagement = context.getBean(ElasticityManagement.class);
     if (autoScalingProperties.getService().getKey().isEmpty()) {
@@ -143,7 +142,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
     }
 
     try {
-      //List<Project> projectList = nfvoRequestor.getProjectAgent().findAll();
+      // List<Project> projectList = nfvoRequestor.getProjectAgent().findAll();
       //      for (Project project : projectList) {
       //        if (project.getName().equals("default")) {
       //          nfvoRequestor.setProjectId(project.getId());
@@ -154,9 +153,9 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
       subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
       subscriptionIds.add(subscribe(Action.ERROR));
 
-      //for (ServiceMetadata serviceMetadata : nfvoRequestor.getServiceAgent().findAll()) {
+      // for (ServiceMetadata serviceMetadata : nfvoRequestor.getServiceAgent().findAll()) {
       //  log.info(serviceMetadata.toString());
-      //}
+      // }
 
       List<EventEndpoint> eventEndpoints = nfvoRequestor.getEventAgent().findAll();
       if (eventEndpoints.size() == 3) {

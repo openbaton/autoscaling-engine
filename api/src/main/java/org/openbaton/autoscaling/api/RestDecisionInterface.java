@@ -48,11 +48,10 @@ public class RestDecisionInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "",
-    method = RequestMethod.POST,
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "",
+      method = RequestMethod.POST,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void decide(@RequestBody String msg) throws NotFoundException {
     log.debug("========================");
@@ -67,7 +66,8 @@ public class RestDecisionInterface {
     String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
     AutoScalePolicy autoScalePolicy =
         mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
-    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+    // NetworkServiceRecord.class);
     //        log.debug("NSR=" + nsr);
     decisionManagement.decide(projectId, nsrId, autoScalePolicy);
   }
@@ -78,10 +78,9 @@ public class RestDecisionInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "",
-    method = RequestMethod.DELETE, /*consumes = MediaType.APPLICATION_JSON_VALUE,*/
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "",
+      method = RequestMethod.DELETE, /*consumes = MediaType.APPLICATION_JSON_VALUE,*/
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void stop(@RequestBody String msg) throws NotFoundException {
     log.debug("========================");
@@ -96,7 +95,8 @@ public class RestDecisionInterface {
     String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
     AutoScalePolicy autoScalePolicy =
         mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
-    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+    // NetworkServiceRecord.class);
     //        log.debug("NSR=" + nsr);
     decisionManagement.stop(projectId, nsrId);
   }
@@ -106,7 +106,8 @@ public class RestDecisionInterface {
   //     *
   //     * @param msg : NSR in payload to add for autoscaling
   //     */
-  //    @RequestMapping(value = "ERROR", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  //    @RequestMapping(value = "ERROR", method = RequestMethod.POST, consumes =
+  // MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   //    @ResponseStatus(HttpStatus.CREATED)
   //    public void stop(@RequestBody String msg) throws NotFoundException {
   //        log.debug("========================");
@@ -117,11 +118,13 @@ public class RestDecisionInterface {
   //        Action action = mapper.fromJson(json.get("action"), Action.class);
   //        log.debug("ACTION=" + action);
   //        try {
-  //            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+  //            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+  // NetworkServiceRecord.class);
   //            log.debug("NSR=" + nsr);
   //            elasticityManagement.deactivate(nsr);
   //        } catch (NullPointerException e) {
-  //            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
+  //            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"),
+  // VirtualNetworkFunctionRecord.class);
   //            log.debug("vnfr=" + vnfr);
   //            elasticityManagement.deactivate(vnfr);
   //        }

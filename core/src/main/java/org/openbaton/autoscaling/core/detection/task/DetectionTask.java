@@ -107,7 +107,7 @@ public class DetectionTask implements Runnable {
 
   @Override
   public void run() {
-    //log.info("[DETECTOR] CHECK_ALARM " + new Date().getTime());
+    // log.info("[DETECTOR] CHECK_ALARM " + new Date().getTime());
     if (!actionMonitor.requestAction(autoScalePolicy.getId(), Action.DETECT)) {
       return;
     }
@@ -121,7 +121,7 @@ public class DetectionTask implements Runnable {
         while (i < autoScalePolicy.getCooldown()) {
           Thread.sleep(1000);
           i++;
-          //terminate gracefully at this point in time if suggested from the outside
+          // terminate gracefully at this point in time if suggested from the outside
           if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
             actionMonitor.finishedAction(autoScalePolicy.getId(), Action.TERMINATED);
             return;
@@ -159,14 +159,14 @@ public class DetectionTask implements Runnable {
       actionMonitor.finishedAction(autoScalePolicy.getId());
       return;
     }
-    //terminate gracefully at this point in time if suggested from the outside
+    // terminate gracefully at this point in time if suggested from the outside
     if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
       actionMonitor.finishedAction(autoScalePolicy.getId(), Action.TERMINATED);
       return;
     }
     if (vnfr != null) {
       for (ScalingAlarm alarm : autoScalePolicy.getAlarms()) {
-        //terminate gracefully at this point in time if suggested from the outside
+        // terminate gracefully at this point in time if suggested from the outside
         if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
           actionMonitor.finishedAction(autoScalePolicy.getId(), Action.TERMINATED);
           return;
@@ -174,15 +174,15 @@ public class DetectionTask implements Runnable {
         alarmsWeightCount = +alarm.getWeight();
         List<Item> measurementResults = null;
         try {
-          //log.info("[DETECTOR] REQUEST_MEASUREMENTS " + new Date().getTime());
+          // log.info("[DETECTOR] REQUEST_MEASUREMENTS " + new Date().getTime());
           log.trace("Request measurements for VNFR " + vnfr_id);
           measurementResults =
               detectionEngine.getRawMeasurementResults(
                   vnfr, alarm.getMetric(), Integer.toString(autoScalePolicy.getPeriod()));
-          //log.info("[DETECTOR] GOT_MEASUREMENT_RESULTS " + new Date().getTime());
+          // log.info("[DETECTOR] GOT_MEASUREMENT_RESULTS " + new Date().getTime());
 
         } catch (MonitoringException e) {
-          //log.error(e.getMessage(), e);
+          // log.error(e.getMessage(), e);
           if (log.isDebugEnabled())
             log.error(
                 "Not found all the measurement results for VNFR "
@@ -242,18 +242,18 @@ public class DetectionTask implements Runnable {
       }
       log.trace(
           "Finished check of all Alarms of AutoScalePolicy with id " + autoScalePolicy.getId());
-      //Check if Alarm must be fired for this AutoScalingPolicy
+      // Check if Alarm must be fired for this AutoScalingPolicy
       double finalResult = (100 * alarmsWeightFired) / alarmsWeightCount;
       log.trace(
           "Checking if AutoScalingPolicy with id " + autoScalePolicy.getId() + " must be executed");
-      //terminate gracefully at this point in time if suggested from the outside
+      // terminate gracefully at this point in time if suggested from the outside
       if (actionMonitor.isTerminating(autoScalePolicy.getId())) {
         actionMonitor.finishedAction(autoScalePolicy.getId(), Action.TERMINATED);
         return;
       }
       if (detectionEngine.checkThreshold(
           autoScalePolicy.getComparisonOperator(), autoScalePolicy.getThreshold(), finalResult)) {
-        //if (fired == false) {
+        // if (fired == false) {
         log.info(
             "Threshold of AutoScalingPolicy with id "
                 + autoScalePolicy.getId()
@@ -262,11 +262,13 @@ public class DetectionTask implements Runnable {
                 + autoScalePolicy.getComparisonOperator()
                 + finalResult);
         fired = true;
-        //log.info("[DETECTOR] DETECTED_ALARM " + new Date().getTime());
+        // log.info("[DETECTOR] DETECTED_ALARM " + new Date().getTime());
         detectionEngine.sendAlarm(projectId, nsr_id, vnfr_id, autoScalePolicy);
-        //} else {
-        //    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was already crossed. So don't FIRE it again and wait for CLEARED-> " + autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
-        //}
+        // } else {
+        //    log.debug("Threshold of AutoScalingPolicy with id " + autoScalePolicy.getId() + " was
+        // already crossed. So don't FIRE it again and wait for CLEARED-> " +
+        // autoScalePolicy.getThreshold() + autoScalePolicy.getComparisonOperator() + finalResult);
+        // }
       } else {
         if (fired == false) {
           log.trace(
@@ -285,7 +287,7 @@ public class DetectionTask implements Runnable {
                   + autoScalePolicy.getComparisonOperator()
                   + finalResult);
           fired = false;
-          //ToDo throw event CLEARED
+          // ToDo throw event CLEARED
         }
       }
     } else {

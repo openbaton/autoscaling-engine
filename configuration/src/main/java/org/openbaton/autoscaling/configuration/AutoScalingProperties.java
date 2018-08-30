@@ -20,7 +20,6 @@
 
 package org.openbaton.autoscaling.configuration;
 
-import java.io.File;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -29,7 +28,7 @@ import org.springframework.stereotype.Service;
 /** Created by mpa on 25.01.16. */
 @Service
 @ConfigurationProperties(prefix = "ase")
-//@PropertySource("classpath:application.properties")
+// @PropertySource("classpath:application.properties")
 public class AutoScalingProperties {
 
   private Rabbitmq rabbitmq;

@@ -64,7 +64,7 @@ public class CooldownTask implements Runnable {
         log.debug("Waiting for Cooldown ... " + (cooldown - i) + "s");
         Thread.sleep(increment * 1000);
         i = i + increment;
-        //terminate gracefully at this point in time if suggested from the outside
+        // terminate gracefully at this point in time if suggested from the outside
         if (actionMonitor.isTerminating(nsr_id)) {
           actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
           return;

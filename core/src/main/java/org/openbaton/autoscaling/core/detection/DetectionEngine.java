@@ -55,7 +55,7 @@ public class DetectionEngine {
 
   private MonitoringPlugin monitor;
 
-  //@Autowired
+  // @Autowired
   private DetectionManagement detectionManagement;
 
   @Autowired private AutoScalingProperties autoScalingProperties;

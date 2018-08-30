@@ -57,9 +57,8 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 @Service
 @Scope("singleton")
 @ContextConfiguration(
-  loader = AnnotationConfigContextLoader.class,
-  classes = {ASBeanConfiguration.class}
-)
+    loader = AnnotationConfigContextLoader.class,
+    classes = {ASBeanConfiguration.class})
 public class ElasticityManagement {
 
   protected Logger log = LoggerFactory.getLogger(this.getClass());
@@ -154,9 +153,9 @@ public class ElasticityManagement {
   public void activate(String projectId, String nsr_id, String vnfr_id)
       throws NotFoundException, VimException, SDKException {
     log.debug("Activating Elasticity for NSR with id: " + nsr_id);
-    //log.info("[AUTOSCALING] Activating Elasticity " + System.currentTimeMillis());
+    // log.info("[AUTOSCALING] Activating Elasticity " + System.currentTimeMillis());
     detectionManagment.start(projectId, nsr_id, vnfr_id);
-    //log.info("[AUTOSCALING] Activated Elasticity " + System.currentTimeMillis());
+    // log.info("[AUTOSCALING] Activated Elasticity " + System.currentTimeMillis());
     log.info("Activated Elasticity for NSR with id: " + nsr_id);
   }
 

@@ -72,7 +72,7 @@ public class DecisionManagement {
   }
 
   public void decide(String projectId, String nsr_id, AutoScalePolicy autoScalePolicy) {
-    //log.info("[DECISION_MAKER] DECISION_REQUESTED " + new Date().getTime());
+    // log.info("[DECISION_MAKER] DECISION_REQUESTED " + new Date().getTime());
     log.debug(
         "Processing decision request of AutoScalePolicy with id "
             + autoScalePolicy.getId()

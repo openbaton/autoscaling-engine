@@ -51,11 +51,10 @@ public class RestExecutionInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "",
-    method = RequestMethod.POST,
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "",
+      method = RequestMethod.POST,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void execute(@RequestBody String msg) throws NotFoundException, SDKException {
     log.debug("========================");
@@ -66,7 +65,8 @@ public class RestExecutionInterface {
     //        String actionsString = json.get("actions");
     //        Set<Action> actions = mapper.fromJson(actionsString, Action.class);
     //        log.debug("ACTION=" + action);
-    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+    // NetworkServiceRecord.class);
     //        log.debug("NSR=" + nsr);
     //        detectionEngine.activate(nsr);
     String projectId = mapper.fromJson(json.get("project_id"), String.class);
@@ -83,11 +83,10 @@ public class RestExecutionInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "",
-    method = RequestMethod.DELETE,
-    consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "",
+      method = RequestMethod.DELETE,
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void stop(@RequestBody String msg) throws NotFoundException {
     log.debug("========================");
@@ -97,7 +96,8 @@ public class RestExecutionInterface {
     Gson mapper = new GsonBuilder().create();
     //        Action action = mapper.fromJson(json.get("action"), Action.class);
     //        log.debug("ACTION=" + action);
-    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+    // NetworkServiceRecord.class);
     //        log.debug("NSR=" + nsr);
     String projectId = mapper.fromJson(json.get("project_id"), String.class);
     String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
@@ -111,7 +111,8 @@ public class RestExecutionInterface {
   //     *
   //     * @param msg : NSR in payload to add for autoscaling
   //     */
-  //    @RequestMapping(value = "ERROR", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  //    @RequestMapping(value = "ERROR", method = RequestMethod.POST, consumes =
+  // MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   //    @ResponseStatus(HttpStatus.CREATED)
   //    public void stop(@RequestBody String msg) throws NotFoundException {
   //        log.debug("========================");
@@ -122,11 +123,13 @@ public class RestExecutionInterface {
   //        Action action = mapper.fromJson(json.get("action"), Action.class);
   //        log.debug("ACTION=" + action);
   ////        try {
-  ////            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+  ////            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+  // NetworkServiceRecord.class);
   ////            log.debug("NSR=" + nsr);
   ////            elasticityManagement.deactivate(nsr);
   ////        } catch (NullPointerException e) {
-  ////            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
+  ////            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"),
+  // VirtualNetworkFunctionRecord.class);
   ////            log.debug("vnfr=" + vnfr);
   ////            elasticityManagement.deactivate(vnfr);
   ////        }
