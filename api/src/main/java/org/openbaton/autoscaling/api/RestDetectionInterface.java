@@ -51,11 +51,10 @@ public class RestDetectionInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "",
-    method = RequestMethod.POST,
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "",
+      method = RequestMethod.POST,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void activate(@RequestBody String msg)
       throws NotFoundException, VimException, SDKException {
@@ -71,7 +70,8 @@ public class RestDetectionInterface {
     String vnfrId = mapper.fromJson(json.get("vnfr_id"), String.class);
     AutoScalePolicy autoScalePolicy =
         mapper.fromJson(json.get("autoScalePolicy"), AutoScalePolicy.class);
-    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+    // NetworkServiceRecord.class);
     //        log.debug("NSR=" + nsr);
     if (autoScalePolicy != null) {
       detectionManagement.start(projectId, nsrId, vnfrId, autoScalePolicy);
@@ -86,10 +86,9 @@ public class RestDetectionInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "",
-    method = RequestMethod.DELETE, /*consumes = MediaType.APPLICATION_JSON_VALUE,*/
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "",
+      method = RequestMethod.DELETE, /*consumes = MediaType.APPLICATION_JSON_VALUE,*/
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void deactivate(@RequestBody String msg) throws NotFoundException, SDKException {
     log.debug("========================");
@@ -99,7 +98,8 @@ public class RestDetectionInterface {
     Gson mapper = new GsonBuilder().create();
     //        Action action = mapper.fromJson(json.get("action"), Action.class);
     //        log.debug("ACTION=" + action);
-    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+    //        NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+    // NetworkServiceRecord.class);
     //        log.debug("NSR=" + nsr);
     String projectId = mapper.fromJson(json.get("project_id"), String.class);
     String nsrId = mapper.fromJson(json.get("nsr_id"), String.class);
@@ -113,11 +113,10 @@ public class RestDetectionInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "ERROR",
-    method = RequestMethod.POST,
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "ERROR",
+      method = RequestMethod.POST,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void stop(@RequestBody String msg) throws NotFoundException {
     log.debug("========================");
@@ -128,11 +127,13 @@ public class RestDetectionInterface {
     Action action = mapper.fromJson(json.get("action"), Action.class);
     log.debug("ACTION=" + action);
     //        try {
-    //            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+    //            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+    // NetworkServiceRecord.class);
     //            log.debug("NSR=" + nsr);
     //            elasticityManagement.deactivate(nsr);
     //        } catch (NullPointerException e) {
-    //            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
+    //            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"),
+    // VirtualNetworkFunctionRecord.class);
     //            log.debug("vnfr=" + vnfr);
     //            elasticityManagement.deactivate(vnfr);
     //        }
@@ -143,22 +144,29 @@ public class RestDetectionInterface {
   //     *
   //     * @param msg : NSR in payload to add for autoscaling
   //     */
-  //    @RequestMapping(value = "createPMJob", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  //    @RequestMapping(value = "createPMJob", method = RequestMethod.POST, consumes =
+  // MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   //    @ResponseStatus(HttpStatus.CREATED)
-  //    //public String createPMJob(ObjectSelection resourceSelector, List<String> performanceMetric, List<String> performanceMetricGroup, Integer collectionPeriod, Integer reportingPeriod) throws MonitoringException {
+  //    //public String createPMJob(ObjectSelection resourceSelector, List<String>
+  // performanceMetric, List<String> performanceMetricGroup, Integer collectionPeriod, Integer
+  // reportingPeriod) throws MonitoringException {
   //    public String createPMJob(@RequestBody String msg) throws MonitoringException {
   //        JsonParser jsonParser = new JsonParser();
   //        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
   //        Gson mapper = new GsonBuilder().create();
   //        //Parse JSon
-  //        ObjectSelection resourceSelection = mapper.fromJson(json.get("resourceSelector"), ObjectSelection.class);
+  //        ObjectSelection resourceSelection = mapper.fromJson(json.get("resourceSelector"),
+  // ObjectSelection.class);
   //        Type typeOfList = new TypeToken<List<String>>(){}.getType();
-  //        List<String> performanceMetric = mapper.fromJson(json.get("performanceMetric"), typeOfList);
-  //        List<String> performanceMetricGroup = mapper.fromJson(json.get("performanceMetricGroup"), typeOfList);
+  //        List<String> performanceMetric = mapper.fromJson(json.get("performanceMetric"),
+  // typeOfList);
+  //        List<String> performanceMetricGroup =
+  // mapper.fromJson(json.get("performanceMetricGroup"), typeOfList);
   //        Integer collectionPeriod = mapper.fromJson(json.get("collectionPeriod"), Integer.class);
   //        Integer reportingPeriod = mapper.fromJson(json.get("reportingPeriod"), Integer.class);
   //
-  //        return detectionManagement.createPMJob(resourceSelection, performanceMetric, performanceMetricGroup, collectionPeriod, reportingPeriod);
+  //        return detectionManagement.createPMJob(resourceSelection, performanceMetric,
+  // performanceMetricGroup, collectionPeriod, reportingPeriod);
   //    }
   //
   //    /**
@@ -166,7 +174,8 @@ public class RestDetectionInterface {
   //     *
   //     * @param msg : NSR in payload to add for autoscaling
   //     */
-  //    @RequestMapping(value = "deletePMJob", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  //    @RequestMapping(value = "deletePMJob", method = RequestMethod.DELETE, consumes =
+  // MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   //    @ResponseStatus(HttpStatus.OK)
   //    //public List<String> deletePMJob(List<String> itemIdsToDelete) throws MonitoringException {
   //    public List<String> deletePMJob(@RequestBody String msg) throws MonitoringException {
@@ -185,9 +194,11 @@ public class RestDetectionInterface {
   //     *
   //     * @param msg : NSR in payload to add for autoscaling
   //     */
-  //    @RequestMapping(value = "queryPMJob", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  //    @RequestMapping(value = "queryPMJob", method = RequestMethod.GET, consumes =
+  // MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   //    @ResponseStatus(HttpStatus.OK)
-  //    //public List<Item> queryPMJob(List<String> hostnames, List<String> metrics, String period) throws MonitoringException {
+  //    //public List<Item> queryPMJob(List<String> hostnames, List<String> metrics, String period)
+  // throws MonitoringException {
   //    public List<Item> queryPMJob(@RequestBody String msg) throws MonitoringException {
   //        JsonParser jsonParser = new JsonParser();
   //        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
@@ -212,20 +223,26 @@ public class RestDetectionInterface {
   //     *
   //     * @param msg : NSR in payload to add for autoscaling
   //     */
-  //    @RequestMapping(value = "createThreshold", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  //    @RequestMapping(value = "createThreshold", method = RequestMethod.POST, consumes =
+  // MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   //    @ResponseStatus(HttpStatus.CREATED)
-  //    //public String createThreshold(ObjectSelection objectSelector, String performanceMetric, ThresholdType thresholdType, ThresholdDetails thresholdDetails) throws MonitoringException {
+  //    //public String createThreshold(ObjectSelection objectSelector, String performanceMetric,
+  // ThresholdType thresholdType, ThresholdDetails thresholdDetails) throws MonitoringException {
   //    public String createThreshold(@RequestBody String msg) throws MonitoringException {
   //        JsonParser jsonParser = new JsonParser();
   //        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
   //        Gson mapper = new GsonBuilder().create();
   //        //Parse JSon
-  //        ObjectSelection resourceSelection = mapper.fromJson(json.get("resourceSelector"), ObjectSelection.class);
+  //        ObjectSelection resourceSelection = mapper.fromJson(json.get("resourceSelector"),
+  // ObjectSelection.class);
   //        String performanceMetric = mapper.fromJson(json.get("performanceMetric"), String.class);
-  //        ThresholdType thresholdType = mapper.fromJson(json.get("thresholdType"), ThresholdType.class);
-  //        ThresholdDetails thresholdDetails = mapper.fromJson(json.get("thresholdDetails"), ThresholdDetails.class);
+  //        ThresholdType thresholdType = mapper.fromJson(json.get("thresholdType"),
+  // ThresholdType.class);
+  //        ThresholdDetails thresholdDetails = mapper.fromJson(json.get("thresholdDetails"),
+  // ThresholdDetails.class);
   //
-  //        return detectionManagement.createThreshold(resourceSelection, performanceMetric, thresholdType, thresholdDetails);
+  //        return detectionManagement.createThreshold(resourceSelection, performanceMetric,
+  // thresholdType, thresholdDetails);
   //    }
   //
   //    /**
@@ -233,9 +250,11 @@ public class RestDetectionInterface {
   //     *
   //     * @param msg : NSR in payload to add for autoscaling
   //     */
-  //    @RequestMapping(value = "deleteThreshold", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  //    @RequestMapping(value = "deleteThreshold", method = RequestMethod.DELETE, consumes =
+  // MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   //    @ResponseStatus(HttpStatus.OK)
-  //    //public List<String> deleteThreshold(List<String> thresholdIds) throws MonitoringException {
+  //    //public List<String> deleteThreshold(List<String> thresholdIds) throws MonitoringException
+  // {
   //    public List<String> deleteThreshold(@RequestBody String msg) throws MonitoringException {
   //        JsonParser jsonParser = new JsonParser();
   //        JsonObject json = jsonParser.parse(msg).getAsJsonObject();
@@ -251,7 +270,8 @@ public class RestDetectionInterface {
   //     *
   //     * @param msg : NSR in payload to add for autoscaling
   //     */
-  //    @RequestMapping(value = "queryThreshold", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  //    @RequestMapping(value = "queryThreshold", method = RequestMethod.DELETE, consumes =
+  // MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   //    @ResponseStatus(HttpStatus.OK)
   //    //public void queryThreshold(String queryFilter) {
   //    public void queryThreshold(@RequestBody String msg) {

@@ -20,6 +20,15 @@
 
 package org.openbaton.autoscaling.core.management;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.SpringProperties;
 import org.openbaton.autoscaling.core.decision.DecisionManagement;
@@ -32,7 +41,6 @@ import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.monitoring.interfaces.MonitoringPlugin;
 import org.openbaton.monitoring.interfaces.MonitoringPluginCaller;
-import org.openbaton.plugin.utils.RabbitPluginBroker;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,25 +53,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("singleton")
 @ContextConfiguration(
-  loader = AnnotationConfigContextLoader.class,
-  classes = {ASBeanConfiguration.class}
-)
+    loader = AnnotationConfigContextLoader.class,
+    classes = {ASBeanConfiguration.class})
 public class ElasticityManagement {
 
   protected Logger log = LoggerFactory.getLogger(this.getClass());
@@ -158,9 +153,9 @@ public class ElasticityManagement {
   public void activate(String projectId, String nsr_id, String vnfr_id)
       throws NotFoundException, VimException, SDKException {
     log.debug("Activating Elasticity for NSR with id: " + nsr_id);
-    //log.info("[AUTOSCALING] Activating Elasticity " + System.currentTimeMillis());
+    // log.info("[AUTOSCALING] Activating Elasticity " + System.currentTimeMillis());
     detectionManagment.start(projectId, nsr_id, vnfr_id);
-    //log.info("[AUTOSCALING] Activated Elasticity " + System.currentTimeMillis());
+    // log.info("[AUTOSCALING] Activated Elasticity " + System.currentTimeMillis());
     log.info("Activated Elasticity for NSR with id: " + nsr_id);
   }
 

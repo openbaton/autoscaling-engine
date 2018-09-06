@@ -52,11 +52,10 @@ public class RestElasticityManagementInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "INSTANTIATE_FINISH",
-    method = RequestMethod.POST,
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "INSTANTIATE_FINISH",
+      method = RequestMethod.POST,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void activate(@RequestBody String msg)
       throws NotFoundException, VimException, SDKException {
@@ -77,11 +76,10 @@ public class RestElasticityManagementInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "RELEASE_RESOURCES_FINISH",
-    method = RequestMethod.POST,
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "RELEASE_RESOURCES_FINISH",
+      method = RequestMethod.POST,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void deactivate(@RequestBody String msg) throws NotFoundException {
     log.trace("msg=" + msg);
@@ -103,11 +101,10 @@ public class RestElasticityManagementInterface {
    * @param msg : NSR in payload to add for autoscaling
    */
   @RequestMapping(
-    value = "ERROR",
-    method = RequestMethod.POST,
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
+      value = "ERROR",
+      method = RequestMethod.POST,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public void stop(@RequestBody String msg) throws NotFoundException {
     log.trace("msg=" + msg);
@@ -117,11 +114,13 @@ public class RestElasticityManagementInterface {
     Action action = mapper.fromJson(json.get("action"), Action.class);
     log.trace("ACTION=" + action);
     //        try {
-    //            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"), NetworkServiceRecord.class);
+    //            NetworkServiceRecord nsr = mapper.fromJson(json.get("payload"),
+    // NetworkServiceRecord.class);
     //            log.debug("NSR=" + nsr);
     //            elasticityManagement.deactivate(nsr);
     //        } catch (NullPointerException e) {
-    //            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"), VirtualNetworkFunctionRecord.class);
+    //            VirtualNetworkFunctionRecord vnfr = mapper.fromJson(json.get("payload"),
+    // VirtualNetworkFunctionRecord.class);
     //            log.debug("vnfr=" + vnfr);
     //            elasticityManagement.deactivate(vnfr);
     //        }

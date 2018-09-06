@@ -28,9 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("prototype")
 public class CooldownTask implements Runnable {
@@ -66,7 +64,7 @@ public class CooldownTask implements Runnable {
         log.debug("Waiting for Cooldown ... " + (cooldown - i) + "s");
         Thread.sleep(increment * 1000);
         i = i + increment;
-        //terminate gracefully at this point in time if suggested from the outside
+        // terminate gracefully at this point in time if suggested from the outside
         if (actionMonitor.isTerminating(nsr_id)) {
           actionMonitor.finishedAction(nsr_id, Action.TERMINATED);
           return;

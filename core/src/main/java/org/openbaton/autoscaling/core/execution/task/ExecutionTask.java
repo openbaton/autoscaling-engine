@@ -20,6 +20,8 @@
 
 package org.openbaton.autoscaling.core.execution.task;
 
+import java.util.Map;
+import java.util.Set;
 import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
@@ -37,12 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.Set;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("prototype")
 public class ExecutionTask implements Runnable {
@@ -107,7 +104,8 @@ public class ExecutionTask implements Runnable {
     //        try {
     //            vnfr = executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.SCALING);
     //        } catch (SDKException e) {
-    //            log.error("Problems with SDK. Cannot update the VNFR. Scaling will not be executed");
+    //            log.error("Problems with SDK. Cannot update the VNFR. Scaling will not be
+    // executed");
     //            if (log.isDebugEnabled()) {
     //                log.error(e.getMessage(), e);
     //            }
@@ -136,9 +134,9 @@ public class ExecutionTask implements Runnable {
         }
         switch (action.getType()) {
           case SCALE_OUT:
-            //log.info("[EXECUTOR] START_SCALE_OUT " + new Date().getTime());
+            // log.info("[EXECUTOR] START_SCALE_OUT " + new Date().getTime());
             vnfr = executionEngine.scaleOut(projectId, vnfr, Integer.parseInt(action.getValue()));
-            //log.info("[EXECUTOR] FINISH_SCALE_OUT " + new Date().getTime());
+            // log.info("[EXECUTOR] FINISH_SCALE_OUT " + new Date().getTime());
             break;
           case SCALE_OUT_TO:
             executionEngine.scaleOutTo(projectId, vnfr, Integer.parseInt(action.getValue()));
@@ -169,7 +167,8 @@ public class ExecutionTask implements Runnable {
       //            try {
       //                executionEngine.updateVNFRStatus(nsr_id, vnfr_id, Status.ACTIVE);
       //            } catch (SDKException e) {
-      //                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in SCALE");
+      //                log.error("Problems with the SDK. Cannot Update VNFR. VNFR status remains in
+      // SCALE");
       //                if (log.isDebugEnabled()) {
       //                    log.error(e.getMessage(), e);
       //                }
@@ -177,7 +176,7 @@ public class ExecutionTask implements Runnable {
       //            }
       log.info("Executed scaling actions for NSR " + vnfr.getId());
       if (actionMonitor.getAction(nsr_id) == Action.SCALED) {
-        //log.info("[EXECUTOR] START_COOLDOWN " + new Date().getTime());
+        // log.info("[EXECUTOR] START_COOLDOWN " + new Date().getTime());
         executionEngine.startCooldown(projectId, nsr_id, cooldown);
       } else {
         actionMonitor.finishedAction(nsr_id);

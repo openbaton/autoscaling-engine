@@ -20,15 +20,15 @@
 
 package org.openbaton.autoscaling.configuration;
 
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
-/**
- * Created by mpa on 25.01.16.
- */
+/** Created by mpa on 25.01.16. */
 @Service
 @ConfigurationProperties(prefix = "ase")
-//@PropertySource("classpath:application.properties")
+// @PropertySource("classpath:application.properties")
 public class AutoScalingProperties {
 
   private Rabbitmq rabbitmq;
@@ -314,5 +314,17 @@ public class AutoScalingProperties {
     public String toString() {
       return "File{" + "path='" + path + '\'' + '}';
     }
+  }
+
+  public void updateProperty(String key, String value) throws ConfigurationException {
+
+    java.io.File propertiesFile =
+        new java.io.File(
+            getClass().getClassLoader().getResource("application.properties").getFile());
+    org.apache.commons.configuration.PropertiesConfiguration properties =
+        new org.apache.commons.configuration.PropertiesConfiguration(propertiesFile);
+    properties.setReloadingStrategy(new FileChangedReloadingStrategy());
+    properties.setProperty(key, value);
+    properties.save();
   }
 }

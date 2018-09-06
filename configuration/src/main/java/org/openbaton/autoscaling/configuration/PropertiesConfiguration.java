@@ -23,9 +23,7 @@ package org.openbaton.autoscaling.configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Created by mpa on 25.01.16.
- */
+/** Created by mpa on 25.01.16. */
 @Configuration
 public class PropertiesConfiguration {
 

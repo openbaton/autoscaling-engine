@@ -20,6 +20,10 @@
 
 package org.openbaton.autoscaling.core.detection;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import javax.annotation.PostConstruct;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.configuration.SpringProperties;
@@ -51,16 +55,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("singleton")
 public class DetectionEngine {
@@ -71,7 +66,7 @@ public class DetectionEngine {
 
   //  private MonitoringPlugin monitor;
 
-  //@Autowired
+  // @Autowired
   private DetectionManagement detectionManagement;
 
   @Autowired private SpringProperties springProperties;
@@ -298,7 +293,8 @@ public class DetectionEngine {
 
         //        String[] domainProjectSplit = vimInstance.getTenant().split(Pattern.quote(":"));
         //        if (domainProjectSplit.length == 2) {
-        //          log.trace("Found domain name and project id: " + Arrays.toString(domainProjectSplit));
+        //          log.trace("Found domain name and project id: " +
+        // Arrays.toString(domainProjectSplit));
         //          domain = Identifier.byName(domainProjectSplit[0]);
         //          project = Identifier.byId(domainProjectSplit[1]);
         //        }

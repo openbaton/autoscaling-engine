@@ -20,18 +20,15 @@
 
 package org.openbaton.autoscaling.utils;
 
+import java.io.IOException;
+import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.Socket;
-
-/**
- * Created by mpa on 28.10.15.
- */
+/** Created by mpa on 28.10.15. */
 public class Utils {
 
-  private final static Logger log = LoggerFactory.getLogger(Utils.class);
+  private static final Logger log = LoggerFactory.getLogger(Utils.class);
 
   public static boolean isNfvoStarted(String ip, String port) {
     int i = 0;

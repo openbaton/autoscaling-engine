@@ -20,6 +20,7 @@
 
 package org.openbaton.autoscaling.api.exceptions;
 
+import javax.persistence.NoResultException;
 import org.openbaton.exceptions.BadFormatException;
 import org.openbaton.exceptions.NetworkServiceIntegrityException;
 import org.openbaton.exceptions.NotFoundException;
@@ -36,11 +37,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import javax.persistence.NoResultException;
-
-/**
- * Created by gca on 27/08/15.
- */
+/** Created by gca on 27/08/15. */
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   private Logger log = LoggerFactory.getLogger(this.getClass());

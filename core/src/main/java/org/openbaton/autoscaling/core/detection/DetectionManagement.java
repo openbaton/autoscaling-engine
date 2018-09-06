@@ -20,6 +20,14 @@
 
 package org.openbaton.autoscaling.core.detection;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
+import javax.annotation.PostConstruct;
 import org.openbaton.autoscaling.catalogue.Action;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
@@ -43,18 +51,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ErrorHandler;
 
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("singleton")
 public class DetectionManagement {
@@ -159,7 +156,7 @@ public class DetectionManagement {
       return;
     }
     if (vnfr == null) {
-      //throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
+      // throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
       log.warn("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
       return;
     }
@@ -187,8 +184,10 @@ public class DetectionManagement {
         detectionTasks.get(nsr_id).put(vnfr_id, new HashMap<String, ScheduledFuture>());
       }
       if (detectionTasks.get(nsr_id).get(vnfr_id).containsKey(autoScalePolicy.getId())) {
-        //                log.debug("Restarting Alarm Detection for AutoScalePolicy with id: " + autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
-        //                detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
+        //                log.debug("Restarting Alarm Detection for AutoScalePolicy with id: " +
+        // autoScalePolicy.getId() + " of VNFR " + vnfr_id + " of NSR with id: " + nsr_id);
+        //
+        // detectionTasks.get(nsr_id).get(vnfr_id).get(autoScalePolicy.getId()).cancel(false);
         log.warn(
             "Got new request for starting DetectionTask for AutoScalePolicy "
                 + autoScalePolicy.getId()
@@ -297,7 +296,7 @@ public class DetectionManagement {
       return null;
     }
     if (vnfr == null) {
-      //throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
+      // throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
       log.warn("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
       return new AsyncResult<>(false);
     }
@@ -337,7 +336,7 @@ public class DetectionManagement {
     Set<Future<Boolean>> futureTasks = new HashSet<>();
     Set<Boolean> tasks = new HashSet<>();
     if (vnfr == null) {
-      //throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
+      // throw new NotFoundException("Not Found VirtualNetworkFunctionRecord with id: " + vnfr_id);
       log.warn("Not Found VirtualNetworkFunctionRecord with id: " + vnfr.getId());
       return new AsyncResult<>(false);
     }
@@ -394,7 +393,7 @@ public class DetectionManagement {
                     + " ("
                     + i
                     + "s)");
-            //log.debug(actionMonitor.toString());
+            // log.debug(actionMonitor.toString());
             if (i <= 0) {
               log.warn(
                   "Forced deactivation of DetectionTask for AutoScalePolicy with id: "

@@ -20,10 +20,11 @@
 
 package org.openbaton.autoscaling.core.execution;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import javax.annotation.PostConstruct;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
-import org.openbaton.sdk.NfvoRequestorBuilder;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.core.management.ActionMonitor;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
@@ -34,6 +35,7 @@ import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.sdk.NFVORequestor;
+import org.openbaton.sdk.NfvoRequestorBuilder;
 import org.openbaton.sdk.api.exception.SDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,17 +43,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.annotation.PostConstruct;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @Service
 @Scope("singleton")
 public class ExecutionEngine {
@@ -69,7 +63,7 @@ public class ExecutionEngine {
 
   @PostConstruct
   public void init() {
-    //this.resourceManagement = context.getBean(ResourceManagement.class);
+    // this.resourceManagement = context.getBean(ResourceManagement.class);
     this.executionManagement = context.getBean(ExecutionManagement.class);
   }
 

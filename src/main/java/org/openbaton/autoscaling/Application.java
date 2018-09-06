@@ -21,6 +21,17 @@
 package org.openbaton.autoscaling;
 
 import com.google.gson.JsonSyntaxException;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.apache.commons.configuration.ConfigurationException;
 import org.openbaton.autoscaling.configuration.AutoScalingProperties;
 import org.openbaton.autoscaling.configuration.NfvoProperties;
 import org.openbaton.autoscaling.configuration.PropertiesConfiguration;
@@ -35,6 +46,7 @@ import org.openbaton.catalogue.nfvo.Action;
 import org.openbaton.catalogue.nfvo.EndpointType;
 import org.openbaton.catalogue.nfvo.EventEndpoint;
 import org.openbaton.catalogue.security.Project;
+import org.openbaton.catalogue.security.ServiceMetadata;
 import org.openbaton.exceptions.NotFoundException;
 import org.openbaton.exceptions.VimException;
 import org.openbaton.plugin.mgmt.PluginStartup;
@@ -49,30 +61,19 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-/**
- * Created by mpa on 27.10.15.
- */
+/** Created by mpa on 27.10.15. */
 @SpringBootApplication
 @ComponentScan({"org.openbaton.autoscaling.api", "org.openbaton.autoscaling", "org.openbaton"})
 @ContextConfiguration(
-  loader = AnnotationConfigContextLoader.class,
-  classes = {ASBeanConfiguration.class, PropertiesConfiguration.class}
-)
+    loader = AnnotationConfigContextLoader.class,
+    classes = {ASBeanConfiguration.class, PropertiesConfiguration.class})
 public class Application implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
 
   protected static Logger log = LoggerFactory.getLogger(Application.class);
@@ -91,13 +92,39 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
 
   private ElasticityManagement elasticityManagement;
 
-  private void init() throws ClassNotFoundException {
+  private void init()
+      throws ClassNotFoundException, NotFoundException, SDKException, ConfigurationException {
     subscriptionIds = new ArrayList<>();
-    //start all the plugins needed
+    // start all the plugins needed
     startPlugins();
-    //waiting until the NFVO is available
+    // waiting until the NFVO is available
     waitForNfvo();
     this.elasticityManagement = context.getBean(ElasticityManagement.class);
+    if (autoScalingProperties.getService().getKey().isEmpty()) {
+      log.warn("No service key provided. Trying to self register as new service...");
+      if (nfvoProperties.getUsername().isEmpty() && nfvoProperties.getPassword().isEmpty()) {
+        throw new NotFoundException(
+            "Not found user and/or password to self register as a new service. Exiting....");
+      }
+      ServiceMetadata serviceMetadata = new ServiceMetadata();
+      serviceMetadata.setName("autoscaling-engine");
+      ArrayList<String> roles = new ArrayList<>();
+      roles.add("*");
+
+      NFVORequestor tmpNfvoRequestor =
+          NfvoRequestorBuilder.create()
+              .nfvoIp(nfvoProperties.getIp())
+              .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
+              .username(nfvoProperties.getUsername())
+              .password(nfvoProperties.getPassword())
+              .sslEnabled(nfvoProperties.getSsl().isEnabled())
+              .version("1")
+              .build();
+
+      String serviceKey = tmpNfvoRequestor.getServiceAgent().create("autoscaling-engine", roles);
+      log.info("Received service key: " + serviceKey);
+      autoScalingProperties.updateProperty("ase.service.key", serviceKey);
+    }
     try {
       this.nfvoRequestor =
           NfvoRequestorBuilder.create()
@@ -105,6 +132,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
               .nfvoPort(Integer.parseInt(nfvoProperties.getPort()))
               .serviceName("autoscaling-engine")
               .serviceKey(autoScalingProperties.getService().getKey())
+              .projectId("*")
               .sslEnabled(nfvoProperties.getSsl().isEnabled())
               .version("1")
               .build();
@@ -112,8 +140,9 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
       log.error(e.getMessage(), e);
       System.exit(1);
     }
+
     try {
-      List<Project> projectList = nfvoRequestor.getProjectAgent().findAll();
+      // List<Project> projectList = nfvoRequestor.getProjectAgent().findAll();
       //      for (Project project : projectList) {
       //        if (project.getName().equals("default")) {
       //          nfvoRequestor.setProjectId(project.getId());
@@ -123,6 +152,27 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
       subscriptionIds.add(subscribe(Action.INSTANTIATE_FINISH));
       subscriptionIds.add(subscribe(Action.RELEASE_RESOURCES_FINISH));
       subscriptionIds.add(subscribe(Action.ERROR));
+
+      // for (ServiceMetadata serviceMetadata : nfvoRequestor.getServiceAgent().findAll()) {
+      //  log.info(serviceMetadata.toString());
+      // }
+
+      List<EventEndpoint> eventEndpoints = nfvoRequestor.getEventAgent().findAll();
+      if (eventEndpoints.size() == 3) {
+        log.info("Subscribed successfully to all events...");
+      } else {
+        log.error(
+            "Not subscribed successfully to events. Requried 3. Subscribed: "
+                + eventEndpoints.size());
+        log.warn(
+            "Is that the IP were the autoscaling engine is reachable: "
+                + autoScalingProperties.getServer().getIp()
+                + "?");
+        log.warn("Subscribed events: ");
+        for (EventEndpoint event : nfvoRequestor.getEventAgent().findAll()) {
+          log.info(event.toString());
+        }
+      }
     } catch (SDKException | IllegalStateException e) {
       log.error(e.getMessage());
       System.exit(1);
@@ -258,6 +308,7 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
   private void fetchNSRsFromNFVO() {
     log.debug("Fetching previously deployed NSRs from NFVO to start the autoscaling for them.");
     List<NetworkServiceRecord> nsrs = new ArrayList<>();
+
     try {
       for (Project project : nfvoRequestor.getProjectAgent().findAll()) {
         nfvoRequestor.setProjectId(project.getId());
@@ -310,5 +361,13 @@ public class Application implements CommandLineRunner, ApplicationListener<Conte
   @Override
   public void run(String... args) throws Exception {
     init();
+  }
+
+  @Configuration
+  static class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    public void configure(WebSecurity web) throws Exception {
+      web.ignoring().antMatchers("/**");
+    }
   }
 }
