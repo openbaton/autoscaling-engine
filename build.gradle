@@ -53,7 +53,7 @@ ext {
     /**
      * OpenBaton Related Version
      */
-    openbatonVersion = '6.0.0'
+    openbatonVersion = '6.0.1-SNAPSHOT'
     /**
      * Application Related Version
      */

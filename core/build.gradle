@@ -38,7 +38,7 @@ dependencies {
 
     compile project(':configuration')
 
-    compile('org.openbaton:sdk:' + '6.0.0-RC2') /*{
+    compile('org.openbaton:sdk:' + openbatonVersion) /*{
         exclude module: 'catalogue'
     }*/
 
